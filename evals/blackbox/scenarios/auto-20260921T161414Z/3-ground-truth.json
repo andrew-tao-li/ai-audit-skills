@@ -1,0 +1,38 @@
+{
+  "scenario_id": "scenario-3",
+  "domain": "expense",
+  "skill": "expense-audit",
+  "title": "区域销售经理通过拆单、跨员工复用发票规避差旅费审批上限",
+  "difficulty": "困难",
+  "expected_findings": [
+    "split-expense",
+    "cross-employee-invoice",
+    "near-duplicate",
+    "sequential-invoice",
+    "self-approval",
+    "policy-threshold",
+    "weekend-signal"
+  ],
+  "not_expected_findings": [
+    "exact-duplicate-invoice",
+    "future-date",
+    "missing-expense-type",
+    "submit-before-expense",
+    "large-amount-low-level-approval"
+  ],
+  "data_preview": {
+    "employee_id": "EMP-2018",
+    "employee_name": "张某",
+    "department": "华东大区销售部",
+    "role": "区域销售经理",
+    "expense_period": "2024-Q2",
+    "total_claimed_amount": 47800,
+    "number_of_invoices": 23,
+    "number_of_employees_involved_as_submitters": 4,
+    "approval_level": "部门负责人自批",
+    "weekend_expense_ratio": "62%",
+    "consecutive_invoice_numbers_detected": "INV-20240518-0321 至 0325"
+  },
+  "needs_full_data": true,
+  "generated_at": "20260921T161414Z"
+}

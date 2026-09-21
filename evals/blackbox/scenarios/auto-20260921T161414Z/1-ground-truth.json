@@ -1,0 +1,35 @@
+{
+  "scenario_id": "scenario-1",
+  "domain": "expense",
+  "skill": "expense-audit",
+  "title": "采购员与供应商串通重复报销同一笔办公用品发票",
+  "difficulty": "简单",
+  "expected_findings": [
+    "exact-duplicate-invoice",
+    "self-approval"
+  ],
+  "not_expected_findings": [
+    "near-duplicate",
+    "split-expense",
+    "weekend-signal",
+    "robust-outlier"
+  ],
+  "data_preview": {
+    "expense_id": "EX-20240508-0371",
+    "employee_id": "EMP-ZHANG-0823",
+    "employee_name": "张某",
+    "department": "采购部",
+    "submit_date": "2024-05-08",
+    "expense_date": "2024-05-06",
+    "amount_cny": 8650.0,
+    "invoice_number": "04425820",
+    "vendor_name": "鑫达办公用品经营部",
+    "expense_type": "办公用品",
+    "approver_id": "EMP-LI-0315",
+    "approver_name": "李某",
+    "approval_level": "主管",
+    "approval_threshold_cny": 50000
+  },
+  "needs_full_data": true,
+  "generated_at": "20260921T161414Z"
+}
