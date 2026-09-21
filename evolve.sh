@@ -1,10 +1,12 @@
 #!/bin/bash
-# 完整进化循环：跑测试 → 评分 → LLM 分析 → 写 proposals → 通知
-# 用法：./evolve.sh [--skip-llm]
+# 完整进化循环：跑测试 → 评分 → 健康检查 → LLM 分析 → 写 proposals → 通知 → git 持久化
+# 用法：./evolve.sh [--skip-llm] [--skip-push]
 #
 # 架构：
 #   - 测试 + 评分（无 LLM）：本脚本可独立运行
 #   - LLM 分析（要 API key）：通过 call_llm.py 直接调 MiniMax
+#   - 健康检查：ping MiniMax API + token 配额
+#   - 通知：企业微信 Webhook / 邮件 / 日志
 #   - launchd 后台跑：每步可独立开关
 
 set -e
@@ -16,20 +18,66 @@ TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 LOG_DIR="evolution/log"
 STATE_FILE="evolution/state.json"
 PROPOSALS_DIR="evolution/proposals"
+NOTIFY_SCRIPT="$ROOT/evolution/notify.sh"
 
 SKIP_LLM=0
-if [ "$1" = "--skip-llm" ]; then
-    SKIP_LLM=1
-fi
+SKIP_PUSH=0
+for arg in "$@"; do
+    case "$arg" in
+        --skip-llm) SKIP_LLM=1 ;;
+        --skip-push) SKIP_PUSH=1 ;;
+    esac
+done
 
 mkdir -p "$LOG_DIR" "$PROPOSALS_DIR"
 
+# 0. 健康检查：ping MiniMax API
 echo "═══════════════════════════════════════════════"
 echo "  Audit Skill Box - Daily Cycle"
 echo "  Version: $VERSION"
 echo "  Timestamp: $TIMESTAMP"
-echo "  Skip LLM: $SKIP_LLM"
 echo "═══════════════════════════════════════════════"
+
+echo ""
+echo "▶ Step 0: 健康检查（API 可达性 + token 配额）"
+HEALTH_STATUS="unknown"
+HEALTH_MSG=""
+if [ -n "${MINIMAX_API_KEY:-}" ]; then
+    HEALTH_RESP=$(curl -s -X POST https://api.minimax.io/anthropic/v1/messages \
+        -H "Content-Type: application/json" \
+        -H "X-Api-Key: $MINIMAX_API_KEY" \
+        -H "anthropic-version: 2023-06-01" \
+        -d '{"model":"MiniMax-M3","max_tokens":10,"messages":[{"role":"user","content":"ping"}]}' \
+        -w "%{http_code}" -o /tmp/health_resp.json 2>&1)
+    HEALTH_CODE="$HEALTH_RESP"
+    if [ "$HEALTH_CODE" = "200" ]; then
+        HEALTH_STATUS="ok"
+        HEALTH_MSG="API 可达"
+        echo "  ✓ MiniMax API 可达"
+    elif [ "$HEALTH_CODE" = "401" ]; then
+        HEALTH_STATUS="auth_error"
+        HEALTH_MSG="API key 无效（401）"
+        echo "  ✗ API key 认证失败"
+    elif [ "$HEALTH_CODE" = "429" ]; then
+        HEALTH_STATUS="rate_limited"
+        HEALTH_MSG="Token 配额耗尽（429）"
+        echo "  ⚠ Token 配额耗尽，LLM 步骤将跳过"
+    else
+        HEALTH_STATUS="unknown_error"
+        HEALTH_MSG="HTTP $HEALTH_CODE"
+        echo "  ⚠ API 返回 HTTP $HEALTH_CODE"
+    fi
+else
+    HEALTH_STATUS="no_api_key"
+    HEALTH_MSG="MINIMAX_API_KEY 未设置"
+    echo "  ⚠ MINIMAX_API_KEY 未设置，LLM 步骤将跳过"
+fi
+
+# 如果健康检查失败且未禁用 LLM，自动跳过
+if [ "$HEALTH_STATUS" != "ok" ] && [ "$SKIP_LLM" = "0" ]; then
+    echo "  → 自动跳过 LLM 分析（$HEALTH_STATUS）"
+    SKIP_LLM=1
+fi
 
 # 1. 跑测试（不需要 LLM）
 echo ""
@@ -191,6 +239,80 @@ open('$STATE_FILE', 'w').write(json.dumps(state, indent=2, ensure_ascii=False))
 elif [ "$OPEN_FAILURES_COUNT" = "0" ]; then
     echo ""
     echo "▶ Step 4: SKIP (no failures to analyze)"
+fi
+
+# 5. 健康信息写入 state.json
+echo ""
+echo "▶ Step 5: 更新 state.json（健康状态）"
+python3 <<PYEOF
+import json
+from pathlib import Path
+state_file = Path("$STATE_FILE")
+state = json.loads(state_file.read_text())
+state["health"] = {
+    "status": "$HEALTH_STATUS",
+    "message": "$HEALTH_MSG",
+    "checked_at": "$TIMESTAMP",
+}
+state["last_modified"] = "$TIMESTAMP"
+state_file.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+PYEOF
+echo "  ✓ Health status recorded: $HEALTH_STATUS"
+
+# 6. 通知
+echo ""
+echo "▶ Step 6: 发送通知"
+NOTIFY_BODY="**Audit Skill Box 每日报告**
+
+- 时间: $TIMESTAMP
+- 版本: $VERSION
+- 健康: $HEALTH_STATUS ($HEALTH_MSG)
+- 失败: $OPEN_FAILURES_COUNT 个"
+
+if [ -f "$PROPOSALS_DIR/${TIMESTAMP}-llm-analysis.md" ]; then
+    NOTIFY_BODY="$NOTIFY_BODY
+
+- 最新提案: evolution/proposals/${TIMESTAMP}-llm-analysis.md
+- 分数: expense=$(python3 -c "import json; s=json.load(open('$STATE_FILE')); print(f\"{s.get('latest_scores',{}).get('expense',{}).get('f1',0):.0%}\")")
+"
+fi
+
+if [ -f "$NOTIFY_SCRIPT" ]; then
+    bash "$NOTIFY_SCRIPT" "[Audit Box] $VERSION 每日报告" "$NOTIFY_BODY" 2>&1 | tail -3
+else
+    echo "  ⚠ notify.sh 不存在，跳过通知"
+fi
+
+# 7. Git auto-commit + push
+echo ""
+echo "▶ Step 7: Git auto-commit"
+if [ "$SKIP_PUSH" = "0" ]; then
+    git add -A 2>&1 | tail -2
+    if ! git diff --cached --quiet 2>/dev/null; then
+        git commit -m "auto: iteration $TIMESTAMP (failures=$OPEN_FAILURES_COUNT, health=$HEALTH_STATUS)" 2>&1 | tail -2
+
+        # 尝试 push（如果有 remote + token）
+        REMOTE_URL=$(git remote get-url origin 2>/dev/null)
+        if [ -n "$REMOTE_URL" ]; then
+            # 看 remote URL 是否含 token
+            if echo "$REMOTE_URL" | grep -qE 'github.*@'; then
+                echo "  → push 到 GitHub..."
+                if git push origin main 2>&1 | tail -3; then
+                    echo "  ✓ push 成功"
+                else
+                    echo "  ⚠ push 失败（可能 token 过期或权限不足）"
+                fi
+            else
+                echo "  ⚠ remote URL 不含 token（用户没配置 PAT），跳过 push"
+            fi
+        else
+            echo "  ⚠ 没有配置 remote，跳过 push"
+        fi
+    else
+        echo "  → 没有变化，跳过 commit"
+    fi
+else
+    echo "  → --skip-push，跳过"
 fi
 
 echo ""
