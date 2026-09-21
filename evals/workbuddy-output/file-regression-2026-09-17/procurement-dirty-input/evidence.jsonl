@@ -1,0 +1,2 @@
+{"confidence": 1.0, "evidence_id": "EV-000001", "extraction_method": "normalized", "field": "po_id", "row": 2, "sheet": null, "source_file": "purchase_orders.csv", "source_hash": "sha256:bac8a49d731cb8e9983a8642f7593e8976cff6f29f8fa2c03585c8da92d21e4a", "value": "DPO-001"}
+{"confidence": 1.0, "evidence_id": "EV-000002", "extraction_method": "normalized", "field": "total_amount", "row": 2, "sheet": null, "source_file": "purchase_orders.csv", "source_hash": "sha256:bac8a49d731cb8e9983a8642f7593e8976cff6f29f8fa2c03585c8da92d21e4a", "value": 900.0}

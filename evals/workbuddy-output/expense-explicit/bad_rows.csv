@@ -1,0 +1,2 @@
+﻿source_row,reasons,raw_record
+16,amount 无法解析为有限数值；expense_date 无法解析,"{""expense_id"": ""EXP-BAD"", ""employee_id"": ""E006"", ""department"": ""市场"", ""expense_type"": ""meal"", ""expense_date"": ""not-a-date"", ""submit_date"": ""2026-06-12"", ""amount"": ""abc"", ""currency"": ""CNY"", ""vendor_name"": ""园区餐厅"", ""invoice_number"": ""M-BAD"", ""project_code"": ""P-F"", ""approver"": ""A600"", ""business_purpose"": ""坏行测试""}"

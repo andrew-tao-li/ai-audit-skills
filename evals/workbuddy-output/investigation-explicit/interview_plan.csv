@@ -1,0 +1,3 @@
+﻿interviewee,objective,known_facts,unknown_facts,questions,documents_to_show,follow_up_triggers
+E001,核对下载、外发目的和授权依据,"E001 向 E002 发送消息：资料下载已获主管 A100 批准,用于客户演示,请保留授权记录。|E001 向 external@example.test 发送消息：请把机密计划文件外发到这个测试邮箱,明早继续处理。|E001 执行 download，对象 confidential_plan.pdf，结果 success|E001 执行 upload，对象 external_drive/L-002，结果 success",主管 A100 的正式批准记录|外部位置的所有者和访问日志|文件内容及密级确认,请按时间顺序说明相关活动|当时目的和授权依据是什么|哪些记录可以验证或否定该说明|是否存在其他合理解释,由调查负责人从 evidence_matrix 中选择并确认展示顺序,回答与已登记时间线不一致|提出新的授权文件或证人|指出系统自动行为
+E002,核对消息背景和所知审批情况,,主管 A100 的正式批准记录|外部位置的所有者和访问日志|文件内容及密级确认,请按时间顺序说明相关活动|当时目的和授权依据是什么|哪些记录可以验证或否定该说明|是否存在其他合理解释,由调查负责人从 evidence_matrix 中选择并确认展示顺序,回答与已登记时间线不一致|提出新的授权文件或证人|指出系统自动行为

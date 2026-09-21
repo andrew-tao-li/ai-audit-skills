@@ -1,0 +1,3 @@
+﻿employee_id,employee_name,department,phone,email,address,bank_account,_source_file,_source_row,_source_sheet
+E001,张三,采购,555-0101,zhangsan@corp.example,员工宿舍1号,EMP-BA-1,employees.csv,2,
+E002,李四,采购,555-9999,lisi@corp.example,共享企业服务中心88号,EMP-BA-2,employees.csv,3,

@@ -1,0 +1,25 @@
+{
+  "case_id": "CASE-TEST-001",
+  "purpose": "测试基础 scope",
+  "authorization_confirmed": true,
+  "authorization_reference": "TEST-AUTH-001",
+  "date_range": {
+    "start": "2026-06-01",
+    "end": "2026-06-30"
+  },
+  "persons_in_scope": [
+    "E001",
+    "E002"
+  ],
+  "allowed_sources": [
+    "complaint.txt",
+    "messages.csv",
+    "logs.csv"
+  ],
+  "source_types": {
+    "complaint.txt": "text",
+    "messages.csv": "messages",
+    "logs.csv": "logs"
+  },
+  "network_access": false
+}

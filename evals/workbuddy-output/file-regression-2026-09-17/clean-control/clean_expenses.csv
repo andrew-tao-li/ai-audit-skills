@@ -1,0 +1,7 @@
+﻿expense_id,employee_id,department,expense_type,expense_date,submit_date,amount,currency,vendor_name,invoice_number,invoice_date,project_code,approver,payment_date,business_purpose,_source_row,_source_sheet
+CLN-001,E101,销售,hotel,2026-06-01,2026-06-02,650.0,CNY,东湖酒店,H-1001,,P-101,A101,,客户拜访住宿,2,
+CLN-002,E102,研发,meal,2026-06-02,2026-06-02,68.0,CNY,园区食堂,M-1001,,P-102,A102,,项目加班餐,3,
+CLN-003,E103,行政,office,2026-06-03,2026-06-03,210.0,CNY,办公用品店,O-1001,,P-103,A103,,打印耗材,4,
+CLN-004,E104,服务,taxi,2026-06-04,2026-06-04,96.0,CNY,城市出行,T-1001,,P-104,A104,,客户现场往返,5,
+CLN-005,E105,市场,travel,2026-06-05,2026-06-05,320.0,CNY,铁路平台,R-1001,,P-105,A105,,行业会议交通,6,
+CLN-006,E106,财务,meal,2026-06-08,2026-06-08,55.0,CNY,楼下餐厅,M-1002,,P-106,A106,,盘点加班餐,7,

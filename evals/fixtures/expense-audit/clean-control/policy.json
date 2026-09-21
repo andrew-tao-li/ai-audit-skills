@@ -1,0 +1,16 @@
+{
+  "policy_version": "SYNTHETIC-EXPENSE-CLEAN-1.0",
+  "default_currency": "CNY",
+  "limits": [
+    {"rule_id": "HOTEL-800", "expense_type": "hotel", "currency": "CNY", "max_amount": 800}
+  ],
+  "approval_thresholds": [
+    {"rule_id": "GENERAL-900", "currency": "CNY", "amount": 900}
+  ],
+  "near_duplicate_window_days": 7,
+  "near_duplicate_amount_tolerance": 0.02,
+  "split_window_days": 3,
+  "weekend_check": true,
+  "outlier_min_group_size": 5,
+  "outlier_robust_z": 3.5
+}

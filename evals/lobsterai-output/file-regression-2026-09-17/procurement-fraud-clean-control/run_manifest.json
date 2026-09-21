@@ -1,0 +1,151 @@
+{
+  "field_mappings": {
+    "bids": {
+      "bid_price": "bid_price",
+      "bidder_id": "bidder_id",
+      "currency": "currency",
+      "document_path": "document_path",
+      "lot_id": "lot_id",
+      "submitted_at": "submitted_at",
+      "tender_id": "tender_id"
+    },
+    "employees": {
+      "address": "address",
+      "bank_account": "bank_account",
+      "department": "department",
+      "email": "email",
+      "employee_id": "employee_id",
+      "employee_name": "employee_name",
+      "phone": "phone"
+    },
+    "payments": {
+      "amount": "amount",
+      "bank_account": "bank_account",
+      "currency": "currency",
+      "payment_date": "payment_date",
+      "payment_id": "payment_id",
+      "po_id": "po_id",
+      "vendor_id": "vendor_id"
+    },
+    "purchase_orders": {
+      "approval_date": "approval_date",
+      "buyer_id": "buyer_id",
+      "category": "category",
+      "currency": "currency",
+      "item": "item",
+      "order_date": "order_date",
+      "po_id": "po_id",
+      "quantity": "quantity",
+      "receipt_date": "receipt_date",
+      "region": "region",
+      "total_amount": "total_amount",
+      "unit": "unit",
+      "unit_price": "unit_price",
+      "vendor_id": "vendor_id"
+    },
+    "vendors": {
+      "address": "address",
+      "bank_account": "bank_account",
+      "created_at": "created_at",
+      "email": "email",
+      "legal_name": "legal_name",
+      "legal_representative": "legal_representative",
+      "phone": "phone",
+      "tax_id": "tax_id",
+      "vendor_id": "vendor_id",
+      "vendor_name": "vendor_name"
+    }
+  },
+  "finished_at": "2026-09-17T00:53:35.666334+00:00",
+  "input_files": [
+    {
+      "path": "vendors.csv",
+      "sha256": "5c1cf499af3fe77a31e67d86f2c36c7f259db61f651872a1f3fb78f79dbe1037",
+      "sheet": null,
+      "table": "vendors"
+    },
+    {
+      "path": "purchase_orders.csv",
+      "sha256": "9600accdeeb05e2eccf329719321e5a7422fca2127c7cf4ac62c322c7a67de6f",
+      "sheet": null,
+      "table": "purchase_orders"
+    },
+    {
+      "path": "employees.csv",
+      "sha256": "e5aea5ff92439e17097132fbb893d5b111dd63a09f75fac5e3d410323e7c4586",
+      "sheet": null,
+      "table": "employees"
+    },
+    {
+      "path": "payments.csv",
+      "sha256": "7f9b365bef36fa011ba528be5015ccba07d5f5a68e15b1ff9486d637cac53989",
+      "sheet": null,
+      "table": "payments"
+    },
+    {
+      "path": "bids.csv",
+      "sha256": "e97f233cba0739c2c737f26ffb8ac58d951b0b127469cd7258bb923aef5f86d7",
+      "sheet": null,
+      "table": "bids"
+    },
+    {
+      "path": "config.json",
+      "sha256": "4b5b9d07e6c8f697683e8961287b992ecd69337c370b2ddc446500a5b63f7b3f",
+      "table": "config"
+    }
+  ],
+  "network_access": false,
+  "outputs": [
+    "bad_rows.csv",
+    "data_quality.md",
+    "evidence.jsonl",
+    "findings.csv",
+    "findings.jsonl",
+    "investigation_handoff.json",
+    "normalized_bids.csv",
+    "normalized_employees.csv",
+    "normalized_payments.csv",
+    "normalized_purchase_orders.csv",
+    "normalized_vendors.csv",
+    "relationship_graph.json",
+    "summary.md",
+    "run_manifest.json"
+  ],
+  "parameters": {
+    "approval_thresholds": [
+      {
+        "amount": 9000,
+        "currency": "CNY",
+        "rule_id": "PO-APPROVAL-9000"
+      }
+    ],
+    "bid_ngram_max": 5,
+    "bid_ngram_min": 2,
+    "bid_price_close_ratio": 0.01,
+    "bid_similarity_threshold": 0.8,
+    "common_template_phrases": [],
+    "concentration_min_orders": 3,
+    "concentration_share": 0.7,
+    "config_version": "SYNTHETIC-PROCUREMENT-CLEAN-1.0",
+    "default_currency": "CNY",
+    "price_outlier_min_group_size": 5,
+    "price_outlier_robust_z": 3.5,
+    "split_window_days": 5,
+    "whitelists": {
+      "address": [],
+      "bank_account": [],
+      "email": [],
+      "legal_representative": [],
+      "phone": []
+    }
+  },
+  "run_id": "PROC-20260917T005335Z-d468b3fb",
+  "scripts": {
+    "run_procurement_audit.py": "sha256:d08f4a93995aea2dcbf5abfd8223e504412c775785a129a3dd59cbb956c49aea"
+  },
+  "skill": "procurement-fraud",
+  "skill_version": "0.1.1",
+  "skipped_modules": [],
+  "started_at": "2026-09-17T00:53:35.660978+00:00",
+  "warnings": []
+}

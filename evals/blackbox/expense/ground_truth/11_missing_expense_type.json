@@ -1,0 +1,17 @@
+{
+  "fixture_id": "11_missing_expense_type",
+  "description": "测试 missing-expense-type：缺费用类型且金额超最严上限",
+  "expected_findings": [
+    "missing-expense-type"
+  ],
+  "policy_overrides": {
+    "limits": [
+      {
+        "rule_id": "HOTEL",
+        "expense_type": "hotel",
+        "currency": "CNY",
+        "max_amount": 1000
+      }
+    ]
+  }
+}

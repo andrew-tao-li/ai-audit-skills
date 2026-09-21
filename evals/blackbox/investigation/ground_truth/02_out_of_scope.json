@@ -1,0 +1,5 @@
+{
+  "fixture_id": "02_out_of_scope",
+  "description": "测试 scope filter：超期人员/日期会被排除（成功生成 workspace 即证明过滤生效）",
+  "expected_outcome": "workspace_created"
+}

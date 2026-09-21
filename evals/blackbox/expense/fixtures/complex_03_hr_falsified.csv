@@ -1,0 +1,5 @@
+﻿expense_id,employee_id,expense_type,expense_date,submit_date,amount,currency,vendor_name,invoice_number,approver
+E-C3-1,E-HR-1,hotel,2026-07-01,2026-06-15,1200,CNY,酒店A,INV-HR-FAKE-001,E-HR-1
+E-C3-2,E-HR-2,hotel,2026-07-02,2026-06-15,1200,CNY,酒店A,INV-HR-FAKE-001,E-HR-1
+E-C3-3,E-HR-3,hotel,2026-07-03,2026-06-15,1200,CNY,酒店A,INV-HR-FAKE-001,E-HR-1
+E-C3-4,E-HR-1,meal,2026-12-31,2026-06-15,800,CNY,饭店,M-HR-FUTURE,E-HR-1

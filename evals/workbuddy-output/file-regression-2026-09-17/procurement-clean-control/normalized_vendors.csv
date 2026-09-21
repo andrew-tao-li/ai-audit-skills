@@ -1,0 +1,4 @@
+﻿vendor_id,vendor_name,legal_name,tax_id,bank_account,phone,email,address,legal_representative,created_at,_source_file,_source_row,_source_sheet
+CV001,甲方设备,甲方设备有限公司,CTAX-001,CBA-001,021-6001,a@alpha.example,甲路1号,甲代表,2025-01-01,vendors.csv,2,
+CV002,乙方服务,乙方服务有限公司,CTAX-002,CBA-002,021-6002,b@beta.example,乙路2号,乙代表,2025-02-01,vendors.csv,3,
+CV003,丙方用品,丙方用品有限公司,CTAX-003,CBA-003,021-6003,c@gamma.example,丙路3号,丙代表,2025-03-01,vendors.csv,4,

@@ -1,0 +1,87 @@
+{
+  "edges": [
+    {
+      "evidence_refs": [
+        "EV-000006"
+      ],
+      "source": "person:E001",
+      "target": "person:E002",
+      "type": "messaged"
+    },
+    {
+      "evidence_refs": [
+        "EV-000007"
+      ],
+      "source": "person:E001",
+      "target": "email:external@example.test",
+      "type": "messaged"
+    },
+    {
+      "evidence_refs": [
+        "EV-000009"
+      ],
+      "source": "person:E001",
+      "target": "device:LAPTOP-001",
+      "type": "used_device"
+    },
+    {
+      "action": "download",
+      "evidence_refs": [
+        "EV-000009"
+      ],
+      "source": "person:E001",
+      "target": "document:confidential_plan.pdf",
+      "type": "acted_on"
+    },
+    {
+      "evidence_refs": [
+        "EV-000010"
+      ],
+      "source": "person:E001",
+      "target": "device:LAPTOP-001",
+      "type": "used_device"
+    },
+    {
+      "action": "upload",
+      "evidence_refs": [
+        "EV-000010"
+      ],
+      "source": "person:E001",
+      "target": "document:external_drive/L-002",
+      "type": "acted_on"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "person:E001",
+      "label": "E001",
+      "type": "person"
+    },
+    {
+      "id": "person:E002",
+      "label": "E002",
+      "type": "person"
+    },
+    {
+      "id": "email:external@example.test",
+      "label": "external@example.test",
+      "type": "email"
+    },
+    {
+      "id": "device:LAPTOP-001",
+      "label": "LAPTOP-001",
+      "type": "device"
+    },
+    {
+      "id": "document:confidential_plan.pdf",
+      "label": "confidential_plan.pdf",
+      "type": "document"
+    },
+    {
+      "id": "document:external_drive/L-002",
+      "label": "external_drive/L-002",
+      "type": "document"
+    }
+  ],
+  "schema_version": "0.1.1"
+}

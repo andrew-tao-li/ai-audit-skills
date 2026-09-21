@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Label: 唯一标识，必须唯一 -->
+    <key>Label</key>
+    <string>com.audit.skill.box</string>
+
+    <!-- ProgramArguments: 启动时执行的命令 -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/taoli/Documents/AI助力审计0201/opencode/ai-audit-skills/evolve.sh</string>
+    </array>
+
+    <!-- WorkingDirectory: 工作目录 -->
+    <key>WorkingDirectory</key>
+    <string>/Users/taoli/Documents/AI助力审计0201/opencode/ai-audit-skills</string>
+
+    <!-- StartCalendarInterval: 定时启动（每天 9:00 AM） -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- StandardOutPath: stdout 重定向 -->
+    <key>StandardOutPath</key>
+    <string>/Users/taoli/Documents/AI助力审计0201/opencode/ai-audit-skills/evolution/log/launchd-stdout.log</string>
+
+    <!-- StandardErrorPath: stderr 重定向 -->
+    <key>StandardErrorPath</key>
+    <string>/Users/taoli/Documents/AI助力审计0201/opencode/ai-audit-skills/evolution/log/launchd-stderr.log</string>
+
+    <!-- RunAtLoad: 加载时立即运行一次（首次安装时） -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- StandardErrorPath: 运行环境 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>PYTHONIOENCODING</key>
+        <string>utf-8</string>
+    </dict>
+</dict>
+</plist>

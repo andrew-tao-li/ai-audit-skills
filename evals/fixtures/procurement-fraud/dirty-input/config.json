@@ -1,0 +1,8 @@
+{
+  "config_version": "SYNTHETIC-PROCUREMENT-DIRTY-1.0",
+  "default_currency": "CNY",
+  "price_outlier_min_group_size": 5,
+  "approval_thresholds": [],
+  "concentration_min_orders": 3,
+  "whitelists": {"address": [], "phone": [], "email": [], "bank_account": [], "legal_representative": []}
+}

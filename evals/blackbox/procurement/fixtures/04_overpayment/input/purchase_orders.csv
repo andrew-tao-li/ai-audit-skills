@@ -1,0 +1,2 @@
+﻿po_id,vendor_id,buyer_id,category,item,unit,region,quantity,unit_price,total_amount,currency,order_date,approval_date,receipt_date
+PO-D,PV-D,PB,原料,塑料,吨,华南,10,5000,50000,CNY,2026-06-01,2026-05-31,2026-06-04

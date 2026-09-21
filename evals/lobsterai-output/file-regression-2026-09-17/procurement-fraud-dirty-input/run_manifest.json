@@ -1,0 +1,102 @@
+{
+  "field_mappings": {
+    "purchase_orders": {
+      "approval_date": "approval_date",
+      "buyer_id": "buyer_id",
+      "category": "category",
+      "currency": "currency",
+      "item": "item",
+      "order_date": "order_date",
+      "po_id": "po_id",
+      "quantity": "quantity",
+      "receipt_date": "receipt_date",
+      "region": "region",
+      "total_amount": "total_amount",
+      "unit": "unit",
+      "unit_price": "unit_price",
+      "vendor_id": "vendor_id"
+    },
+    "vendors": {
+      "address": "address",
+      "bank_account": "bank_account",
+      "created_at": "created_at",
+      "email": "email",
+      "legal_name": "legal_name",
+      "legal_representative": "legal_representative",
+      "phone": "phone",
+      "tax_id": "tax_id",
+      "vendor_id": "vendor_id",
+      "vendor_name": "vendor_name"
+    }
+  },
+  "finished_at": "2026-09-17T00:53:38.313445+00:00",
+  "input_files": [
+    {
+      "path": "vendors.csv",
+      "sha256": "351a4bdb1c4e286dd5d4100dad0c8d8d7c207512be277e850ae298e4a3ba779b",
+      "sheet": null,
+      "table": "vendors"
+    },
+    {
+      "path": "purchase_orders.csv",
+      "sha256": "bac8a49d731cb8e9983a8642f7593e8976cff6f29f8fa2c03585c8da92d21e4a",
+      "sheet": null,
+      "table": "purchase_orders"
+    },
+    {
+      "path": "config.json",
+      "sha256": "25d5d4597207d17c3a7ac182bf0bfd1d06981bba9bf5e1b17d5cbd3150414872",
+      "table": "config"
+    }
+  ],
+  "network_access": false,
+  "outputs": [
+    "bad_rows.csv",
+    "data_quality.md",
+    "evidence.jsonl",
+    "findings.csv",
+    "findings.jsonl",
+    "investigation_handoff.json",
+    "normalized_purchase_orders.csv",
+    "normalized_vendors.csv",
+    "relationship_graph.json",
+    "summary.md",
+    "run_manifest.json"
+  ],
+  "parameters": {
+    "approval_thresholds": [],
+    "bid_ngram_max": null,
+    "bid_ngram_min": null,
+    "bid_price_close_ratio": null,
+    "bid_similarity_threshold": null,
+    "common_template_phrases": null,
+    "concentration_min_orders": 3,
+    "concentration_share": null,
+    "config_version": "SYNTHETIC-PROCUREMENT-DIRTY-1.0",
+    "default_currency": "CNY",
+    "price_outlier_min_group_size": 5,
+    "price_outlier_robust_z": null,
+    "split_window_days": null,
+    "whitelists": {
+      "address": [],
+      "bank_account": [],
+      "email": [],
+      "legal_representative": [],
+      "phone": []
+    }
+  },
+  "run_id": "PROC-20260917T005338Z-9dd20bd0",
+  "scripts": {
+    "run_procurement_audit.py": "sha256:d08f4a93995aea2dcbf5abfd8223e504412c775785a129a3dd59cbb956c49aea"
+  },
+  "skill": "procurement-fraud",
+  "skill_version": "0.1.1",
+  "skipped_modules": [
+    "employees 模块：未提供输入",
+    "payments 模块：未提供输入",
+    "bids 模块：未提供输入",
+    "split-order：未提供 approval_thresholds"
+  ],
+  "started_at": "2026-09-17T00:53:38.308574+00:00",
+  "warnings": []
+}

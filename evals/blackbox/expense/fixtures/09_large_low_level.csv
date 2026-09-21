@@ -1,0 +1,2 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-LLL-1,E-EMP-H,meal,2026-06-01,15000,CNY,酒店,H-LLL-001,A-INTERN

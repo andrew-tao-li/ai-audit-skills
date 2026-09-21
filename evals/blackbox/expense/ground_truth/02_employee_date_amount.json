@@ -1,0 +1,8 @@
+{
+  "fixture_id": "02_employee_date_amount",
+  "description": "测试 exact-duplicate-employee-date-amount：同员工同日同金额",
+  "expected_findings": [
+    "exact-duplicate-employee-date-amount"
+  ],
+  "policy_overrides": {}
+}

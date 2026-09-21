@@ -1,0 +1,7 @@
+{
+  "fixture_id": "03_payment_before_order",
+  "description": "测试 payment-before-order：付款日期早于下单日期",
+  "expected_findings": [
+    "payment-before-order"
+  ]
+}

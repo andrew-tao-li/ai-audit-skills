@@ -1,0 +1,14 @@
+{
+  "fixture_id": "09_large_low_level",
+  "description": "测试 large-amount-low-level-approval：大额由低层级审批",
+  "expected_findings": [
+    "large-amount-low-level-approval"
+  ],
+  "policy_overrides": {
+    "large_amount_threshold": 5000,
+    "low_level_approver_keywords": [
+      "INTERN",
+      "ASSIST"
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-HOL-1,E-EMP-E,meal,2025-10-01,200,CNY,饭店,M-NAT-2025-1,A-5
+E-HOL-2,E-EMP-E,hotel,2025-10-02,800,CNY,酒店,H-NAT-2025-1,A-5

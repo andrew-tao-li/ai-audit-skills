@@ -1,0 +1,5 @@
+{
+  "fixture_id": "01_basic_authorized",
+  "description": "测试基础 scope：授权齐全，材料齐全，应正常生成调查工作空间",
+  "expected_outcome": "workspace_created"
+}

@@ -1,0 +1,6 @@
+{
+  "fixture_id": "12_no_finding_clean",
+  "description": "测试无 finding：完全正常的数据",
+  "expected_findings": [],
+  "policy_overrides": {}
+}

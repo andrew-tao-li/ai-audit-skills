@@ -1,0 +1,8 @@
+{
+  "fixture_id": "01_duplicate_invoice",
+  "description": "测试 exact-duplicate-invoice：同发票号+同金额+同币种被两人/两次报销",
+  "expected_findings": [
+    "exact-duplicate-invoice"
+  ],
+  "policy_overrides": {}
+}

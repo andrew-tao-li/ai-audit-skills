@@ -1,0 +1,24 @@
+{
+  "case_id": "CASE-SYNTHETIC-SCOPE-001",
+  "purpose": "教学模拟：验证范围过滤和零命中输出",
+  "authorization_confirmed": true,
+  "authorization_reference": "SYNTHETIC-AUTH-SCOPE-001",
+  "date_range": {"start": "2026-06-01", "end": "2026-06-30"},
+  "persons_in_scope": ["E301", "E302"],
+  "allowed_sources": ["complaint.txt", "messages.csv", "logs.csv"],
+  "source_types": {"complaint.txt": "text", "messages.csv": "messages", "logs.csv": "logs"},
+  "assumed_timezone": "Asia/Shanghai",
+  "network_access": false,
+  "issues": [
+    {
+      "issue_id": "ISSUE-SCOPE-001",
+      "allegation_or_issue": "是否存在受限资料传输行为",
+      "priority": "medium",
+      "keywords": ["受限资料传输", "restricted transfer"],
+      "contradictory_keywords": ["正式批准"],
+      "missing_evidence": ["受限资料清单"],
+      "alternative_explanations": ["普通业务活动"]
+    }
+  ],
+  "interviewees": []
+}

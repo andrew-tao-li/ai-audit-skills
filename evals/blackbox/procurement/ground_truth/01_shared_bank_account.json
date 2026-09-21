@@ -1,0 +1,7 @@
+{
+  "fixture_id": "01_shared_bank_account",
+  "description": "测试 shared-bank-account：两家供应商共享对公账户",
+  "expected_findings": [
+    "shared-bank-account"
+  ]
+}

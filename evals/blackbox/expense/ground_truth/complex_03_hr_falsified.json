@@ -1,0 +1,10 @@
+{
+  "fixture_id": "complex_03_hr_falsified",
+  "description": "复合场景3：HR 伪造差旅报销（跨人复用发票 + 未来日期 + 大额自审）",
+  "expected_findings": [
+    "cross-employee-invoice",
+    "future-date",
+    "self-approval"
+  ],
+  "complex": true
+}

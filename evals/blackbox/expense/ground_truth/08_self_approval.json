@@ -1,0 +1,8 @@
+{
+  "fixture_id": "08_self_approval",
+  "description": "测试 self-approval：审批人 == 报销人",
+  "expected_findings": [
+    "self-approval"
+  ],
+  "policy_overrides": {}
+}

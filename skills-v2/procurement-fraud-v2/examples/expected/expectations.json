@@ -1,0 +1,17 @@
+{
+  "synthetic_data": true,
+  "must_include_finding_types": [
+    "shared-bank-account",
+    "employee-vendor-shared-phone",
+    "price-outlier",
+    "split-order",
+    "process-order-before-approval",
+    "process-receipt-before-order",
+    "process-payment-before-approval",
+    "bid-text-similarity",
+    "bid-price-pattern",
+    "buyer-vendor-concentration"
+  ],
+  "must_not_flag": ["供应商 V003 与 V004 的共享企业服务中心88号地址", "员工 E002 与供应商的白名单地址"],
+  "handoff_human_approval_required": true
+}

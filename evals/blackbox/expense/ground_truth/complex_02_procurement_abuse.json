@@ -1,0 +1,9 @@
+{
+  "fixture_id": "complex_02_procurement_abuse",
+  "description": "复合场景2：仓储员工高频小额办公采购（跨月）+ 单笔大额低层级审批",
+  "expected_findings": [
+    "near-duplicate",
+    "large-amount-low-level-approval"
+  ],
+  "complex": true
+}

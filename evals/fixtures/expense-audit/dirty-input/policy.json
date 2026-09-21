@@ -1,0 +1,9 @@
+{
+  "policy_version": "SYNTHETIC-EXPENSE-DIRTY-1.0",
+  "default_currency": "CNY",
+  "limits": [],
+  "approval_thresholds": [],
+  "weekend_check": false,
+  "outlier_min_group_size": 5,
+  "outlier_robust_z": 3.5
+}

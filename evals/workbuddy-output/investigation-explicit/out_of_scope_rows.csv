@@ -1,0 +1,3 @@
+﻿source_file,source_row,reason,evidence_id
+messages.csv,4,人员超出 persons_in_scope,EV-000008
+logs.csv,4,时间超出 scope date_range,EV-000011

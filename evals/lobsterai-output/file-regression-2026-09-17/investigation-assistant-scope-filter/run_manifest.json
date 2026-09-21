@@ -1,0 +1,82 @@
+{
+  "case_id": "CASE-SYNTHETIC-SCOPE-001",
+  "finished_at": "2026-09-17T00:53:45.927827+00:00",
+  "input_files": [
+    {
+      "evidence_id": "EV-000001",
+      "mime_type": "text/plain",
+      "modified_at": "2026-09-17T00:46:10.696589+00:00",
+      "relative_path": "complaint.txt",
+      "sha256": "5e4c792955c18a623fc37f99321366b775cc1e38ac0f8d7f2695e61fc0938611",
+      "size_bytes": 103,
+      "source_type": "text"
+    },
+    {
+      "evidence_id": "EV-000002",
+      "mime_type": "text/csv",
+      "modified_at": "2026-09-17T00:46:10.759131+00:00",
+      "relative_path": "messages.csv",
+      "sha256": "d2987a3e75093b80084fea3b1d5975c270f66dcf4c464b1221c2aa4a887c2183",
+      "size_bytes": 248,
+      "source_type": "messages"
+    },
+    {
+      "evidence_id": "EV-000003",
+      "mime_type": "text/csv",
+      "modified_at": "2026-09-17T00:46:10.824421+00:00",
+      "relative_path": "logs.csv",
+      "sha256": "91e2cbd3162d8435e53753670031b9dab9e5a00f00a7529291f9277e3530889b",
+      "size_bytes": 237,
+      "source_type": "logs"
+    }
+  ],
+  "network_access": false,
+  "outputs": [
+    "evidence/raw/",
+    "derived/",
+    "evidence_inventory.jsonl",
+    "evidence.jsonl",
+    "chain_of_custody.jsonl",
+    "out_of_scope_rows.csv",
+    "timeline.csv",
+    "entity_index.csv",
+    "relationships.json",
+    "evidence_matrix.csv",
+    "hypothesis_register.csv",
+    "findings.jsonl",
+    "interview_plan.csv",
+    "case_memo_template.md",
+    "data_quality.md",
+    "run_manifest.json"
+  ],
+  "run_id": "INV-20260917T005345Z-7a8ef81a",
+  "scope": {
+    "allowed_sources": [
+      "complaint.txt",
+      "messages.csv",
+      "logs.csv"
+    ],
+    "assumed_timezone": "Asia/Shanghai",
+    "authorization_reference": "SYNTHETIC-AUTH-SCOPE-001",
+    "date_range": {
+      "end": "2026-06-30",
+      "start": "2026-06-01"
+    },
+    "persons_in_scope": [
+      "E301",
+      "E302"
+    ],
+    "purpose": "教学模拟：验证范围过滤和零命中输出"
+  },
+  "scope_file": {
+    "path": "scope.json",
+    "sha256": "7a8ef81a2b3b417cbf5785a6ca10537fdf6aec4cf785764fb97d244d354f7267"
+  },
+  "scripts": {
+    "build_case_workspace.py": "sha256:ed110ec14af4faa85abe2457e27349f9b6532a2d33f287c30e39ac78466794ce"
+  },
+  "skill": "investigation-assistant",
+  "skill_version": "0.1.1",
+  "started_at": "2026-09-17T00:53:45.922630+00:00",
+  "warnings": []
+}

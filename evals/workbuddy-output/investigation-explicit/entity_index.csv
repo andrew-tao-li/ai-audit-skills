@@ -1,0 +1,7 @@
+﻿entity_id,entity_type,value
+person:E001,person,E001
+person:E002,person,E002
+email:external@example.test,email,external@example.test
+device:LAPTOP-001,device,LAPTOP-001
+document:confidential_plan.pdf,document,confidential_plan.pdf
+document:external_drive/L-002,document,external_drive/L-002

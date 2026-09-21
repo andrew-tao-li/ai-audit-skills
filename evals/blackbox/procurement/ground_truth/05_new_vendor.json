@@ -1,0 +1,7 @@
+{
+  "fixture_id": "05_new_vendor",
+  "description": "测试 new-vendor-large-order：新成立供应商短期内接大单",
+  "expected_findings": [
+    "new-vendor-large-order"
+  ]
+}

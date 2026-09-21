@@ -1,0 +1,12 @@
+{
+  "fixture_id": "complex_02_emergence",
+  "description": "复合场景2：新成立供应商紧急采购 + 流程倒置 + 超额付款",
+  "expected_findings": [
+    "new-vendor-large-order",
+    "process-receipt-before-order",
+    "process-receipt-before-approval",
+    "process-payment-before-approval",
+    "overpayment"
+  ],
+  "complex": true
+}

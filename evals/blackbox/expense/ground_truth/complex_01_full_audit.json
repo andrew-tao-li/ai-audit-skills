@@ -1,0 +1,11 @@
+{
+  "fixture_id": "complex_01_full_audit",
+  "description": "复合场景1：销售经理同一周多次出差广州，存在重复发票 + 自审自批 + 周末信号 + 超标的多 finding 共现",
+  "expected_findings": [
+    "exact-duplicate-invoice",
+    "self-approval",
+    "weekend-signal",
+    "policy-threshold"
+  ],
+  "complex": true
+}

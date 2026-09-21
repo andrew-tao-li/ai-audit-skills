@@ -1,0 +1,12 @@
+{
+  "entities": [],
+  "finding_ids": [],
+  "human_approval_required": true,
+  "hypotheses": [],
+  "known_facts": [],
+  "reason_for_handoff": "未达到多类独立红旗的建议条件",
+  "recommended_scope": [],
+  "schema_version": "0.1.1",
+  "source_skill": "procurement-fraud",
+  "status": "not_recommended"
+}

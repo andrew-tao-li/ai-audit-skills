@@ -1,0 +1,16 @@
+{
+  "config_version": "SYNTHETIC-PROCUREMENT-CLEAN-1.0",
+  "default_currency": "CNY",
+  "price_outlier_min_group_size": 5,
+  "price_outlier_robust_z": 3.5,
+  "split_window_days": 5,
+  "approval_thresholds": [{"rule_id": "PO-APPROVAL-9000", "currency": "CNY", "amount": 9000}],
+  "bid_similarity_threshold": 0.8,
+  "bid_ngram_min": 2,
+  "bid_ngram_max": 5,
+  "bid_price_close_ratio": 0.01,
+  "concentration_share": 0.7,
+  "concentration_min_orders": 3,
+  "common_template_phrases": [],
+  "whitelists": {"address": [], "phone": [], "email": [], "bank_account": [], "legal_representative": []}
+}

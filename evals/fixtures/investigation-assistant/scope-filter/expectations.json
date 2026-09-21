@@ -1,0 +1,11 @@
+{
+  "scenario": "scope-filter",
+  "synthetic_data": true,
+  "expected_return_code": 0,
+  "expected_raw_files": 3,
+  "expected_timeline_rows": 0,
+  "expected_out_of_scope_rows": 4,
+  "expected_findings": 0,
+  "expected_issue_rows": 1,
+  "expected_issue_status": "open"
+}

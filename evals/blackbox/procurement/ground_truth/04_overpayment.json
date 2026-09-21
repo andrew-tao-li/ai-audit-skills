@@ -1,0 +1,7 @@
+{
+  "fixture_id": "04_overpayment",
+  "description": "测试 overpayment：付款额 > 订单额",
+  "expected_findings": [
+    "overpayment"
+  ]
+}

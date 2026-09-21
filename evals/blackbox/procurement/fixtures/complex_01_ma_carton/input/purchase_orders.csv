@@ -1,0 +1,6 @@
+﻿po_id,vendor_id,buyer_id,category,item,unit,region,quantity,unit_price,total_amount,currency,order_date,approval_date,receipt_date
+PO-CV-A,CV-A,PB,原料,钢板,吨,华南,5,5000,25000,CNY,2026-06-01,2026-05-31,2026-06-05
+PO-CV-B,CV-B,PB,原料,钢板,吨,华南,5,5000,25000,CNY,2026-06-02,2026-06-01,2026-06-06
+PO-CV-C,CV-C,PB,原料,钢板,吨,华南,5,5000,25000,CNY,2026-06-03,2026-06-02,2026-06-07
+PO-CV-D,CV-D,PB,原料,钢板,吨,华南,5,3500,17500,CNY,2026-06-01,2026-05-31,2026-06-05
+PO-CV-D2,CV-D,PB,原料,钢板,吨,华南,5,3600,18000,CNY,2026-06-08,2026-06-07,2026-06-12

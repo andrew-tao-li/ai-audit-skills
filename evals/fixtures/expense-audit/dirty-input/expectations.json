@@ -1,0 +1,14 @@
+{
+  "scenario": "dirty-input",
+  "synthetic_data": true,
+  "expected_return_code": 0,
+  "expected_valid_rows": 2,
+  "expected_bad_rows": 3,
+  "expected_findings": 0,
+  "expected_defaulted_currency": "CNY",
+  "required_bad_row_reasons": [
+    "expense_date 无法解析",
+    "amount 无法解析为有限数值",
+    "employee_id 为空"
+  ]
+}

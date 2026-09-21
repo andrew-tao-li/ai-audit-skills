@@ -1,0 +1,2 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-SELF-1,A-APPROVER,hotel,2026-06-01,800,CNY,酒店,H-SELF-001,A-APPROVER

@@ -1,0 +1,8 @@
+{
+  "fixture_id": "03_sequential_invoices",
+  "description": "测试 sequential-invoice：同商户≥3 张连号发票",
+  "expected_findings": [
+    "sequential-invoice"
+  ],
+  "policy_overrides": {}
+}

@@ -1,0 +1,91 @@
+{
+  "edges": [
+    {
+      "amount": 3200.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000001",
+        "EV-000002"
+      ],
+      "source": "buyer:CB001",
+      "target": "vendor:CV001",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 2800.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000003",
+        "EV-000004"
+      ],
+      "source": "buyer:CB001",
+      "target": "vendor:CV002",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 1800.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000005",
+        "EV-000006"
+      ],
+      "source": "buyer:CB002",
+      "target": "vendor:CV003",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 4500.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000007",
+        "EV-000008"
+      ],
+      "source": "buyer:CB003",
+      "target": "vendor:CV001",
+      "type": "purchased_from"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "vendor:CV001",
+      "label": "CV001",
+      "type": "vendor"
+    },
+    {
+      "id": "vendor:CV002",
+      "label": "CV002",
+      "type": "vendor"
+    },
+    {
+      "id": "vendor:CV003",
+      "label": "CV003",
+      "type": "vendor"
+    },
+    {
+      "id": "employee:CE001",
+      "label": "CE001",
+      "type": "employee"
+    },
+    {
+      "id": "employee:CE002",
+      "label": "CE002",
+      "type": "employee"
+    },
+    {
+      "id": "buyer:CB001",
+      "label": "CB001",
+      "type": "buyer"
+    },
+    {
+      "id": "buyer:CB002",
+      "label": "CB002",
+      "type": "buyer"
+    },
+    {
+      "id": "buyer:CB003",
+      "label": "CB003",
+      "type": "buyer"
+    }
+  ],
+  "schema_version": "0.1.1"
+}

@@ -1,0 +1,7 @@
+{
+  "fixture_id": "02_bid_text_similarity",
+  "description": "测试 bid-text-similarity：两家供应商投标文本完全相同",
+  "expected_findings": [
+    "bid-text-similarity"
+  ]
+}

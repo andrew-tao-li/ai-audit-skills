@@ -1,0 +1,60 @@
+{
+  "field_mapping": {
+    "amount": "报销金额",
+    "approver": "审批人",
+    "business_purpose": "业务目的",
+    "currency": "币种",
+    "department": "部门",
+    "employee_id": "工号",
+    "expense_date": "费用日期",
+    "expense_id": "费用编号",
+    "expense_type": "费用类别",
+    "invoice_number": "发票号码",
+    "project_code": "项目代码",
+    "submit_date": "提交日期",
+    "vendor_name": "商户"
+  },
+  "finished_at": "2026-09-17T00:52:32.205987+00:00",
+  "input_files": [
+    {
+      "path": "expenses.csv",
+      "sha256": "2d6e622d2dc05711f94cf8171ca883a583e13786888cf2c0ac78ddc3a68ed699",
+      "sheet": null
+    },
+    {
+      "path": "policy.json",
+      "sha256": "d2a02f17773547bddca7803f67ff5b4b453b59e2c35a6023ca7428243ae3c78c"
+    }
+  ],
+  "network_access": false,
+  "outputs": [
+    "clean_expenses.csv",
+    "bad_rows.csv",
+    "findings.csv",
+    "findings.jsonl",
+    "evidence.jsonl",
+    "summary.md",
+    "data_quality.md",
+    "run_manifest.json"
+  ],
+  "parameters": {
+    "near_duplicate_amount_tolerance": 0.02,
+    "near_duplicate_window_days": 7,
+    "outlier_min_group_size": 5,
+    "outlier_robust_z": 3.5,
+    "policy_version": "SYNTHETIC-EXPENSE-CLEAN-1.0",
+    "split_window_days": 3,
+    "weekend_check": true
+  },
+  "run_id": "EXP-20260917T005232Z-2d6e622d",
+  "scripts": {
+    "run_expense_audit.py": "sha256:ee2d34163664c57f9409ed854e357a3ee50e8f5045149eb92806f94c0565c1cf"
+  },
+  "skill": "expense-audit",
+  "skill_version": "0.1.1",
+  "skipped_rules": [
+    "robust-outlier：没有达到最小样本且 MAD 非零的 peer group"
+  ],
+  "started_at": "2026-09-17T00:52:32.063327+00:00",
+  "warnings": []
+}

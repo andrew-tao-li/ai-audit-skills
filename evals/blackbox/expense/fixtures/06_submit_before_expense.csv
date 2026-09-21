@@ -1,0 +1,2 @@
+﻿expense_id,employee_id,expense_type,expense_date,submit_date,amount,currency,vendor_name,invoice_number,approver
+E-SUB-1,E-EMP-F,hotel,2026-06-15,2026-06-10,800,CNY,酒店,H-SUB-001,A-6

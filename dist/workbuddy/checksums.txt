@@ -1,0 +1,3 @@
+50491317d3ad6211d95dd0346081cec1b6dc5e64b1294518c6c109d36b2d6d95  expense-audit-0.1.1.zip
+5231b59d0cff8fc869dd5e4e8c508fa90ca36e3ac840a9ee2efa38d6d6d2fc7d  investigation-assistant-0.1.2.zip
+96c629dde847157bbd1257c1f3112b530132b8f53c5e90b6026d622345c5097c  procurement-fraud-0.1.1.zip

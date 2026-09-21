@@ -1,0 +1,204 @@
+{
+  "edges": [
+    {
+      "evidence_refs": [
+        "EV-000001",
+        "EV-000002",
+        "EV-000003",
+        "EV-000004"
+      ],
+      "source": "vendor:V001",
+      "target": "vendor:V002",
+      "type": "shares_bank_account"
+    },
+    {
+      "evidence_refs": [
+        "EV-000005",
+        "EV-000006",
+        "EV-000001",
+        "EV-000007"
+      ],
+      "source": "employee:E001",
+      "target": "vendor:V001",
+      "type": "shares_phone"
+    },
+    {
+      "amount": 1000.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000059",
+        "EV-000060"
+      ],
+      "source": "buyer:B001",
+      "target": "vendor:V005",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 1020.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000061",
+        "EV-000062"
+      ],
+      "source": "buyer:B002",
+      "target": "vendor:V003",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 980.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000063",
+        "EV-000064"
+      ],
+      "source": "buyer:B003",
+      "target": "vendor:V004",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 1010.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000065",
+        "EV-000066"
+      ],
+      "source": "buyer:B004",
+      "target": "vendor:V005",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 990.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000067",
+        "EV-000068"
+      ],
+      "source": "buyer:B005",
+      "target": "vendor:V003",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 1800.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000008",
+        "EV-000069"
+      ],
+      "source": "buyer:B001",
+      "target": "vendor:V001",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 4800.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000014",
+        "EV-000018"
+      ],
+      "source": "buyer:B900",
+      "target": "vendor:V001",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 4700.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000020",
+        "EV-000024"
+      ],
+      "source": "buyer:B900",
+      "target": "vendor:V001",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 12000.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000026",
+        "EV-000036"
+      ],
+      "source": "buyer:B900",
+      "target": "vendor:V001",
+      "type": "purchased_from"
+    },
+    {
+      "amount": 1000.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000070",
+        "EV-000071"
+      ],
+      "source": "buyer:B900",
+      "target": "vendor:V005",
+      "type": "purchased_from"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "vendor:V001",
+      "label": "V001",
+      "type": "vendor"
+    },
+    {
+      "id": "vendor:V002",
+      "label": "V002",
+      "type": "vendor"
+    },
+    {
+      "id": "vendor:V003",
+      "label": "V003",
+      "type": "vendor"
+    },
+    {
+      "id": "vendor:V004",
+      "label": "V004",
+      "type": "vendor"
+    },
+    {
+      "id": "vendor:V005",
+      "label": "V005",
+      "type": "vendor"
+    },
+    {
+      "id": "employee:E001",
+      "label": "E001",
+      "type": "employee"
+    },
+    {
+      "id": "employee:E002",
+      "label": "E002",
+      "type": "employee"
+    },
+    {
+      "id": "buyer:B001",
+      "label": "B001",
+      "type": "buyer"
+    },
+    {
+      "id": "buyer:B002",
+      "label": "B002",
+      "type": "buyer"
+    },
+    {
+      "id": "buyer:B003",
+      "label": "B003",
+      "type": "buyer"
+    },
+    {
+      "id": "buyer:B004",
+      "label": "B004",
+      "type": "buyer"
+    },
+    {
+      "id": "buyer:B005",
+      "label": "B005",
+      "type": "buyer"
+    },
+    {
+      "id": "buyer:B900",
+      "label": "B900",
+      "type": "buyer"
+    }
+  ],
+  "schema_version": "0.1.1"
+}

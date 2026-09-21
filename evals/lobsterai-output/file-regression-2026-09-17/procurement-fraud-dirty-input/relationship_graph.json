@@ -1,0 +1,28 @@
+{
+  "edges": [
+    {
+      "amount": 900.0,
+      "currency": "CNY",
+      "evidence_refs": [
+        "EV-000001",
+        "EV-000002"
+      ],
+      "source": "buyer:DB001",
+      "target": "vendor:DV001",
+      "type": "purchased_from"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "vendor:DV001",
+      "label": "DV001",
+      "type": "vendor"
+    },
+    {
+      "id": "buyer:DB001",
+      "label": "DB001",
+      "type": "buyer"
+    }
+  ],
+  "schema_version": "0.1.1"
+}

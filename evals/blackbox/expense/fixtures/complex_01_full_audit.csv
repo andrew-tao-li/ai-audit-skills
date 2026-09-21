@@ -1,0 +1,6 @@
+﻿expense_id,employee_id,expense_type,expense_date,submit_date,amount,currency,vendor_name,invoice_number,approver
+E-C1-1,E-SALES-1,hotel,2026-06-12,2026-06-13,980,CNY,广州希尔顿,INV-GZ-2024-001,E-SALES-1
+E-C1-2,E-SALES-1,hotel,2026-06-13,2026-06-14,980,CNY,广州希尔顿,INV-GZ-2024-001,E-SALES-1
+E-C1-3,E-SALES-1,meal,2026-06-13,2026-06-14,850,CNY,广州海鲜酒家,M-GZ-1,E-SALES-1
+E-C1-4,E-SALES-1,meal,2026-06-14,2026-06-15,900,CNY,广州海鲜酒家,M-GZ-2,E-SALES-1
+E-C1-5,E-SALES-1,hotel,2026-06-15,2026-06-16,2800,CNY,广州W酒店,INV-W-001,E-SALES-1

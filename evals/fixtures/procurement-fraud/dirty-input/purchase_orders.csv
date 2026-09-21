@@ -1,0 +1,4 @@
+po_id,vendor_id,buyer_id,category,item,unit,region,quantity,unit_price,total_amount,currency,order_date,approval_date,receipt_date
+DPO-001,DV001,DB001,办公,文件柜,个,华东,1,900,900,CNY,2026-08-02,2026-08-01,2026-08-05
+DPO-002,DV001,DB002,办公,办公椅,把,华东,2,bad-number,1200,CNY,2026-08-03,2026-08-02,2026-08-06
+DPO-003,DV001,,办公,白板,块,华东,1,500,500,CNY,2026-08-04,2026-08-03,2026-08-07

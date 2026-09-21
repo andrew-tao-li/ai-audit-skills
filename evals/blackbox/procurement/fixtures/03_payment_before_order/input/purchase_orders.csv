@@ -1,0 +1,2 @@
+﻿po_id,vendor_id,buyer_id,category,item,unit,region,quantity,unit_price,total_amount,currency,order_date,receipt_date
+PO-C,PV-C,PB,原料,钢板,吨,华南,5,5000,25000,CNY,2026-06-05,2026-06-10

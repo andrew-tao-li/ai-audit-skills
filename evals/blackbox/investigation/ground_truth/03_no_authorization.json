@@ -1,0 +1,5 @@
+{
+  "fixture_id": "03_no_authorization",
+  "description": "测试 scope gate：未授权时必须拒绝",
+  "expected_outcome": "rejected_by_scope_gate"
+}

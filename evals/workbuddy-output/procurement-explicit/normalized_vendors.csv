@@ -1,0 +1,6 @@
+﻿vendor_id,vendor_name,legal_name,tax_id,bank_account,phone,email,address,legal_representative,created_at,_source_file,_source_row,_source_sheet
+V001,星河设备,星河设备有限公司,TAX-001,BA-001,555-0101,sales@xinghe.example,创新路1号,张甲,2024-01-01,vendors.csv,2,
+V002,远航器材,远航器材有限公司,TAX-002,BA-001,555-0202,bid@yuanhang.example,创新路2号,李乙,2024-02-01,vendors.csv,3,
+V003,北方服务,北方服务有限公司,TAX-003,BA-003,555-0303,a@north.example,共享企业服务中心88号,王丙,2024-03-01,vendors.csv,4,
+V004,南方服务,南方服务有限公司,TAX-004,BA-004,555-0404,b@south.example,共享企业服务中心88号,赵丁,2024-04-01,vendors.csv,5,
+V005,诚信工具,诚信工具有限公司,TAX-005,BA-005,555-0505,contact@honest.example,工业路5号,陈戊,2024-05-01,vendors.csv,6,

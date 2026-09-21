@@ -1,0 +1,7 @@
+{
+  "scenario": "authorization-denied",
+  "synthetic_data": true,
+  "expected_return_code": 2,
+  "expected_error_contains": "authorization_confirmed",
+  "output_must_not_exist": true
+}

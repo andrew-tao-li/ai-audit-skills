@@ -1,0 +1,8 @@
+{
+  "fixture_id": "10_cross_employee_invoice",
+  "description": "测试 cross-employee-invoice：同一发票号被不同员工使用",
+  "expected_findings": [
+    "cross-employee-invoice"
+  ],
+  "policy_overrides": {}
+}

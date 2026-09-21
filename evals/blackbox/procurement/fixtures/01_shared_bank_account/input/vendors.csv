@@ -1,0 +1,3 @@
+﻿vendor_id,vendor_name,legal_name,tax_id,bank_account,phone,email,address,legal_representative,created_at
+PV-A,甲公司,甲有限公司,TAX-A,BA-SHARED,13800001,a@a.com,A路,张一,2018-01-01
+PV-B,乙公司,乙有限公司,TAX-B,BA-SHARED,13800002,b@b.com,B路,李二,2018-01-01

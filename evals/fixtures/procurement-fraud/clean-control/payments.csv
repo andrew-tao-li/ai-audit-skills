@@ -1,0 +1,3 @@
+payment_id,po_id,vendor_id,amount,currency,payment_date,bank_account
+CPAY-001,CPO-001,CV001,3200,CNY,2026-07-06,CBA-001
+CPAY-002,CPO-003,CV003,1800,CNY,2026-07-19,CBA-003

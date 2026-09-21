@@ -1,0 +1,5 @@
+po_id,vendor_id,buyer_id,category,item,unit,region,quantity,unit_price,total_amount,currency,order_date,approval_date,receipt_date
+CPO-001,CV001,CB001,设备,测试仪,台,华东,1,3200,3200,CNY,2026-07-02,2026-07-01,2026-07-05
+CPO-002,CV002,CB001,服务,维护服务,次,华东,1,2800,2800,CNY,2026-07-10,2026-07-09,2026-07-12
+CPO-003,CV003,CB002,办公,打印纸,箱,华东,10,180,1800,CNY,2026-07-15,2026-07-14,2026-07-18
+CPO-004,CV001,CB003,设备,网络交换机,台,华北,1,4500,4500,CNY,2026-07-20,2026-07-19,2026-07-24

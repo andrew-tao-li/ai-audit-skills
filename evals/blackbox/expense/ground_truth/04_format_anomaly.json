@@ -1,0 +1,8 @@
+{
+  "fixture_id": "04_format_anomaly",
+  "description": "测试 invoice-format-anomaly：发票号含非常规字符",
+  "expected_findings": [
+    "invoice-format-anomaly"
+  ],
+  "policy_overrides": {}
+}

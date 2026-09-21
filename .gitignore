@@ -1,0 +1,23 @@
+# 敏感信息
+.env
+*.key
+*.secret
+*.token
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# 测试产物
+.test-output/
+.test-output-*/
+*.log.tmp
+
+# 系统文件
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/

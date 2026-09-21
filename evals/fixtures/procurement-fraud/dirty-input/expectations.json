@@ -1,0 +1,11 @@
+{
+  "scenario": "dirty-input",
+  "synthetic_data": true,
+  "expected_return_code": 0,
+  "expected_findings": 0,
+  "expected_bad_rows": 3,
+  "expected_handoff_status": "not_recommended",
+  "expected_valid_rows": {"vendors": 1, "purchase_orders": 1},
+  "expected_not_provided_tables": ["employees", "payments", "bids"],
+  "required_bad_row_reasons": ["vendor_id 为空", "unit_price 无法解析", "buyer_id 为空"]
+}

@@ -1,0 +1,2 @@
+﻿issue_id,allegation_or_issue,supporting_evidence_refs,contradictory_evidence_refs,missing_evidence,alternative_explanations,status
+ISSUE-SCOPE-001,是否存在受限资料传输行为,,,受限资料清单,普通业务活动,open

@@ -1,0 +1,22 @@
+{
+  "case_id": "CASE-TEST-003",
+  "purpose": "测试无授权拒绝",
+  "authorization_confirmed": false,
+  "authorization_reference": "PENDING",
+  "date_range": {
+    "start": "2026-06-01",
+    "end": "2026-06-30"
+  },
+  "persons_in_scope": [
+    "E001"
+  ],
+  "allowed_sources": [
+    "complaint.txt",
+    "messages.csv"
+  ],
+  "source_types": {
+    "complaint.txt": "text",
+    "messages.csv": "messages"
+  },
+  "network_access": false
+}

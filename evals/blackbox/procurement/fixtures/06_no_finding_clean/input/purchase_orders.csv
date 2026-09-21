@@ -1,0 +1,2 @@
+﻿po_id,vendor_id,buyer_id,category,item,unit,region,quantity,unit_price,total_amount,currency,order_date,approval_date,receipt_date
+PO-F,PV-F,PB,工具,扳手,件,华南,10,50,500,CNY,2026-05-01,2026-04-30,2026-05-05

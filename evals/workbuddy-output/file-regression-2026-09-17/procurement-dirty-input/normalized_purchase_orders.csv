@@ -1,0 +1,2 @@
+﻿po_id,vendor_id,buyer_id,category,item,unit,region,quantity,unit_price,total_amount,currency,order_date,approval_date,receipt_date,_source_file,_source_row,_source_sheet
+DPO-001,DV001,DB001,办公,文件柜,个,华东,1.0,900.0,900.0,CNY,2026-08-02,2026-08-01,2026-08-05,purchase_orders.csv,2,

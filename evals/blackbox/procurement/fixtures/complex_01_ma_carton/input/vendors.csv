@@ -1,0 +1,5 @@
+﻿vendor_id,vendor_name,bank_account,phone,address,created_at
+CV-A,甲伪装,BA-CARTON,13800001,A路,2018-01-01
+CV-B,乙伪装,BA-CARTON,13800002,B路,2018-01-01
+CV-C,丙伪装,BA-CARTON,13800003,C路,2018-01-01
+CV-D,正常供应商,BA-D-NORMAL,13800004,D路,2018-01-01

@@ -1,0 +1,2 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-FUT-1,E-EMP-G,hotel,2026-12-31,1000,CNY,酒店,H-FUT,A-7

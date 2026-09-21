@@ -1,0 +1,8 @@
+{
+  "fixture_id": "07_future_date",
+  "description": "测试 future-date：费用日期在未来（默认基准日为系统今天）",
+  "expected_findings": [
+    "future-date"
+  ],
+  "policy_overrides": {}
+}

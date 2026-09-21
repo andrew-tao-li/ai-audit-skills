@@ -1,0 +1,4 @@
+﻿po_id,vendor_id,buyer_id,category,item,unit,region,quantity,unit_price,total_amount,currency,order_date,approval_date,receipt_date
+PO-X,PV-X,PB,设备,机床,台,华南,1,100000,100000,CNY,2026-05-01,2026-04-30,2026-05-05
+PO-Y,PV-Y,PB,设备,机床,台,华南,1,100000,100000,CNY,2026-05-02,2026-05-01,2026-05-06
+PO-Z,PV-Z,PB,设备,机床,台,华南,1,110000,110000,CNY,2026-05-03,2026-05-02,2026-05-07

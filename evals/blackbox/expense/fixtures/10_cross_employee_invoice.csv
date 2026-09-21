@@ -1,0 +1,3 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-CROSS-1,E-EMP-X,hotel,2026-06-01,800,CNY,酒店,INV-CROSS-XYZ,A-X
+E-CROSS-2,E-EMP-Y,hotel,2026-06-01,900,CNY,酒店,INV-CROSS-XYZ,A-Y

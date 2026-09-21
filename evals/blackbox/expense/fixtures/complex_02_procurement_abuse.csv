@@ -1,0 +1,8 @@
+﻿expense_id,employee_id,expense_type,expense_date,submit_date,amount,currency,vendor_name,invoice_number,approver
+E-C2-1,E-WH-1,office,2026-06-01,2026-06-02,80,CNY,文具店,WS-001,A-WH-MGR
+E-C2-2,E-WH-1,office,2026-06-03,2026-06-04,85,CNY,文具店,WS-002,A-WH-MGR
+E-C2-3,E-WH-1,office,2026-06-05,2026-06-06,92,CNY,文具店,WS-003,A-WH-MGR
+E-C2-4,E-WH-1,office,2026-06-08,2026-06-09,78,CNY,文具店,WS-004,A-WH-MGR
+E-C2-5,E-WH-1,office,2026-06-10,2026-06-11,88,CNY,文具店,WS-005,A-WH-MGR
+E-C2-6,E-WH-1,office,2026-06-12,2026-06-13,95,CNY,文具店,WS-006,A-WH-MGR
+E-C2-7,E-WH-1,office,2026-06-15,2026-06-16,12000,CNY,家具城,FURN-001,A-INTERN

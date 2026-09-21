@@ -1,0 +1,5 @@
+{
+  "fixture_id": "06_no_finding_clean",
+  "description": "测试无 finding：完全正常的采购数据",
+  "expected_findings": []
+}

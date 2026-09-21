@@ -1,0 +1,58 @@
+{
+  "field_mapping": {
+    "amount": "amount",
+    "approver": "approver",
+    "business_purpose": "business_purpose",
+    "currency": "currency",
+    "department": "department",
+    "employee_id": "employee_id",
+    "expense_date": "expense_date",
+    "expense_id": "expense_id",
+    "expense_type": "expense_type",
+    "invoice_number": "invoice_number",
+    "project_code": "project_code",
+    "submit_date": "submit_date",
+    "vendor_name": "vendor_name"
+  },
+  "finished_at": "2026-09-16T02:09:04.267563+00:00",
+  "input_files": [
+    {
+      "path": "expenses.csv",
+      "sha256": "d47c4079ec14b506137e3a9fabadfd7cc81c439ddd77e24d9169e9851bd3c8c5",
+      "sheet": null
+    },
+    {
+      "path": "policy.json",
+      "sha256": "fd01a56770bdab5fe02fe44be72bc96bf94e539470c93752668756d17a692ec6"
+    }
+  ],
+  "network_access": false,
+  "outputs": [
+    "clean_expenses.csv",
+    "bad_rows.csv",
+    "findings.csv",
+    "findings.jsonl",
+    "evidence.jsonl",
+    "summary.md",
+    "data_quality.md",
+    "run_manifest.json"
+  ],
+  "parameters": {
+    "near_duplicate_amount_tolerance": 0.02,
+    "near_duplicate_window_days": 7,
+    "outlier_min_group_size": 5,
+    "outlier_robust_z": 3.5,
+    "policy_version": "SYNTHETIC-EXPENSE-POLICY-1.0",
+    "split_window_days": 3,
+    "weekend_check": true
+  },
+  "run_id": "EXP-20260916T020904Z-d47c4079",
+  "scripts": {
+    "run_expense_audit.py": "sha256:ee2d34163664c57f9409ed854e357a3ee50e8f5045149eb92806f94c0565c1cf"
+  },
+  "skill": "expense-audit",
+  "skill_version": "0.1.1",
+  "skipped_rules": [],
+  "started_at": "2026-09-16T02:09:04.132800+00:00",
+  "warnings": []
+}

@@ -1,0 +1,3 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-FMT-1,E-EMP-D,office,2026-06-01,50,CNY,店铺A,INV-@@@@-!!!,A-4
+E-FMT-2,E-EMP-D,office,2026-06-02,60,CNY,店铺A,#$%^&99,A-4

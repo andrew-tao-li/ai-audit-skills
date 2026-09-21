@@ -1,0 +1,9 @@
+{
+  "fixture_id": "complex_01_ma_carton",
+  "description": "复合场景1：3 家马甲供应商共享账户 + 拆分采购 + 价格离群",
+  "expected_findings": [
+    "shared-bank-account",
+    "price-outlier"
+  ],
+  "complex": true
+}

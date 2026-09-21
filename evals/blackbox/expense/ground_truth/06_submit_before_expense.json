@@ -1,0 +1,8 @@
+{
+  "fixture_id": "06_submit_before_expense",
+  "description": "测试 submit-before-expense：提交日期早于消费日期",
+  "expected_findings": [
+    "submit-before-expense"
+  ],
+  "policy_overrides": {}
+}

@@ -1,0 +1,7 @@
+﻿tender_id,lot_id,bidder_id,bid_price,currency,document_path,submitted_at,_source_file,_source_row,_source_sheet
+T-001,L-001,V001,100000.0,CNY,bid-docs/v001.txt,2026-04-01 09:00,bids.csv,2,
+T-001,L-001,V002,100500.0,CNY,bid-docs/v002.txt,2026-04-01 09:05,bids.csv,3,
+T-001,L-001,V005,135000.0,CNY,bid-docs/v005.txt,2026-04-01 10:00,bids.csv,4,
+T-002,L-002,V001,50000.0,CNY,,2026-04-10 09:00,bids.csv,5,
+T-002,L-002,V003,50030.0,CNY,,2026-04-10 09:10,bids.csv,6,
+T-002,L-002,V004,50060.0,CNY,,2026-04-10 09:20,bids.csv,7,

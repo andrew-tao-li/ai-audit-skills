@@ -1,0 +1,5 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-SEQ-1,E-EMP-C,office,2026-06-01,30,CNY,打印店,INV-SEQ-100,A-3
+E-SEQ-2,E-EMP-C,office,2026-06-02,50,CNY,打印店,INV-SEQ-101,A-3
+E-SEQ-3,E-EMP-C,office,2026-06-03,40,CNY,打印店,INV-SEQ-102,A-3
+E-SEQ-4,E-EMP-C,office,2026-06-04,60,CNY,打印店,INV-SEQ-103,A-3

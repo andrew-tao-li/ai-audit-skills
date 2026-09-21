@@ -1,0 +1,3 @@
+vendor_id,vendor_name,legal_name,tax_id,bank_account,phone,email,address,legal_representative,created_at
+DV001,正常供应商,正常供应商有限公司,DTAX-001,DBA-001,021-8001,ok@vendor.example,测试路1号,代表甲,2025-01-01
+,缺编号供应商,缺编号供应商有限公司,DTAX-002,DBA-002,021-8002,bad@vendor.example,测试路2号,代表乙,2025-02-01

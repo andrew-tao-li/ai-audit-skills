@@ -1,0 +1,9 @@
+{
+  "scenario": "clean-control",
+  "synthetic_data": true,
+  "expected_return_code": 0,
+  "expected_findings": 0,
+  "expected_bad_rows": 0,
+  "expected_handoff_status": "not_recommended",
+  "expected_loaded_tables": ["vendors", "purchase_orders", "employees", "payments", "bids"]
+}

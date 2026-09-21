@@ -1,0 +1,63 @@
+{
+  "field_mapping": {
+    "amount": "amount",
+    "approver": "approver",
+    "business_purpose": "business_purpose",
+    "currency": "currency",
+    "department": "department",
+    "employee_id": "employee_id",
+    "expense_date": "expense_date",
+    "expense_id": "expense_id",
+    "expense_type": "expense_type",
+    "invoice_number": "invoice_number",
+    "project_code": "project_code",
+    "submit_date": "submit_date",
+    "vendor_name": "vendor_name"
+  },
+  "finished_at": "2026-09-17T00:53:28.338733+00:00",
+  "input_files": [
+    {
+      "path": "expenses.csv",
+      "sha256": "6d0f2cc7476b4a77f164834dc3f9c13d9b33ccefef45be47ff739a2e5d28d86e",
+      "sheet": null
+    },
+    {
+      "path": "policy.json",
+      "sha256": "18abe0795340d9e3a38558a30841dd738f0bd8972473be826c8251bc44717a2b"
+    }
+  ],
+  "network_access": false,
+  "outputs": [
+    "clean_expenses.csv",
+    "bad_rows.csv",
+    "findings.csv",
+    "findings.jsonl",
+    "evidence.jsonl",
+    "summary.md",
+    "data_quality.md",
+    "run_manifest.json"
+  ],
+  "parameters": {
+    "near_duplicate_amount_tolerance": 0.02,
+    "near_duplicate_window_days": 7,
+    "outlier_min_group_size": 5,
+    "outlier_robust_z": 3.5,
+    "policy_version": "SYNTHETIC-EXPENSE-DIRTY-1.0",
+    "split_window_days": 3,
+    "weekend_check": false
+  },
+  "run_id": "EXP-20260917T005328Z-6d0f2cc7",
+  "scripts": {
+    "run_expense_audit.py": "sha256:ee2d34163664c57f9409ed854e357a3ee50e8f5045149eb92806f94c0565c1cf"
+  },
+  "skill": "expense-audit",
+  "skill_version": "0.1.1",
+  "skipped_rules": [
+    "policy-threshold：未提供 limits",
+    "split-expense：未提供 approval_thresholds",
+    "weekend-signal：weekend_check 未启用",
+    "robust-outlier：没有达到最小样本且 MAD 非零的 peer group"
+  ],
+  "started_at": "2026-09-17T00:53:28.335118+00:00",
+  "warnings": []
+}

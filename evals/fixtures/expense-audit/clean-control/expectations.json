@@ -1,0 +1,10 @@
+{
+  "scenario": "clean-control",
+  "synthetic_data": true,
+  "expected_return_code": 0,
+  "expected_valid_rows": 6,
+  "expected_bad_rows": 0,
+  "expected_findings": 0,
+  "expected_evidence": 0,
+  "required_policy_version": "SYNTHETIC-EXPENSE-CLEAN-1.0"
+}

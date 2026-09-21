@@ -1,0 +1,6 @@
+expense_id,employee_id,department,expense_type,expense_date,submit_date,amount,currency,vendor_name,invoice_number,project_code,approver,business_purpose
+DIRTY-001,E201,研发,meal,2026-06-15,2026-06-15,80,CNY,甲餐厅,D-1001,P-201,A201,正常工作餐
+DIRTY-002,E202,行政,office,2026-06-16,2026-06-16,120,,乙文具店,D-1002,P-202,A202,正常办公用品
+DIRTY-003,E203,市场,travel,2026-99-99,2026-06-17,300,CNY,铁路平台,D-1003,P-203,A203,日期无效
+DIRTY-004,E204,销售,taxi,2026-06-18,2026-06-18,not-a-number,CNY,城市出行,D-1004,P-204,A204,金额无效
+DIRTY-005,,服务,meal,2026-06-19,2026-06-19,60,CNY,丙餐厅,D-1005,P-205,A205,员工编号缺失

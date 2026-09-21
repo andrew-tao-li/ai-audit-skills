@@ -1,0 +1,4 @@
+﻿tender_id,lot_id,bidder_id,bid_price,currency,document_path,submitted_at
+T-A,L-A,PV-X,100000,CNY,bid-docs/pvx.txt,2026-04-01 09:00
+T-A,L-A,PV-Y,100500,CNY,bid-docs/pvy.txt,2026-04-01 09:05
+T-A,L-A,PV-Z,110000,CNY,bid-docs/pvz.txt,2026-04-01 09:10

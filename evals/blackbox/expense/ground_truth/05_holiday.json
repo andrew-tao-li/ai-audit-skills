@@ -1,0 +1,23 @@
+{
+  "fixture_id": "05_holiday",
+  "description": "测试 holiday-signal：国庆节假日消费（需在 policy 配置 holidays）",
+  "expected_findings": [
+    "holiday-signal"
+  ],
+  "policy_overrides": {
+    "holidays": [
+      "2025-10-01",
+      "2025-10-02",
+      "2025-10-03"
+    ],
+    "limits": [
+      {
+        "rule_id": "HOTEL",
+        "expense_type": "hotel",
+        "currency": "CNY",
+        "max_amount": 1500
+      }
+    ],
+    "approval_thresholds": []
+  }
+}

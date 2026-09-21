@@ -1,0 +1,3 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-CLEAN-1,E-EMP-N,meal,2026-06-08,50,CNY,园区餐厅,M-CLEAN-1,A-N
+E-CLEAN-2,E-EMP-N,taxi,2026-06-09,80,CNY,出租车,T-CLEAN-1,A-N

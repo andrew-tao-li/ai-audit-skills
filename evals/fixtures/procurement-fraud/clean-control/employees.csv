@@ -1,0 +1,3 @@
+employee_id,employee_name,department,phone,email,address,bank_account
+CE001,测试员工甲,采购,021-7001,employee1@corp.example,员工路1号,CEBA-001
+CE002,测试员工乙,财务,021-7002,employee2@corp.example,员工路2号,CEBA-002
