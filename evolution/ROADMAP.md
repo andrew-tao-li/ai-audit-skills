@@ -81,11 +81,11 @@ Layer 4 (自适应): 跨 skill 协同 + 自我优化 ← 长期
   - [x] 用户通过浏览器访问（Tailscale `100.118.163.58:4096` / 局域网 `192.168.100.147:4096`）
   - [x] 落地脚本：`scripts/setup-opencode-web.sh` + 模板 `evolution/com.opencode.web.plist`
 
-- [ ] **2.2 半自动 apply 命令**（1 周）
-  - [ ] OpenCode 接受 "应用 proposal #N" 指令
-  - [ ] 显示 diff 给用户预览
-  - [ ] 用户输入 y/n 决定
-  - [ ] AI 应用 patch + 跑测试 + git commit
+- [x] **2.2 半自动 apply 命令**（已完成 2026-09-22）
+  - [x] `guardrail.py apply -m "..."`：跑测试对比基线，通过则 `git commit`，退步则自动回滚
+  - [x] 显示 diff 给用户预览（apply 前用 `git diff` 审阅）
+  - [x] 用户输入 y/n 决定（网页里审阅 diff → 同意 → 触发 apply）
+  - [x] AI 应用 patch + 跑测试 + git commit（首个修复已落地：expense F1 0.9304→0.9359）
 
 - [x] **2.3 A/B 测试保护**（已完成 2026-09-22）
   - [x] 每次改动必须保持 F1 不退步（`evolution/guardrail.py`）
