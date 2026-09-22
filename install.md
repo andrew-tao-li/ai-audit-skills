@@ -35,6 +35,26 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 
 ---
 
+## WorkBuddy / 有道龙虾 用户：优先用「通过 URL 导入」而非 curl
+
+如果你的 Agent 是 **WorkBuddy** 或 **有道龙虾（LobsterAI）**，别用上面的 `curl | bash`（它会反复弹「是否在沙箱执行」的确认，因为 curl|bash = 下载并执行远程脚本，属于高风险操作）。改用平台原生导入，更顺、不弹窗：
+
+- **WorkBuddy**：技能管理 → 「通过 URL 导入」/「GitHub 仓库导入」→ 填：
+  ```
+  https://github.com/andrew-tao-li/ai-audit-skills
+  ```
+  （或某个 skill 子目录，如 `https://github.com/andrew-tao-li/ai-audit-skills/tree/main/skills-v2/expense-audit-v2`）
+
+- **有道龙虾（LobsterAI）**：Skill Store 里直接装，或命令行：
+  ```
+  clawhub install expense-audit-v2
+  ```
+  （LobsterAI 支持 GitHub 全量 skills 安装）
+
+> `curl | bash` 只当**兜底**（给那些没有「URL 导入」入口的 Agent 用）。每个 skill 根目录还带了 `manifest.json`（id/name/version/description/author/type/triggers/tags/license），WorkBuddy / ClawHub 直接认这个格式。
+
+---
+
 ## 人类补充说明（agent 可忽略）
 
 ### 三个 Agent 的安装位置
