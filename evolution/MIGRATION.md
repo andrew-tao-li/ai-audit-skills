@@ -81,7 +81,8 @@ ls -la evolution/ scripts/  # 应该看到 ARCHITECTURE.md, notify.sh, setup-mac
 setup 脚本会问几个问题：
 
 1. **API key**：粘贴 `MINIMAX_API_KEY`（即 `sk-cp-...`）
-2. **企业微信 Webhook**（可选）：
+2. **DeepSeek 回退 key**（可选）：粘贴 `DEEPSEEK_API_KEY`（即 `sk-...`）。MiniMax 配额耗尽/不可用时，`evolve.sh` 自动改用 DeepSeek。
+3. **企业微信 Webhook**（可选）：
    - 在企业微信群 → 添加群机器人 → 复制 Webhook URL
    - 格式：`https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxx`
    - 直接回车跳过（会用邮件或仅写日志）

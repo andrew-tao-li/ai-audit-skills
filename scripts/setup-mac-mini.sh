@@ -71,6 +71,25 @@ else
 fi
 echo ""
 
+# === Step 3b: DeepSeek 回退 key（可选，MiniMax 不可用时兜底） ===
+echo "▶ Step 3b: 配置 DEEPSEEK_API_KEY（可选，MiniMax 不可用时回退）"
+if [ -n "${DEEPSEEK_API_KEY:-}" ]; then
+    echo "  ✓ 当前 shell 已有 DeepSeek key"
+elif grep -q "DEEPSEEK_API_KEY" ~/.zshrc 2>/dev/null; then
+    echo "  ✓ ~/.zshrc 已有 DeepSeek key 配置"
+else
+    read -p "  请粘贴 DEEPSEEK_API_KEY (sk-...，直接回车跳过): " ds_key
+    if [ -n "$ds_key" ]; then
+        echo "" >> ~/.zshrc
+        echo "# Audit Skill Box - DeepSeek fallback key (added $(date -u +%Y-%m-%d))" >> ~/.zshrc
+        echo "export DEEPSEEK_API_KEY=\"$ds_key\"" >> ~/.zshrc
+        echo "  ✓ 已写入 ~/.zshrc"
+    else
+        echo "  ⚠ 未配置 DeepSeek，仅使用 MiniMax"
+    fi
+fi
+echo ""
+
 # === Step 4: launchd 部署 ===
 echo "▶ Step 4: 部署 launchd 后台任务"
 PLIST_TEMPLATE="$ROOT/evolution/com.audit.skill.box.plist"
@@ -100,6 +119,16 @@ launchctl unload "$PLIST_DEST" 2>/dev/null || true
         /usr/libexec/PlistBuddy -c "Add :EnvironmentVariables:MINIMAX_API_KEY string '$api_key_from_zshrc'" "$PLIST_DEST"
     fi
 }
+
+# DeepSeek 回退 key
+/usr/libexec/PlistBuddy -c "Delete :EnvironmentVariables:DEEPSEEK_API_KEY" "$PLIST_DEST" 2>/dev/null || true
+ds_key_from_env="${DEEPSEEK_API_KEY:-}"
+if [ -z "$ds_key_from_env" ]; then
+    ds_key_from_env=$(grep "DEEPSEEK_API_KEY" ~/.zshrc 2>/dev/null | sed -E 's/.*"(.*)".*/\1/' | head -1)
+fi
+if [ -n "$ds_key_from_env" ]; then
+    /usr/libexec/PlistBuddy -c "Add :EnvironmentVariables:DEEPSEEK_API_KEY string '$ds_key_from_env'" "$PLIST_DEST"
+fi
 
 echo "  ✓ Plist 已部署: $PLIST_DEST"
 
