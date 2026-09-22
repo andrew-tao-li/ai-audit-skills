@@ -92,10 +92,10 @@ Layer 4 (自适应): 跨 skill 协同 + 自我优化 ← 长期
   - [x] 如果退步 → 自动回滚（`guardrail.py verify --rollback`，只回滚 skills-v2/skills 代码）
   - [x] 在 state.json 记录每次改动的 before/after 分数（`guardrail_history`）
 
-- [ ] **2.4 半自动 fixture 生成**（1 周）
-  - [ ] LLM 生成 N 个候选 fixture
-  - [ ] 真实审计师 review（人工）
-  - [ ] 留下真实的部分入黄金测试集
+- [x] **2.4 半自动 fixture 生成**（已完成 2026-09-22）
+  - [x] LLM 生成 N 个候选 fixture（`evolution/fixture_generator.py generate`，完整 CSV + ground truth）
+  - [x] 跑 skill 验证一致性（`validate`，报告漏报/误报）
+  - [x] 人工 review + 迁入黄金集（`promote`，复跑确认 F1 不退步）
 
 **完成时间目标**：2026-10-12
 
