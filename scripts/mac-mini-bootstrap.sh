@@ -110,7 +110,7 @@ fi
 
 # === Step 6: clone 项目 ===
 echo "▶ Step 6: clone 项目"
-TARGET_DIR="$HOME/Documents/AI助力审计0201/opencode"
+TARGET_DIR="$HOME/ai-audit-skills"
 mkdir -p "$TARGET_DIR"
 cd "$TARGET_DIR"
 

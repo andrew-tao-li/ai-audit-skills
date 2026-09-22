@@ -291,19 +291,13 @@ if [ "$SKIP_PUSH" = "0" ]; then
     if ! git diff --cached --quiet 2>/dev/null; then
         git commit -m "auto: iteration $TIMESTAMP (failures=$OPEN_FAILURES_COUNT, health=$HEALTH_STATUS)" 2>&1 | tail -2
 
-        # 尝试 push（如果有 remote + token）
-        REMOTE_URL=$(git remote get-url origin 2>/dev/null)
-        if [ -n "$REMOTE_URL" ]; then
-            # 看 remote URL 是否含 token
-            if echo "$REMOTE_URL" | grep -qE 'github.*@'; then
-                echo "  → push 到 GitHub..."
-                if git push origin main 2>&1 | tail -3; then
-                    echo "  ✓ push 成功"
-                else
-                    echo "  ⚠ push 失败（可能 token 过期或权限不足）"
-                fi
+        # 尝试 push（SSH key 或 token 均可用）
+        if git remote get-url origin >/dev/null 2>&1; then
+            echo "  → push 到 GitHub..."
+            if git push origin main 2>&1 | tail -3; then
+                echo "  ✓ push 成功"
             else
-                echo "  ⚠ remote URL 不含 token（用户没配置 PAT），跳过 push"
+                echo "  ⚠ push 失败（SSH key / token 未配置或权限不足）"
             fi
         else
             echo "  ⚠ 没有配置 remote，跳过 push"

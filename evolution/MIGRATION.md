@@ -51,9 +51,11 @@ cat ~/.ssh/id_ed25519.pub
 ### 2.1 创建目录
 
 ```bash
-mkdir -p ~/Documents/AI助力审计0201/opencode
-cd ~/Documents/AI助力审计0201/opencode
+mkdir -p ~/ai-audit-skills
+cd ~/ai-audit-skills
 ```
+
+> **为什么不用 `~/Documents`**：macOS 的 TCC 隐私保护会阻止 launchd 后台进程访问 `~/Documents`（报错 `Operation not permitted` / `getcwd: cannot access parent directories`），导致每日任务无法运行。请把项目放在 `~/ai-audit-skills` 这类不受 TCC 保护的位置。
 
 ### 2.2 Clone（用 SSH 方式）
 
@@ -159,7 +161,7 @@ git push origin main
 
 ```bash
 # 每天手动或自动（可选 cron）拉取最新代码
-cd ~/Documents/AI助力审计0201/opencode/ai-audit-skills
+cd ~/ai-audit-skills
 git pull origin main
 ```
 

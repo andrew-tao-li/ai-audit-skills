@@ -15,6 +15,10 @@ __pycache__/
 .test-output-*/
 *.log.tmp
 
+# 本地运行日志（launchd stdout/stderr 等，不入库）
+*.log
+evolution/log/notifications.log
+
 # 系统文件
 .DS_Store
 
