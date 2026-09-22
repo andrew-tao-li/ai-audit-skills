@@ -1,9 +1,8 @@
-# AI Audit Skills v0.2.0 — 一键安装
+# AI Audit Skills — 安装
 
-适用版本：**v0.2.0**  
-GitHub Release：<https://github.com/andrew-tao-li/ai-audit-skills/releases/tag/v0.2.0>
+适用版本：**最新版（动态拉取）**
 
-本仓库提供 3 个独立、可离线运行的审计 Agent Skill（canonical v0.2.0）：
+三个独立、可离线运行的审计 Agent Skill（canonical v0.2.0）：
 
 | Skill 名 | 用途 |
 |---|---|
@@ -11,66 +10,62 @@ GitHub Release：<https://github.com/andrew-tao-li/ai-audit-skills/releases/tag/
 | `procurement-fraud-v2` | 采购舞弊红旗、供应商关系、价格、拆单、流程和投标相似度筛查 |
 | `investigation-assistant-v2` | 把举报、邮件、消息和日志整理为可追溯调查工作空间 |
 
-ZIP 直链：
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/expense-audit-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/procurement-fraud-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/investigation-assistant-v2.zip>
+## 一键安装（推荐）
 
-## 一键安装（按 Agent 选）
-
-### OpenCode
 ```bash
-mkdir -p ~/.config/opencode/skills
-cd ~/.config/opencode/skills
-for s in expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2; do
-    curl -sLO "https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/${s}.zip"
-    unzip -oq "${s}.zip" -d "${s}"
-    rm -f "${s}.zip"
-done
+curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash
 ```
 
-### WorkBuddy
+**特点**：
+
+- 永远拉**最新版**（脚本内部去问 GitHub `releases/latest`，即使 GitHub API 被速率限制也会 fallback 到 `/releases/latest` 重定向）。
+- 不需要记版本号，这段命令**永远有效**——下次发 v0.3 时不用改任何文字。
+- 可选环境变量：`HOST=opencode|workbuddy|lobsterai`（默认 `opencode`）、`PREFIX=...`、`VERSION=v0.X.Y`（锁定）。
+- 可选位置参数选子集：`... | bash -s -- expense-audit-v2 investigation-assistant-v2`。
+
+## 各 Agent 的安装位置（脚本默认按 `HOST` 选择）
+
+| Agent | 默认安装目录 |
+|---|---|
+| `opencode`（默认） | `~/.config/opencode/skills` |
+| `workbuddy` | `~/.workbuddy/skills` |
+| `lobsterai` | `~/.lobsterai/skills` |
+
+例如装到 WorkBuddy：
+
 ```bash
-mkdir -p ~/.workbuddy/skills
-cd ~/.workbuddy/skills
-for s in expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2; do
-    curl -sLO "https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/${s}.zip"
-    unzip -oq "${s}.zip" -d "${s}"
-    rm -f "${s}.zip"
-done
+curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh \
+  | HOST=workbuddy bash
 ```
 
-### LobsterAI
+## 卸载
+
 ```bash
-mkdir -p ~/.lobsterai/skills
-cd ~/.lobsterai/skills
-for s in expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2; do
-    curl -sLO "https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/${s}.zip"
-    unzip -oq "${s}.zip" -d "${s}"
-    rm -f "${s}.zip"
-done
+rm -rf ~/.config/opencode/skills/{expense-audit-v2,procurement-fraud-v2,investigation-assistant-v2}
+# 或对 WorkBuddy：rm -rf ~/.workbuddy/skills/<skill-name>
 ```
 
-### Codex / Pi / 其他 SKILL.md 宿主
-把这 3 个 zip 解压到对应宿主的位置（详见 `adapters/`）。
-
-## 只装其中一个
-
-把上面 `for s in ...` 循环中的 3 个 skill 名换成你想装的那个就行。
-
-## 验证（任选）
+## 验证（手动跑一次 example）
 
 ```bash
 python3 ~/.config/opencode/skills/expense-audit-v2/scripts/run_expense_audit.py \
-    --input ~/.config/opencode/skills/expense-audit-v2/examples/input/expenses.csv \
+    --input  ~/.config/opencode/skills/expense-audit-v2/examples/input/expenses.csv \
     --policy ~/.config/opencode/skills/expense-audit-v2/examples/input/policy.json \
     --output /tmp/expense-audit-demo
 ls /tmp/expense-audit-demo/findings.csv
 ```
 
-## 卸载
-直接 `rm -rf ~/.config/opencode/skills/<skill-name>`（或 WorkBuddy/LobsterAI 对应目录）。
+## ZIP 直链（不走 `install.sh`，手动下载检查用）
 
-## 关于 SkillHub 用户
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/expense-audit-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/procurement-fraud-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/investigation-assistant-v2.zip>
 
-如果你从 SkillHub 等聚合站来到这里的，本仓库就是这个 skill 的唯一源；release 上的 zip 与本仓库的 `skills-v2/` 100% 一致（通过 `scripts/build-dist.sh` 重新打包）。
+最新版永远在 <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest>。
+
+## 源码 & 自定义
+
+- 三个 skill 的源码：`skills-v2/<skill-name>/`
+- 重新打包 release zip：跑 `./scripts/build-dist.sh`
+- 黑盒黄金测试：`python3 evals/blackbox/score_blackbox.py --version v0.2.0-baseline`
+- 端到端校验：`python3 evals/validate_pack.py --run-tests`
