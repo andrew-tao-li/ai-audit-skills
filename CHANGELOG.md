@@ -8,6 +8,13 @@
 - 修完 11 个复合场景暴露的失败：校准 split-expense、robust-outlier、sequential-invoice、near-duplicate、split-order、price-outlier、process 流程检测器；补全 2 处 ground truth。
 - `opencode.json` 注册 `skills-v2/`；`validate_pack.py` 与 `trigger-prompts.jsonl` 同步到 v2 命名。
 
+### 面向审计人员的输出体验（专项）
+
+- **P0 审计语言翻译**：`facts` 去掉数据分析术语（MAD / robust z-score / peer group / 容差 / 窗口），改为审计语言（如「是同类费用正常水平的约 X 倍」「金额接近、集中在 N 天内」）；`risk_factors` 剥离内部参数（robust_z、peer_group、run_length 等），只保留规则名 + 分值。
+- **P1 输出分层**：`summary.md` 明确区分「审计结论（summary/findings）」与「技术审计轨迹（data_quality/run_manifest/clean/bad/evidence）」；`data_quality.md` 与 `run_manifest.json` 标注「技术附录，非审计结论」。
+- **P2 中文化**：`summary.md` 的「发现类型」「风险优先级」从英文 key 改为中文审计术语（`cross-employee-invoice`→`发票跨人复用`、`high/medium/low`→`高/中/低`）；`finding_type` 英文 key 保留在 findings 里供黑盒评分比对。
+- **安装鲁棒性**：`install.sh` 下载改用目标目录（不用 mktemp，避开 Windows 沙箱拦截）；版本探测加 User-Agent、用 sed 替代 python3、重定向改 GET；支持位置参数选子集 + 校验 skill 名 + 自动探测 Agent。
+
 ## Unreleased — 2026-09-17
 
 - 新增 6 个文件级正反向回归场景及 `expectations.json`，覆盖正常对照、坏行隔离、缺失可选表、范围过滤、只读证据副本和未授权拒绝。
