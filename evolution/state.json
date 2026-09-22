@@ -3,8 +3,8 @@
   "current_version": "v0.2.0-baseline",
   "last_action": {
     "type": "llm-analysis",
-    "timestamp": "2026-09-22T04:53:31Z",
-    "summary": "LLM analyzed 11 failures → evolution/proposals/2026-09-22T04:53:31Z-llm-analysis.md"
+    "timestamp": "2026-09-22T06:49:27Z",
+    "summary": "LLM analyzed 11 failures → evolution/proposals/2026-09-22T06:49:27Z-llm-analysis.md"
   },
   "baseline_scores": {
     "expense": {
@@ -120,9 +120,9 @@
       "detail": "process-receipt-before-approval"
     }
   ],
-  "iteration_count": 16,
+  "iteration_count": 17,
   "created_at": "2026-09-20T23:57:00Z",
-  "last_modified": "2026-09-22T04:53:31Z",
+  "last_modified": "2026-09-22T06:49:27Z",
   "next_action": "run_baseline",
   "proposals": [
     {
@@ -166,12 +166,18 @@
       "path": "evolution/proposals/2026-09-22T04:53:31Z-llm-analysis.md",
       "open_failure_count": 11,
       "trigger": "auto-evolve.sh"
+    },
+    {
+      "timestamp": "2026-09-22T06:49:27Z",
+      "path": "evolution/proposals/2026-09-22T06:49:27Z-llm-analysis.md",
+      "open_failure_count": 11,
+      "trigger": "auto-evolve.sh"
     }
   ],
   "health": {
     "status": "ok",
-    "message": "MiniMax 不可用（429），已回退 DeepSeek",
-    "provider": "deepseek",
-    "checked_at": "2026-09-22T04:53:31Z"
+    "message": "MiniMax API 可达",
+    "provider": "minimax",
+    "checked_at": "2026-09-22T06:49:27Z"
   }
 }
