@@ -867,11 +867,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         quality.extend(["", "## 警告与跳过规则", ""] + ["- " + item for item in warnings + skipped])
     (output / "data_quality.md").write_text("\n".join(quality) + "\n", encoding="utf-8")
 
+    # finding_type → 中文审计术语（面向审计人员的类型标签；finding_type 本身的英文 key 保留在 findings 里供机器比对）
+    finding_type_zh = {
+        "exact-duplicate-invoice": "发票号重复", "exact-duplicate-employee-date-amount": "同员工同日同金额",
+        "near-duplicate": "金额近似", "policy-threshold": "超制度上限", "split-expense": "拆单报销",
+        "weekend-signal": "周末消费", "holiday-signal": "节假日消费", "robust-outlier": "异常高额",
+        "self-approval": "自审自批", "cross-employee-invoice": "发票跨人复用", "submit-before-expense": "提交早于消费",
+        "future-date": "未来日期", "missing-expense-type": "缺费用类型", "sequential-invoice": "发票连号",
+        "invoice-format-anomaly": "发票格式异常", "large-amount-low-level-approval": "大额低层级审批",
+    }
+    priority_zh = {"critical": "严重", "high": "高", "medium": "中", "low": "低"}
     counts = defaultdict(int)
     priorities = defaultdict(int)
     for finding in builder.findings:
-        counts[finding["finding_type"]] += 1
-        priorities[finding["risk_priority"]] += 1
+        counts[finding_type_zh.get(finding["finding_type"], finding["finding_type"])] += 1
+        priorities[priority_zh.get(finding["risk_priority"], finding["risk_priority"])] += 1
     summary = [
         "# 费用审计确定性摘要", "", "- 分析有效记录：%d；排除坏行：%d。" % (len(clean), len(bad)),
         "- Findings：%d；Evidence：%d。" % (len(builder.findings), len(builder.evidence)),
