@@ -2,10 +2,9 @@
   "schema_version": "1.0",
   "current_version": "v0.2.0-baseline",
   "last_action": {
-    "type": "test",
-    "timestamp": "2026-09-22T04:38:10Z",
-    "run_by": "manual",
-    "summary": "precision=91% recall=97%"
+    "type": "llm-analysis",
+    "timestamp": "2026-09-22T04:53:31Z",
+    "summary": "LLM analyzed 11 failures → evolution/proposals/2026-09-22T04:53:31Z-llm-analysis.md"
   },
   "baseline_scores": {
     "expense": {
@@ -121,9 +120,9 @@
       "detail": "process-receipt-before-approval"
     }
   ],
-  "iteration_count": 12,
+  "iteration_count": 16,
   "created_at": "2026-09-20T23:57:00Z",
-  "last_modified": "2026-09-22T04:38:10Z",
+  "last_modified": "2026-09-22T04:53:31Z",
   "next_action": "run_baseline",
   "proposals": [
     {
@@ -143,11 +142,36 @@
       "path": "evolution/proposals/2026-09-22T01:43:36Z-llm-analysis.md",
       "open_failure_count": 11,
       "trigger": "auto-evolve.sh"
+    },
+    {
+      "timestamp": "2026-09-22T04:45:24Z",
+      "path": "evolution/proposals/2026-09-22T04:45:24Z-llm-analysis.md",
+      "open_failure_count": 11,
+      "trigger": "auto-evolve.sh"
+    },
+    {
+      "timestamp": "2026-09-22T04:47:49Z",
+      "path": "evolution/proposals/2026-09-22T04:47:49Z-llm-analysis.md",
+      "open_failure_count": 11,
+      "trigger": "auto-evolve.sh"
+    },
+    {
+      "timestamp": "2026-09-22T04:53:01Z",
+      "path": "evolution/proposals/2026-09-22T04:53:01Z-llm-analysis.md",
+      "open_failure_count": 11,
+      "trigger": "auto-evolve.sh"
+    },
+    {
+      "timestamp": "2026-09-22T04:53:31Z",
+      "path": "evolution/proposals/2026-09-22T04:53:31Z-llm-analysis.md",
+      "open_failure_count": 11,
+      "trigger": "auto-evolve.sh"
     }
   ],
   "health": {
-    "status": "rate_limited",
-    "message": "Token 配额耗尽（429）",
-    "checked_at": "2026-09-22T04:38:10Z"
+    "status": "ok",
+    "message": "MiniMax 不可用（429），已回退 DeepSeek",
+    "provider": "deepseek",
+    "checked_at": "2026-09-22T04:53:31Z"
   }
 }
