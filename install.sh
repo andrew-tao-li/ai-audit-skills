@@ -21,29 +21,35 @@ set -e
 REPO="andrew-tao-li/ai-audit-skills"
 ALL_SKILLS=(expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2)
 
+# 是否显式指定了 PREFIX（用于头部标签显示 custom，避免误导）
+PREFIX_EXPLICIT=0
+[ -n "${PREFIX:-}" ] && PREFIX_EXPLICIT=1
+
 # Auto-detect Agent host（OpenCode → WorkBuddy → LobsterAI，找第一个已存在的 skills 目录）
 # 不传 HOST 或传 HOST=auto 走探测；显式传 opencode/workbuddy/lobsterai/<path> 走指定。
 if [ -z "$HOST" ] || [ "$HOST" = "auto" ]; then
     detected=""
     for h in opencode workbuddy lobsterai; do
         case "$h" in
-            opencode)   d="$HOME/.config/opencode/skills" ;;
-            workbuddy)  d="$HOME/.workbuddy/skills" ;;
-            lobsterai)  d="$HOME/.lobsterai/skills" ;;
+            opencode)   dirs=("$HOME/.config/opencode/skills") ;;
+            workbuddy)  dirs=("$HOME/.workbuddy/skills") ;;
+            # LobsterAI 的 macOS 真实路径在 Library/Application Support 下（SKILLs 大写）；保留 ~/.lobsterai/skills 作兜底
+            lobsterai)  dirs=("$HOME/Library/Application Support/LobsterAI/SKILLs" "$HOME/.lobsterai/skills") ;;
         esac
-        if [ -d "$d" ]; then
-            detected="$h"
-            break
-        fi
+        for d in "${dirs[@]}"; do
+            if [ -d "$d" ]; then detected="$h"; break 2; fi
+        done
     done
     HOST="${detected:-opencode}"
 fi
 case "$HOST" in
     opencode)   PREFIX="${PREFIX:-$HOME/.config/opencode/skills}" ;;
     workbuddy)  PREFIX="${PREFIX:-$HOME/.workbuddy/skills}" ;;
-    lobsterai)  PREFIX="${PREFIX:-$HOME/.lobsterai/skills}" ;;
+    lobsterai)  PREFIX="${PREFIX:-$HOME/Library/Application Support/LobsterAI/SKILLs}" ;;
     *)          PREFIX="${PREFIX:-$HOST}" ;;
 esac
+# 头部标签：显式 PREFIX 时显示 custom，否则显示探测到的 host
+if [ "$PREFIX_EXPLICIT" = "1" ]; then HOST_LABEL="custom"; else HOST_LABEL="$HOST"; fi
 
 # 决定安装哪些 skill：
 #   - 无位置参数 → 装全部 3 个
@@ -98,10 +104,10 @@ fi
 
 # 头部摘要：明确告诉用户要装几个、装哪些、装到哪个 Agent
 if [ "$MODE" = "all" ]; then
-    echo "▶ 安装 AI Audit Skills ${VERSION} → ${PREFIX}  (host=${HOST})"
+    echo "▶ 安装 AI Audit Skills ${VERSION} → ${PREFIX}  (host=${HOST_LABEL})"
     echo "  范围：全部 $N 个 skill"
 else
-    echo "▶ 安装 AI Audit Skills ${VERSION} → ${PREFIX}  (host=${HOST})"
+    echo "▶ 安装 AI Audit Skills ${VERSION} → ${PREFIX}  (host=${HOST_LABEL})"
     echo "  范围：选中 $N/$TOTAL 个 skill（${SKILLS[*]}）"
 fi
 for s in "${SKILLS[@]}"; do

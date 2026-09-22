@@ -20,6 +20,22 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 VERSION = "0.2.0"
 SKILL = "procurement-fraud-v2"
 
+# 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
+FINDING_TYPE_ZH = {
+    "shared-bank-account": "供应商共享账户", "shared-phone": "供应商共享电话", "shared-email": "供应商共享邮箱",
+    "shared-address": "供应商共享地址", "shared-legal-representative": "供应商共享法人",
+    "employee-vendor-shared-bank-account": "员工供应商共享账户", "employee-vendor-shared-phone": "员工供应商共享电话",
+    "employee-vendor-shared-email": "员工供应商共享邮箱", "employee-vendor-shared-address": "员工供应商共享地址",
+    "price-outlier": "价格异常偏高", "split-order": "拆单采购",
+    "bid-text-similarity": "投标文本雷同", "bid-price-subcluster": "报价异常聚集", "bid-price-pattern": "报价模式异常",
+    "new-vendor-large-order": "新供应商接大单", "overpayment": "超额付款", "payment-before-order": "付款早于下单",
+    "process-order-before-approval": "下单早于审批", "process-order-stale-approval": "审批严重滞后",
+    "process-payment-before-approval": "付款早于审批", "process-receipt-before-approval": "收货早于审批",
+    "process-receipt-before-order": "收货早于下单", "buyer-vendor-concentration": "采购员供应商集中",
+}
+PRIORITY_ZH = {"critical": "严重", "high": "高", "medium": "中", "low": "低"}
+STRENGTH_ZH = {"strong": "强", "moderate": "中", "weak": "弱"}
+
 SCHEMAS = {
     "vendors": {
         "required": ["vendor_id", "vendor_name"],
@@ -898,7 +914,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     write_csv(output / "bad_rows.csv", bad_rows, ("table", "source_file", "source_row", "reasons", "raw_record"))
     flat = [{
         "finding_id": f["finding_id"], "finding_type": f["finding_type"], "title": f["title"],
-        "risk_priority": f["risk_priority"], "evidence_strength": f["evidence_strength"],
+        "risk_priority": PRIORITY_ZH.get(f["risk_priority"], f["risk_priority"]),
+        "evidence_strength": STRENGTH_ZH.get(f["evidence_strength"], f["evidence_strength"]),
         "risk_score": f["risk_score"], "entities": json.dumps(f["entities"], ensure_ascii=False),
         "evidence_refs": "|".join(f["evidence_refs"]),
     } for f in builder.findings]
@@ -941,22 +958,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         quality_lines.extend(["", "## 警告与跳过", ""] + ["- " + item for item in warnings + skipped])
     (output / "data_quality.md").write_text("\n".join(quality_lines) + "\n", encoding="utf-8")
 
-    # finding_type → 中文审计术语（面向审计人员的类型标签；finding_type 本身的英文 key 保留在 findings 里供机器比对）
-    finding_type_zh = {
-        "shared-bank-account": "供应商共享账户", "shared-phone": "供应商共享电话", "shared-email": "供应商共享邮箱",
-        "shared-address": "供应商共享地址", "shared-legal-representative": "供应商共享法人",
-        "employee-vendor-shared-bank-account": "员工供应商共享账户", "employee-vendor-shared-phone": "员工供应商共享电话",
-        "employee-vendor-shared-email": "员工供应商共享邮箱", "employee-vendor-shared-address": "员工供应商共享地址",
-        "price-outlier": "价格异常偏高", "split-order": "拆单采购",
-        "bid-text-similarity": "投标文本雷同", "bid-price-subcluster": "报价异常聚集", "bid-price-pattern": "报价模式异常",
-        "new-vendor-large-order": "新供应商接大单", "overpayment": "超额付款", "payment-before-order": "付款早于下单",
-        "process-order-before-approval": "下单早于审批", "process-order-stale-approval": "审批严重滞后",
-        "process-payment-before-approval": "付款早于审批", "process-receipt-before-approval": "收货早于审批",
-        "process-receipt-before-order": "收货早于下单", "buyer-vendor-concentration": "采购员供应商集中",
-    }
-    priority_zh = {"critical": "严重", "high": "高", "medium": "中", "low": "低"}
-    counts = Counter(finding_type_zh.get(f["finding_type"], f["finding_type"]) for f in builder.findings)
-    priorities = Counter(priority_zh.get(f["risk_priority"], f["risk_priority"]) for f in builder.findings)
+    # 类型/优先级显示层中文化（英文 key 保留在 findings.jsonl 供机器比对）
+    counts = Counter(FINDING_TYPE_ZH.get(f["finding_type"], f["finding_type"]) for f in builder.findings)
+    priorities = Counter(PRIORITY_ZH.get(f["risk_priority"], f["risk_priority"]) for f in builder.findings)
     summary = [
         "# 采购红旗确定性摘要", "", "- Findings：%d；Evidence：%d。" % (len(builder.findings), len(builder.evidence)),
         "- 风险优先级：`%s`" % json.dumps(dict(priorities), ensure_ascii=False, sort_keys=True),
