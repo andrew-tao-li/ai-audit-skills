@@ -12,6 +12,9 @@
 # 配置：evolution/notify_config.json
 
 set -e
+# macOS bash 3.2 multibyte bug：双引号内展开含中文变量会损坏字节。按字节处理 + Python UTF-8 模式。
+export LC_ALL=C
+export PYTHONUTF8=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG_FILE="$ROOT/evolution/notify_config.json"
 
