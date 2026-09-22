@@ -2,6 +2,9 @@
 """
 LLM 自主出题 — 双引擎之一
 
+> 注意：此脚本只生成「场景描述 + data_preview」，不生成完整 fixture 数据。
+> 完整的 L2.4 fixture 生成（含完整 CSV + validate + promote）请用 `evolution/fixture_generator.py`。
+
 原理：
   你是审计师。结合你的经验 + 公开知识 + 最新新闻，
   生成真实的费用/采购/调查场景 fixture。
@@ -31,7 +34,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "evals" / "blackbox"))
 
-from call_llm import get_api_key, call_llm
+from call_llm import call_llm  # 返回 (text, provider)
 
 
 # ============== 领域知识（让 LLM 更准） ==============
@@ -159,7 +162,7 @@ def generate_scenarios(domain: str, count: int, focus: str = "") -> list:
     for i in range(count):
         prompt = build_prompt_one(domain, i + 1, focus)
         try:
-            raw = call_llm(prompt, max_tokens=1500, temperature=0.7)
+            raw, _ = call_llm(prompt, max_tokens=1500, temperature=0.7)
             parsed = parse_json_output(raw)
             scenarios = parsed.get("scenarios", [parsed])
             if scenarios:
@@ -244,8 +247,8 @@ def main():
     parser.add_argument("--focus", default="", help="额外关注点（如'中国制造业 2024 趋势'）")
     args = parser.parse_args()
 
-    if not os.environ.get("MINIMAX_API_KEY"):
-        print("ERROR: MINIMAX_API_KEY 未设置", file=sys.stderr)
+    if not os.environ.get("MINIMAX_API_KEY") and not os.environ.get("DEEPSEEK_API_KEY"):
+        print("ERROR: MINIMAX_API_KEY / DEEPSEEK_API_KEY 均未设置", file=sys.stderr)
         sys.exit(1)
 
     print(f"[scenario-generator] domain={args.domain}, count={args.count}, focus={args.focus!r}", file=sys.stderr)

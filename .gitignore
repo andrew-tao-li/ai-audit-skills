@@ -22,6 +22,9 @@ evolution/log/notifications.log
 # A/B 护栏的基线快照（临时工作文件，不入库；审计轨迹在 state.json 的 guardrail_history）
 evolution/guardrail/baseline.json
 
+# LLM 生成的候选 fixture（临时 staging，review 通过后由 promote 迁入黄金集才入库）
+evals/blackbox/scenarios/run-*/
+
 # 系统文件
 .DS_Store
 

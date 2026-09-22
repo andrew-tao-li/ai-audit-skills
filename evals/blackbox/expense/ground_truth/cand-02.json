@@ -1,0 +1,8 @@
+{
+  "fixture_id": "cand-02",
+  "description": "销售员周末餐费（周六两笔小额），只应触发 weekend-signal",
+  "expected_findings": [
+    "weekend-signal"
+  ],
+  "policy_overrides": {}
+}
