@@ -854,7 +854,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     for header in headers:
         null_rates[header] = round(sum(1 for row in source_rows if not norm_text(row.get(header))) / max(len(source_rows), 1), 6)
     quality = [
-        "# 数据质量报告", "", "- 源文件：`%s`" % input_path.name,
+        "# 数据质量报告", "",
+        "> 技术附录：本文件是数据体检的机器记录（字段映射、空值率、标准化计数等），供复核追溯，不是审计结论。", "",
+        "- 源文件：`%s`" % input_path.name,
         "- 工作表：`%s`" % (sheet or "CSV"), "- 源数据行数：%d" % len(source_rows),
         "- 有效行数：%d" % len(clean), "- Bad rows：%d" % len(bad),
         "- 字段映射：`%s`" % json.dumps(mapping, ensure_ascii=False),
@@ -879,7 +881,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "## 建议复核顺序", "",
         "1. 先查 high/critical 且 evidence_strength 为 strong 的重复或制度命中。",
         "2. 再按员工、商户和期间合并 near duplicate、split 和 outlier 模式。",
-        "3. 周末信号单独保持低优先级，主动寻找值班、出差和客户现场等合理解释。",
+        "3. 周末信号单独保持低优先级，主动寻找值班、出差和客户现场等合理解释。", "",
+        "## 输出文件", "",
+        "**审计结论（给人看）**：summary.md、findings.csv、findings.jsonl", "",
+        "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、clean_expenses.csv、bad_rows.csv、evidence.jsonl",
     ]
     (output / "summary.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
 
@@ -897,6 +902,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "scripts": {script_path.name: "sha256:" + sha256_file(script_path)},
         "warnings": warnings, "skipped_rules": skipped, "network_access": False,
         "outputs": ["clean_expenses.csv", "bad_rows.csv", "findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json"],
+        "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))

@@ -935,7 +935,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     skipped = [table + " 模块：未提供输入" for table in ("employees", "payments", "bids") if not tables[table]]
     if not config.get("approval_thresholds"):
         skipped.append("split-order：未提供 approval_thresholds")
-    quality_lines = ["# 采购数据质量报告", "", "- Bad rows 合计：%d" % len(bad_rows), "", "## 各表", ""]
+    quality_lines = ["# 采购数据质量报告", "", "> 技术附录：本文件是数据体检的机器记录（字段映射、空值率等），供复核追溯，不是审计结论。", "", "- Bad rows 合计：%d" % len(bad_rows), "", "## 各表", ""]
     quality_lines.extend("- `%s`: `%s`" % (table, json.dumps(value, ensure_ascii=False)) for table, value in quality.items())
     if warnings or skipped:
         quality_lines.extend(["", "## 警告与跳过", ""] + ["- " + item for item in warnings + skipped])
@@ -950,7 +950,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "> 共享属性、价格离群、流程异常和文本相似均为复核线索。它们不能单独或自动证明串标、利益输送或舞弊。", "",
         "## 建议复核顺序", "", "1. 先核验共享银行账号和员工—供应商强属性是否准确及已申报。",
         "2. 再回到 PO、审批、付款和投标原文检查同一主体上的多模块组合。",
-        "3. 主动核对公共地址、模板、独家供应、紧急采购和系统补录等替代解释。",
+        "3. 主动核对公共地址、模板、独家供应、紧急采购和系统补录等替代解释。", "",
+        "## 输出文件", "", "**审计结论（给人看）**：summary.md、findings.csv、findings.jsonl、investigation_handoff.json", "",
+        "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、各标准化数据表、bad_rows.csv、evidence.jsonl、relationship_graph.json",
     ]
     (output / "summary.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
 
@@ -965,6 +967,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "scripts": {script.name: "sha256:" + sha256_file(script)}, "warnings": warnings, "skipped_modules": skipped,
         "network_access": False,
         "outputs": sorted(path.name for path in output.iterdir()) + ["run_manifest.json"],
+        "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(output), "findings": len(builder.findings), "evidence": len(builder.evidence), "handoff": handoff["status"]}, ensure_ascii=False))

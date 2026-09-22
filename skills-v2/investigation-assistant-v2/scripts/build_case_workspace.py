@@ -575,7 +575,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ]
     (output / "case_memo_template.md").write_text("\n".join(memo) + "\n", encoding="utf-8")
     quality = [
-        "# 调查工作空间数据质量", "", "- 已登记并验证 raw 文件：%d" % len(inventory),
+        "# 调查工作空间数据质量", "",
+        "> 技术附录：本文件是数据体检的机器记录（范围、哈希、时区等），供复核追溯，不是调查结论。", "",
+        "- 已登记并验证 raw 文件：%d" % len(inventory),
         "- 范围内消息：%d" % len(messages), "- 范围内日志：%d" % len(logs),
         "- 文本证据行：%d" % len(text_lines),
         "- 范围外行（人员或日期越界）：%d" % len(excluded),
@@ -610,6 +612,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "timezone_health": timezone_warnings,
         "network_access": False,
         "outputs": ["evidence/raw/", "derived/", "evidence_inventory.jsonl", "evidence.jsonl", "chain_of_custody.jsonl", "out_of_scope_rows.csv", "unparseable_rows.csv", "timeline.csv", "entity_index.csv", "relationships.json", "evidence_matrix.csv", "hypothesis_register.csv", "findings.jsonl", "interview_plan.csv", "case_memo_template.md", "data_quality.md", "run_manifest.json"],
+        "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、范围、时区等），供复核追溯，不是调查结论。",
     }
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(output), "raw_files": len(inventory), "timeline_rows": len(timeline), "out_of_scope_rows": len(excluded), "issues": len(matrix), "findings": len(findings), "timezone_available": timezone_warnings["available"]}, ensure_ascii=False))
