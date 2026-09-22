@@ -2,9 +2,10 @@
   "schema_version": "1.0",
   "current_version": "v0.2.0-baseline",
   "last_action": {
-    "type": "llm-analysis",
-    "timestamp": "2026-09-22T01:43:36Z",
-    "summary": "LLM analyzed 11 failures → evolution/proposals/2026-09-22T01:43:36Z-llm-analysis.md"
+    "type": "test",
+    "timestamp": "2026-09-22T04:36:05Z",
+    "run_by": "manual",
+    "summary": "precision=91% recall=97%"
   },
   "baseline_scores": {
     "expense": {
@@ -120,9 +121,9 @@
       "detail": "process-receipt-before-approval"
     }
   ],
-  "iteration_count": 10,
+  "iteration_count": 11,
   "created_at": "2026-09-20T23:57:00Z",
-  "last_modified": "2026-09-22T01:43:36Z",
+  "last_modified": "2026-09-22T04:36:05Z",
   "next_action": "run_baseline",
   "proposals": [
     {
@@ -145,8 +146,8 @@
     }
   ],
   "health": {
-    "status": "ok",
-    "message": "API 可达",
-    "checked_at": "2026-09-22T01:43:36Z"
+    "status": "rate_limited",
+    "message": "Token 配额耗尽（429）",
+    "checked_at": "2026-09-22T04:36:05Z"
   }
 }
