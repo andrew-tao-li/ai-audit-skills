@@ -65,9 +65,26 @@ python3 evals/run_trigger_eval.py score \
 
 ## 安装
 
-每个 `skills-v2/<name>/` 文件夹都可以单独复制。各宿主的放置位置见 `adapters/`。Canonical skill 不依赖任何宿主私有字段；`agents/openai.yaml` 只提供 Codex/ChatGPT 的可选界面信息。
+三种方式，按你的 Agent 选：
 
-`dist-v2/` 提供按 skill 分开的 ZIP 快照（另见 GitHub Releases）。正式使用前仍应阅读 `SKILL.md`、检查脚本，并先运行包内合成样例。路由验收必须在独立的新会话中执行，不能在已透露预期 skill 的同一上下文里自测。
+**① 一句话安装（curl 兜底，任何 Agent 通用）**
+
+```bash
+curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash -s -- expense-audit-v2
+```
+
+只装一个就把 `expense-audit-v2` 换成你要的（`procurement-fraud-v2` / `investigation-assistant-v2`）；不带参数就是装全部 3 个。脚本会自动取 GitHub 最新版、检测 Agent 类型、装到对应 skills 目录。详见 [install.md](install.md)。
+
+**② 平台原生导入（WorkBuddy / 有道龙虾推荐，不弹沙箱）**
+
+- **WorkBuddy**：技能管理 → 「通过 URL 导入」→ 填 `https://github.com/andrew-tao-li/ai-audit-skills`（或某个 skill 子目录，如 `…/tree/main/skills-v2/expense-audit-v2`）。
+- **有道龙虾（LobsterAI）**：Skill Store 直接装，或 `clawhub install expense-audit-v2`。
+
+每个 skill 根目录带 `manifest.json`（id/name/version/description/author/type/triggers/tags/license），WorkBuddy / ClawHub 直接认。
+
+**③ 手动复制 / ZIP**
+
+每个 `skills-v2/<name>/` 文件夹可单独复制（各宿主放置位置见 `adapters/`）；`dist-v2/` 提供按 skill 分开的 ZIP 快照（另见 GitHub Releases）。正式使用前仍应阅读 `SKILL.md`、检查脚本，并先运行包内合成样例。路由验收必须在独立的新会话中执行，不能在已透露预期 skill 的同一上下文里自测。
 
 已完成的实机验证：Codex 项目级发现与安装路径执行通过；WorkBuddy 5.5.6 与 LobsterAI 2026.5.22 均已实际执行三个 skill 的综合样例，并分别完成 6/6 文件级回归。两端产物都通过统一校验器复核。LobsterAI 清理旧版后的 6 条隐式路由为 6/6，但调查助手有 1 条输入来源行为失败；本地 `investigation-assistant 0.1.2` 已修订，尚待宿主替换复测。正式 120 条/宿主的隐式路由验收、Pi 和 OpenClaw 实测仍未完成，详见 [测试摘要](evals/test-report-2026-09-15.md) 与 [跨 Agent 验收矩阵](evals/cross-agent-matrix.md)。
 
