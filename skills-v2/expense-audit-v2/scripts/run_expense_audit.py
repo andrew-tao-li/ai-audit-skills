@@ -423,11 +423,11 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
         records = list(near_records.values())
         builder.add("near-duplicate", "同员工同商户短期内多笔近似金额", 2, "moderate", records,
                     ("expense_id", "employee_id", "expense_date", "vendor_name", "amount", "invoice_number"),
-                    ["%d 笔记录金额近似（容差 %.0f%%，窗口 %d 天）" % (len(records), near_tolerance * 100, near_days)],
-                    ["高频近似金额可能指向拆分报销或虚构业务"],
+                    ["%d 笔金额接近、集中在 %d 天内的报销记录" % (len(records), near_days)],
+                    ["多笔金额接近、时间集中的报销，可能指向拆分报销或虚构业务"],
                     ["是否为同一次消费的拆分、月度订阅或正常高频小额采购？"],
                     ["对照发票影像、消费时间和支付流水"],
-                    [{"factor": "near_duplicate", "points": 2, "window_days": near_days, "tolerance": near_tolerance, "count": len(records)}])
+                    [{"factor": "near_duplicate", "points": 2, "count": len(records)}])
 
     limits = policy.get("limits", [])
     if not limits:
@@ -535,15 +535,15 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                 continue
             robust_z = 0.6745 * (row["amount"] - median) / mad
             if robust_z > z_threshold:
-                builder.add("robust-outlier", "同类费用中的高额稳健统计离群点", 2, "moderate", (row,),
+                builder.add("robust-outlier", "同类费用中的异常高额", 2, "moderate", (row,),
                             ("expense_id", "expense_type", "amount", "currency"),
-                            ["同类组中位数 %.2f，MAD %.2f，本记录 robust z-score %.2f" % (median, mad, robust_z)],
-                            ["该记录相对同类组明显偏高，仅用于复核排序"],
+                            ["该笔金额 %.2f 元，约为同类费用正常水平的约 %.1f 倍" % (row["amount"], row["amount"] / median)],
+                            ["该记录在同类费用中显著偏高，仅用于确定复核优先级"],
                             ["是否存在人数、城市、天数或特殊业务场景差异？"],
-                            ["补充数量/人数/期间等标准化口径并核对原始单据"],
-                            [{"factor": "robust_outlier", "points": 2, "robust_z": round(robust_z, 4), "peer_group": list(key)}])
+                            ["补充数量、人数、期间等口径，核对原始单据"],
+                            [{"factor": "robust_outlier", "points": 2}])
     if valid_groups == 0:
-        skipped.append("robust-outlier：没有达到最小样本且 MAD 非零的 peer group")
+        skipped.append("robust-outlier：同类样本不足或样本金额高度一致，无法判断离群")
 
     # ============ v0.2.0 新增规则 ============
 

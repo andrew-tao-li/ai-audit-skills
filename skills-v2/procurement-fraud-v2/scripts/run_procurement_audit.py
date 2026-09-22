@@ -457,24 +457,24 @@ def add_price_findings(pos: List[Dict[str, Any]], config: Dict[str, Any], builde
                 for po in group:
                     ratio = po["unit_price"] / min_price
                     if ratio >= 1.3:
-                        builder.add("price-outlier", "同类采购单价显著高于市场基准（最低价）", 2, "moderate", (po,),
+                        builder.add("price-outlier", "同类采购单价显著偏高", 2, "moderate", (po,),
                                     ("po_id", "vendor_id", "item", "unit", "region", "unit_price"),
-                                    ["本单单价 %.2f 是组内最低价 %.2f 的 %.1f 倍" % (po["unit_price"], min_price, ratio)],
+                                    ["本单单价 %.2f，是同类采购最低报价 %.2f 的约 %.1f 倍" % (po["unit_price"], min_price, ratio)],
                                     ["多供应商同价且显著高于市场基准，可能指向串标/抬价"],
                                     ["规格、税、运费、质量、交期和采购时间是否可比？"],
-                                    ["补齐规格与报价依据，重新确认 peer group 后复核"],
-                                    [{"factor": "price_outlier", "points": 2, "ratio_to_min": round(ratio, 4), "peer_group": list(key)}])
+                                    ["补齐规格与报价依据，重新确认同类对比口径后复核"],
+                                    [{"factor": "price_outlier", "points": 2}])
             continue
         for po in group:
             robust_z = 0.6745 * (po["unit_price"] - median) / mad
             if robust_z > threshold:
-                builder.add("price-outlier", "同类采购单价显著高于 peer group", 2, "moderate", (po,),
+                builder.add("price-outlier", "同类采购单价显著偏高", 2, "moderate", (po,),
                             ("po_id", "vendor_id", "item", "unit", "region", "unit_price"),
-                            ["peer group 中位单价 %.2f、MAD %.2f，本单 robust z-score %.2f" % (median, mad, robust_z)],
-                            ["该单价是同类组高额统计离群点"],
+                            ["本单单价 %.2f，约为同类采购正常水平（约 %.2f）的 %.1f 倍" % (po["unit_price"], median, po["unit_price"] / median)],
+                            ["该单价在同类采购中显著偏高"],
                             ["规格、税、运费、质量、交期和采购时间是否可比？"],
-                            ["补齐规格与报价依据，重新确认 peer group 后复核"],
-                            [{"factor": "price_outlier", "points": 2, "robust_z": round(robust_z, 4), "peer_group": list(key)}])
+                            ["补齐规格与报价依据，重新确认同类对比口径后复核"],
+                            [{"factor": "price_outlier", "points": 2}])
 
 
 def add_split_findings(pos: List[Dict[str, Any]], config: Dict[str, Any], builder: Builder) -> None:
