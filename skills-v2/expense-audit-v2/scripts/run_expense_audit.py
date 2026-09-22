@@ -370,7 +370,7 @@ def _adjust_priority_by_amount(score: int, strength: str, amount: Optional[float
 def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: ResultBuilder) -> Tuple[List[str], Dict[str, Any]]:
     skipped: List[str] = []
     exact_pairs = set()
-    for group in group_records(rows, ("invoice_number", "currency", "amount"), ("invoice_number",)):
+    for group in group_records(rows, ("employee_id", "invoice_number", "currency", "amount"), ("invoice_number",)):
         ids = [r["expense_id"] for r in group]
         exact_pairs.update(frozenset((a, b)) for i, a in enumerate(ids) for b in ids[i + 1 :])
         builder.add("exact-duplicate-invoice", "发票号与金额重复，需核对是否重复报销", 4, "strong", group,
