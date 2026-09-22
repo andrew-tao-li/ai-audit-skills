@@ -206,22 +206,16 @@ def cmd_verify(rollback=False):
         record_state(before, after, "regressed")
         return 1
 
-    # 回滚
+    # 回滚：只把「技能代码目录」恢复到基线，不动 HEAD，也不动 state.json / log / proposals 等数据
+    #（避免 reset --hard 把护栏自己的审计轨迹也一并抹掉）
     head = git(["rev-parse", "HEAD"]).stdout.strip()
     base_head = before["git_head"]
-    if base_head == head:
-        print("  当前 HEAD 即基线 HEAD，无可丢弃的提交；尝试用 reset --hard 恢复工作区…")
-    else:
-        # 安全：baseline 必须是当前 HEAD 的祖先
-        if git(["merge-base", "--is-ancestor", base_head, head], check=False).returncode != 0:
-            print(f"  ⚠ 拒绝回滚：基线 {base_head[:8]} 不是当前 HEAD {head[:8]} 的祖先（历史已分叉）。")
-            print("    请手动处理，避免误删无关工作。")
-            record_state(before, after, "regressed", rolled_back=False)
-            return 1
-        print(f"  将回滚到基线：{base_head[:12]}（丢弃其上 {head[:8]} 等提交）")
-
-    print("  → git reset --hard …")
-    git(["reset", "--hard", base_head])
+    print(f"  回滚范围：skills-v2 skills（基线 {base_head[:12]}）")
+    print("  → git checkout <baseline> -- skills-v2 skills")
+    git(["checkout", base_head, "--", "skills-v2", "skills"])
+    if base_head != head:
+        print(f"  注：代码已恢复到基线，但 HEAD 仍在 {head[:8]}；"
+              f"如需彻底丢弃其上提交：git reset --hard {base_head[:12]}")
     print("  → 重跑测试确认…")
     after_rollback = snapshot(run_tests())
     rows2, regressed2 = compare(before, after_rollback)
