@@ -4,7 +4,9 @@
   "expected_findings": [
     "cross-employee-invoice",
     "future-date",
-    "self-approval"
+    "self-approval",
+    "policy-threshold",
+    "submit-before-expense"
   ],
   "complex": true
 }

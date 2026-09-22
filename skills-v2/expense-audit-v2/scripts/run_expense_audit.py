@@ -392,9 +392,10 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                     [{"factor": "same_employee_date_amount", "points": 3}])
 
     near_days = int(policy.get("near_duplicate_window_days", 7))
-    near_tolerance = float(policy.get("near_duplicate_amount_tolerance", 0.02))
+    near_tolerance = float(policy.get("near_duplicate_amount_tolerance", 0.15))
     ordered = sorted(rows, key=lambda r: (r["employee_id"], r["expense_date"], r["expense_id"]))
     near_seen = set()
+    near_records = {}  # expense_id -> row，收集所有近似重复对涉及的记录
     for index, left in enumerate(ordered):
         left_date = date.fromisoformat(left["expense_date"])
         for right in ordered[index + 1 :]:
@@ -415,13 +416,18 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
             difference = abs(left["amount"] - right["amount"]) / max(abs(left["amount"]), abs(right["amount"]), 0.01)
             if difference <= near_tolerance:
                 near_seen.add(pair)
-                builder.add("near-duplicate", "同员工同商户短期内出现近似金额", 2, "moderate", (left, right),
-                            ("expense_id", "employee_id", "expense_date", "vendor_name", "amount", "invoice_number"),
-                            ["两条记录相隔 %d 天，金额差异比例 %.4f" % (delta, difference)],
-                            ["该组合符合 possible near duplicate 的配置条件"],
-                            ["是否为同一次消费的更正、补录或分次结算？"],
-                            ["对照发票影像、消费时间和支付流水"],
-                            [{"factor": "near_duplicate", "points": 2, "window_days": near_days, "tolerance": near_tolerance}])
+                near_records[left["expense_id"]] = left
+                near_records[right["expense_id"]] = right
+    # 只有 ≥3 条记录构成近似重复簇才报（避免把"两笔相似"误判为高频拆分）
+    if len(near_records) >= 3:
+        records = list(near_records.values())
+        builder.add("near-duplicate", "同员工同商户短期内多笔近似金额", 2, "moderate", records,
+                    ("expense_id", "employee_id", "expense_date", "vendor_name", "amount", "invoice_number"),
+                    ["%d 笔记录金额近似（容差 %.0f%%，窗口 %d 天）" % (len(records), near_tolerance * 100, near_days)],
+                    ["高频近似金额可能指向拆分报销或虚构业务"],
+                    ["是否为同一次消费的拆分、月度订阅或正常高频小额采购？"],
+                    ["对照发票影像、消费时间和支付流水"],
+                    [{"factor": "near_duplicate", "points": 2, "window_days": near_days, "tolerance": near_tolerance, "count": len(records)}])
 
     limits = policy.get("limits", [])
     if not limits:
@@ -446,7 +452,7 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     thresholds = policy.get("approval_thresholds", [])
     if not thresholds:
         skipped.append("split-expense：未提供 approval_thresholds")
-    split_days = int(policy.get("split_window_days", 3))
+    split_days = int(policy.get("split_window_days", 0))
     for threshold in thresholds:
         amount_threshold = parse_amount(threshold.get("amount"))
         currency = str(threshold.get("currency", "")).upper()
@@ -508,6 +514,7 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
 
     min_group = int(policy.get("outlier_min_group_size", 5))
     z_threshold = float(policy.get("outlier_robust_z", 3.5))
+    large_threshold = float(policy.get("large_amount_threshold", 5000))
     peer_groups: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
     for row in rows:
         peer_groups[(match_key(row["expense_type"]), row["currency"])].append(row)
@@ -522,6 +529,10 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
             continue
         valid_groups += 1
         for row in group:
+            # 大额（≥ large_amount_threshold）交由 large-amount-low-level-approval / policy-threshold 等
+            # 更具体的规则解释，robust-outlier 只负责"正常区间内的相对离群"，避免同一笔重复告警。
+            if row["amount"] >= large_threshold:
+                continue
             robust_z = 0.6745 * (row["amount"] - median) / mad
             if robust_z > z_threshold:
                 builder.add("robust-outlier", "同类费用中的高额稳健统计离群点", 2, "moderate", (row,),
@@ -538,13 +549,14 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
 
     # 规则：发票连号（sequential invoices）
     # 同一商户在短期内开具连续编号发票（3 张以上连号），可能指向"分拆报销"或"虚构业务"
-    sequential_window = 30  # 默认 30 天窗口
-    invoice_index = {}  # {(vendor_match, currency): [(row, num)]}
+    # 关键约束：连号发票必须在很短时间内（默认 3 天内）开出，否则只是正常的顺序开票（如月度办公采购）。
+    sequential_window = int(policy.get("sequential_invoice_window_days", 3))
+    invoice_index = {}  # {(vendor_match, currency): [(row, num, inv_raw)]}
     for row in rows:
         inv_raw = norm_text(row.get("invoice_number"))
         if not inv_raw:
             continue
-        # 提取末尾连续数字作为序号
+        # 提取连续数字作为序号
         match = re.search(r"(\d{2,})", inv_raw)
         if not match:
             continue
@@ -556,39 +568,34 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
         invoice_index.setdefault(key, []).append((row, num, inv_raw))
     for key, entries in invoice_index.items():
         entries.sort(key=lambda x: (x[1], x[0].get("expense_date", "")))
-        # 找连号段（至少 3 张连续）
-        for i in range(len(entries) - 2):
-            r1, n1, _ = entries[i]
-            r2, n2, _ = entries[i + 1]
-            r3, n3, _ = entries[i + 2]
-            if n2 == n1 + 1 and n3 == n2 + 1:
-                # 三连号以上算连号
-                run = [r1, r2, r3]
-                for j in range(i + 3, len(entries)):
-                    rn, nn, _ = entries[j]
-                    if nn == run[-1]["__num"] + 1 if "__num" in run[-1] else nn == run[-1].get("amount", 0) + 1:
-                        pass
-                # 简单做法：直接用第 i,i+1,i+2 触发 finding，附上连号段
-                nums_in_row = [e[1] for e in entries[i:i + 5]]
-                # 找完整连号段长度
-                run_len = 1
-                for j in range(i, len(entries) - 1):
-                    if entries[j + 1][1] == entries[j][1] + 1:
-                        run_len += 1
-                    else:
-                        break
-                if run_len < 3:
-                    continue
-                run_records = [entries[k][0] for k in range(i, i + run_len)]
-                builder.add("sequential-invoice", "同一商户短期内发票连号（≥3 张连续编号）", 3, "moderate",
-                            run_records,
-                            ("expense_id", "vendor_name", "invoice_number", "expense_date", "amount"),
-                            ["%d 张发票编号连续：%s" % (run_len, ", ".join([str(e[1]) for e in entries[i:i + run_len]]))],
-                            ["连号发票常指向分拆报销或虚构业务"],
-                            ["是否为同一次消费的拆分、团建或代订？"],
-                            ["核对发票原件、消费现场记录和报销事由"],
-                            [{"factor": "sequential_invoice", "points": 3, "run_length": run_len}])
-                break  # 一组只报一次
+        i = 0
+        while i <= len(entries) - 3:
+            # 从 i 起找连续编号 run
+            j = i + 1
+            while j < len(entries) and entries[j][1] == entries[j - 1][1] + 1:
+                j += 1
+            run_len = j - i
+            if run_len >= 3:
+                run_records = [entries[k][0] for k in range(i, j)]
+                run_nums = [entries[k][1] for k in range(i, j)]
+                run_dates = [entries[k][0].get("expense_date", "") for k in range(i, j) if entries[k][0].get("expense_date")]
+                span = 0
+                if run_dates:
+                    try:
+                        span = (date.fromisoformat(max(run_dates)) - date.fromisoformat(min(run_dates))).days
+                    except ValueError:
+                        span = sequential_window + 1
+                if span <= sequential_window:
+                    builder.add("sequential-invoice", "同一商户短期内发票连号（≥3 张连续编号）", 3, "moderate",
+                                run_records,
+                                ("expense_id", "vendor_name", "invoice_number", "expense_date", "amount"),
+                                ["%d 张发票编号连续（跨度 %d 天）：%s" % (run_len, span, ", ".join(str(n) for n in run_nums))],
+                                ["连号发票常指向分拆报销或虚构业务"],
+                                ["是否为同一次消费的拆分、团建或代订？"],
+                                ["核对发票原件、消费现场记录和报销事由"],
+                                [{"factor": "sequential_invoice", "points": 3, "run_length": run_len, "span_days": span}])
+                    break  # 一组只报一次
+            i += 1
 
     # 规则：发票号格式异常
     # 检测非标准字符（如 @、! 等）、过长、过短

@@ -6,6 +6,7 @@
     "process-receipt-before-order",
     "process-receipt-before-approval",
     "process-payment-before-approval",
+    "process-order-before-approval",
     "overpayment"
   ],
   "complex": true

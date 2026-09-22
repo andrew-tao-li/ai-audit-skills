@@ -79,7 +79,7 @@ def run_procurement(fix_dir: Path, gt: dict, work_dir: Path) -> list:
         "config_version": "BLACKBOX-PROC-V2",
         "default_currency": "CNY",
         "approval_thresholds": [{"rule_id": "PO-APPROVAL-20000", "currency": "CNY", "amount": 20000}],
-        "split_window_days": 14,
+        "split_window_days": 0,
         "new_vendor_days_threshold": 180,
         "new_vendor_amount_threshold": 20000,
         "concentration_share": 0.7,

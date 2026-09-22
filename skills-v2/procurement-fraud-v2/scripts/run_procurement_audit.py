@@ -450,6 +450,20 @@ def add_price_findings(pos: List[Dict[str, Any]], config: Dict[str, Any], builde
         median = statistics.median(values)
         mad = statistics.median(abs(value - median) for value in values)
         if mad == 0:
+            # 退化：大部分单价相同（如马甲供应商串通抬价，把中位数拉高）。
+            # 用组内最低价作为市场基准，显著高于最低价者视为价格离群。
+            min_price = min(values)
+            if min_price > 0:
+                for po in group:
+                    ratio = po["unit_price"] / min_price
+                    if ratio >= 1.3:
+                        builder.add("price-outlier", "同类采购单价显著高于市场基准（最低价）", 2, "moderate", (po,),
+                                    ("po_id", "vendor_id", "item", "unit", "region", "unit_price"),
+                                    ["本单单价 %.2f 是组内最低价 %.2f 的 %.1f 倍" % (po["unit_price"], min_price, ratio)],
+                                    ["多供应商同价且显著高于市场基准，可能指向串标/抬价"],
+                                    ["规格、税、运费、质量、交期和采购时间是否可比？"],
+                                    ["补齐规格与报价依据，重新确认 peer group 后复核"],
+                                    [{"factor": "price_outlier", "points": 2, "ratio_to_min": round(ratio, 4), "peer_group": list(key)}])
             continue
         for po in group:
             robust_z = 0.6745 * (po["unit_price"] - median) / mad
@@ -547,8 +561,8 @@ def add_process_findings(pos: List[Dict[str, Any]], payments: List[Dict[str, Any
                         ("po_id", "receipt_date", "order_date"), ["收货日期 %s 早于订单日期 %s" % (receipt_date, order_date)],
                         ["可能存在先执行后补单或日期数据错误"], ["是否为历史补录、退换货或接口口径差异？"],
                         ["核对收货单、系统日志和合同生效时间"], [{"factor": "receipt_before_order", "points": 2}])
-        # v0.2.0: 收货早于审批（独立规则）
-        if receipt_date and approval_date and receipt_date < approval_date and not (receipt_date < order_date):
+        # v0.2.0: 收货早于审批（独立规则，无论收货是否也早于下单都报）
+        if receipt_date and approval_date and receipt_date < approval_date:
             builder.add("process-receipt-before-approval", "收货日期早于采购审批完成日期", 3, "strong", (po,),
                         ("po_id", "receipt_date", "approval_date"), ["收货 %s 早于审批 %s" % (receipt_date, approval_date)],
                         ["先收货后审批属于流程倒置"], ["是否为紧急采购、紧急收货后补审批？"],
