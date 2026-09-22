@@ -6,6 +6,12 @@
 
 ---
 
+## ⏸ 暂缓事项（下次回顾框架时提醒）
+
+- **ClawHub 上架**（已调研完毕，暂缓，2026-09-22）：`clawhub` CLI 已装（v0.23.3）、license 已改 MIT-0、SKILL.md frontmatter（version/author）已就绪。剩两件事待用户：① 跑 `clawhub login`（设备流）或给 API token；② 决定仓库根 `LICENSE` 是否也改 MIT-0。发布命令已备好（见 install.md 或 `clawhub skill publish ./skills-v2/<skill> --slug ... --version 0.2.0`）。
+
+---
+
 ## 路线图总览（4 个 Layer）
 
 ```
