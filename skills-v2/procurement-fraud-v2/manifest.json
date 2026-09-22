@@ -10,6 +10,6 @@
   "runtime": "python",
   "triggers": ["采购舞弊", "采购审计", "供应商筛查", "围标", "串标", "拆单", "采购合规", "procurement fraud"],
   "tags": ["审计", "采购", "反舞弊", "供应商", "招投标", "合规"],
-  "license": "Apache-2.0",
+  "license": "MIT-0",
   "offline": true
 }

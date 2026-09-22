@@ -10,6 +10,6 @@
   "runtime": "python",
   "triggers": ["调查助手", "内部调查", "证据链", "保管链", "举报", "合规调查", "investigation"],
   "tags": ["审计", "调查", "合规", "证据", "取证"],
-  "license": "Apache-2.0",
+  "license": "MIT-0",
   "offline": true
 }

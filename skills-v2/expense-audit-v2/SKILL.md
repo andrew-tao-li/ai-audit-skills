@@ -1,10 +1,9 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-license: Apache-2.0
+version: 0.2.0
 metadata:
-  author: "aiaudit"
-  version: "0.2.0"
+  author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
   predecessor: "expense-audit 0.1.1"
   changelog: "v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
