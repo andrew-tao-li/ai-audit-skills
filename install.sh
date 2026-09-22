@@ -75,17 +75,18 @@ else
 fi
 N=${#SKILLS[@]}
 
-# 解析最新 tag（除非用户锁定 VERSION）
-# 优先 GitHub API（拿 tag_name）；被速率限制时回退到 /releases/latest 的 302 重定向（无速率限制）。
+# 解析最新 tag（除非用户锁定 VERSION）。
+# 方案 A：GitHub API，加 User-Agent（GitHub API 无 UA 会 403）；用 sed 提 tag_name（不依赖 python3，
+#   因为 Windows 上裸 python3 常是商店 stub，会导致解析失败）。
+# 方案 B：回退到 /releases/latest 的 302 重定向（GET 跟随到 tag 页，无速率限制）。
 if [ -z "$VERSION" ]; then
     VERSION=$(curl -sLf -H "Accept: application/vnd.github+json" \
-        "https://api.github.com/repos/${REPO}/releases/latest" \
-        2>/dev/null \
-        | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null) || VERSION=""
+        -H "User-Agent: ai-audit-installer" \
+        "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null \
+        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1) || VERSION=""
 fi
 if [ -z "$VERSION" ]; then
-    # Fallback: redirect of /releases/latest gives the actual tag page URL
-    RELEASE_URL=$(curl -sLI -o /dev/null -w '%{url_effective}\n' \
+    RELEASE_URL=$(curl -sL -o /dev/null -w '%{url_effective}\n' \
         "https://github.com/${REPO}/releases/latest" 2>/dev/null) || RELEASE_URL=""
     # 形如 https://github.com/<owner>/<repo>/releases/tag/v0.2.0
     VERSION="${RELEASE_URL##*/tag/}"
@@ -109,17 +110,19 @@ done
 
 mkdir -p "$PREFIX"
 
-WORKDIR="$(mktemp -d -t aiaudit-install-XXXXXX)"
-trap 'rm -rf "$WORKDIR"' EXIT
-
+# 下载临时 zip 直接写到目标目录内（不用 mktemp / /tmp）：Windows/WorkBuddy 沙箱会拦截 mktemp
+# 建的 /tmp 子目录写入，导致 curl(23)「系统找不到指定的文件」。目标目录是用户自己的 skills 目录，可写。
 for s in "${SKILLS[@]}"; do
     URL="https://github.com/${REPO}/releases/download/${VERSION}/${s}.zip"
-    if ! curl -sLf --connect-timeout 15 -o "$WORKDIR/$s.zip" "$URL"; then
+    mkdir -p "${PREFIX}/${s}"
+    TMP_ZIP="${PREFIX}/${s}.zip.downloading"
+    if ! curl -sLf --connect-timeout 15 -o "$TMP_ZIP" "$URL"; then
+        rm -f "$TMP_ZIP"
         echo "✗ 下载失败：$URL" >&2
         exit 1
     fi
-    mkdir -p "${PREFIX}/${s}"
-    unzip -oq "$WORKDIR/$s.zip" -d "${PREFIX}/${s}"
+    unzip -oq "$TMP_ZIP" -d "${PREFIX}/${s}"
+    rm -f "$TMP_ZIP"
 done
 
 # 收尾：明确区分「全装」 vs 「装子集」，列出已装 / 未装

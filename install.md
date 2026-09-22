@@ -95,6 +95,20 @@ rm -rf ~/.config/opencode/skills/{expense-audit-v2,procurement-fraud-v2,investig
 rm -rf ~/.config/opencode/skills/expense-audit-v2
 ```
 
+### Windows / WorkBuddy 沙箱已知注意（实测踩坑）
+
+以下问题与 skill 质量无关，是 **Windows + WorkBuddy 沙箱**的固有行为，遇到时按右边规避：
+
+| 问题 | 现象 | 规避 |
+|---|---|---|
+| 裸 `python3` 是商店 stub | exit 49 / 打不开 | 用真实 Python 的绝对路径（如 WorkBuddy 托管 Python） |
+| Git Bash 路径传参错乱 | `/c/Users/...` 被拼成 `C:\c\Users\...`（双 c） | 给脚本传参一律用 `C:/Users/...` 或相对路径 |
+| 沙箱拒绝写 `/tmp` 子目录 | `curl(23)`「系统找不到指定的文件」 | install.sh 已改为下载到目标目录（见下）；手动装则直接解压到 skills 目录 |
+| HEAD 请求超时 | `curl -I` 对 release URL 返回 000 | 用 GET；或 API JSON（带 `User-Agent`） |
+| 沙箱拒绝删除部分路径 | 删除被 Blocked | 测试产物留在原位即可 |
+
+> install.sh 已针对这些做过加固：版本探测改用 API+`User-Agent`+`sed`（不依赖 python3），下载直接落目标目录（不用 mktemp/`/tmp`）。
+
 ### ZIP 直链（不走 install.sh，手动下载/检查用）
 
 - <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/expense-audit-v2.zip>
