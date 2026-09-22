@@ -12,7 +12,7 @@
 # 配置：evolution/notify_config.json
 
 set -e
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG_FILE="$ROOT/evolution/notify_config.json"
 
 # === 读取配置 ===
@@ -52,24 +52,26 @@ print(text.strip())
 # === 1. 优先：企业微信 Webhook ===
 SENT=0
 if [ -n "$WECOM_URL" ]; then
-    # 用临时文件避免 heredoc 与参数冲突
+    # 用 sys.argv 传入标题/正文，避免环境变量作用域与引号转义问题
     MSG_JSON=$(python3 -c '
-import json, os, sys
-title = os.environ["NOTIFY_TITLE"]
-body = os.environ["NOTIFY_BODY"]
+import json, sys
+title = sys.argv[1]
+body = sys.argv[2]
 content = "【" + title + "】\n\n" + body
 print(json.dumps({"msgtype": "markdown", "markdown": {"content": content}}, ensure_ascii=False))
-' )
-    HTTP_CODE=$(NOTIFY_TITLE="$TITLE" NOTIFY_BODY="$SIMPLE_BODY" curl -s -o /dev/null -w "%{http_code}" \
+' "$TITLE" "$SIMPLE_BODY")
+    HTTP_CODE=$(curl -s -o /tmp/wecom_notify_resp.json -w "%{http_code}" \
         -X POST \
         -H "Content-Type: application/json" \
         -d "$MSG_JSON" \
         "$WECOM_URL" 2>&1 || echo "000")
-    if [ "$HTTP_CODE" = "200" ]; then
+    # 企业微信即使 HTTP 200 也可能返回 errcode != 0，需校验
+    ERRCODE=$(python3 -c "import json; print(json.load(open('/tmp/wecom_notify_resp.json')).get('errcode','-1'))" 2>/dev/null || echo "-1")
+    if [ "$HTTP_CODE" = "200" ] && [ "$ERRCODE" = "0" ]; then
         echo "[notify] WeCom sent: $TITLE" >&2
         SENT=1
     else
-        echo "[notify] WeCom failed (HTTP $HTTP_CODE), trying fallback" >&2
+        echo "[notify] WeCom failed (HTTP $HTTP_CODE, errcode $ERRCODE)" >&2
     fi
 fi
 
