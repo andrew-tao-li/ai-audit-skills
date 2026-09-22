@@ -35,35 +35,37 @@ Layer 4 (自适应): 跨 skill 协同 + 自我优化 ← 长期
 
 ---
 
-## Layer 1: 通知机制 🟡 本周目标
+## Layer 1: 通知机制 ✅ 已完成（2026-09-22）
 
 **目标**：用户不需要登录 Mac mini 就能知道系统在跑什么。
 
 ### 任务清单
 
-- [ ] **1.1 邮件通知脚本**（半天）
-  - [ ] 写 `evolution/notify.sh`：跑完调 `mail` 命令
-  - [ ] 处理 token 耗尽情况
-  - [ ] 处理 API 不可达情况
-  - [ ] 验证：本地真发一封测试邮件
+- [x] **1.1 通知脚本**（半天）
+  - [x] 写 `evolution/notify.sh`：企业微信 Webhook（优先）/ 邮件（fallback）/ 日志
+  - [x] 处理 token 耗尽情况
+  - [x] 处理 API 不可达情况
+  - [x] 验证：企业微信测试通知已实发成功
 
-- [ ] **1.2 健康检查**（半天）
-  - [ ] evolve.sh 跑前先 ping MiniMax API
-  - [ ] 失败时发邮件 + 跳过 LLM 步骤
-  - [ ] 加 `state.json` 字段记录上次健康时间
+- [x] **1.2 健康检查**（半天）
+  - [x] evolve.sh 跑前先 ping MiniMax API
+  - [x] 失败时通知 + 跳过 LLM 步骤
+  - [x] 加 `state.json` 字段记录健康状态与检查时间
 
-- [ ] **1.3 Mac mini 部署**（半天）
-  - [ ] 复制整个项目到 Mac mini
-  - [ ] 设置 `OPENCODE_SERVER_PASSWORD` 或用 keychain
-  - [ ] 安装 launchd plist
-  - [ ] 验证第二天自动跑
+- [x] **1.3 Mac mini 部署**（半天）
+  - [x] 复制整个项目到 Mac mini
+  - [x] 安装 launchd plist（每天 9:00 自动跑）
+  - [x] 迁出 `~/Documents`（解决 macOS TCC `Operation not permitted`）
+  - [x] 验证 launchd 后台实际跑通
 
-- [ ] **1.4 GitHub 公开仓库**（半天）
-  - [ ] 推送到 GitHub（公开）
-  - [ ] 写 README
-  - [ ] 写 CONTRIBUTING.md
+- [x] **1.4 GitHub 公开仓库**（半天）
+  - [x] 推送到 GitHub（公开）
+  - [x] 写 README
+  - [ ] 写 CONTRIBUTING.md（待补）
 
-**完成时间目标**：2026-09-28
+**完成时间**：2026-09-22
+
+**遗留**：MiniMax 当前 `rate_limited`（Token 配额用尽），需充值后 LLM 分析才会恢复。
 
 ---
 

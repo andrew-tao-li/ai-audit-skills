@@ -3,9 +3,11 @@
 > **目的**：让 Mac mini 上的 OpenCode CLI/Desktop 接手 debug + 修复 Audit Skill Box 后台任务。
 >
 > **使用方法**：
-> 1. 打开 OpenCode（CLI 或 Desktop），cd 到 `/Users/rockymary/Documents/ai-audit-skills/repo`
+> 1. 打开 OpenCode（CLI 或 Desktop），cd 到 `/Users/rockymary/ai-audit-skills/repo`
 > 2. 把下面"给 OpenCode 的 prompt"粘贴进去
 > 3. OpenCode 会自动排查 + 修复 + 验证
+
+> **状态：已解决（2026-09-22）**。本 handoff 描述的 launchd 故障已修复，根因是 macOS TCC 阻止 launchd 访问 `~/Documents`。项目已迁至 `~/ai-audit-skills`，launchd 每日任务已恢复、企业微信通知已修复并实发验证。当前唯一遗留：MiniMax 处于 `rate_limited`（Token 配额用尽），充值后 LLM 分析自动恢复。
 
 ---
 
@@ -15,7 +17,7 @@
 
 ```
 GitHub: andrew-tao-li/ai-audit-skills  (公开仓库，4 个 commit)
-Mac mini: /Users/rockymary/Documents/ai-audit-skills/repo
+Mac mini: /Users/rockymary/ai-audit-skills/repo
 launchd 任务: com.audit.skill.box (期望每天 9:00 自动跑 evolve.sh)
 通知渠道: 企业微信 Webhook (已配)
 ```
@@ -40,12 +42,12 @@ launchd 任务: com.audit.skill.box (期望每天 9:00 自动跑 evolve.sh)
 
 ## 当前状态（我已经知道的）
 - Mac mini 系统：macOS 25.4.0 arm64，用户 rockymary
-- 项目在：/Users/rockymary/Documents/ai-audit-skills/repo
+- 项目在：/Users/rockymary/ai-audit-skills/repo
 - launchd plist 在：~/Library/LaunchAgents/com.audit.skill.box.plist
 - plist 已含：
-  - WorkingDirectory: /Users/rockymary/Documents/ai-audit-skills/repo
-  - StandardOutPath: /Users/rockymary/Documents/ai-audit-skills/repo/evolution/log/launchd-stdout.log
-  - StandardErrorPath: /Users/rockymary/Documents/ai-audit-skills/repo/evolution/log/launchd-stderr.log
+  - WorkingDirectory: /Users/rockymary/ai-audit-skills/repo
+  - StandardOutPath: /Users/rockymary/ai-audit-skills/repo/evolution/log/launchd-stdout.log
+  - StandardErrorPath: /Users/rockymary/ai-audit-skills/repo/evolution/log/launchd-stderr.log
   - EnvironmentVariables.MINIMAX_API_KEY = sk-cp--... (完整 token 在文件里)
 - launchctl list | grep audit 显示 10208 0 com.audit.skill.box
 - launchctl start com.audit.skill.box 不报错
@@ -71,9 +73,9 @@ launchd 任务: com.audit.skill.box (期望每天 9:00 自动跑 evolve.sh)
 
 3. 看 stdout / stderr 文件：
    ```bash
-   ls -la ~/Documents/ai-audit-skills/repo/evolution/log/
-   cat ~/Documents/ai-audit-skills/repo/evolution/log/launchd-stdout.log
-   cat ~/Documents/ai-audit-skills/repo/evolution/log/launchd-stderr.log
+   ls -la ~/ai-audit-skills/repo/evolution/log/
+   cat ~/ai-audit-skills/repo/evolution/log/launchd-stdout.log
+   cat ~/ai-audit-skills/repo/evolution/log/launchd-stderr.log
    ```
 
 4. 看上次 launchd 运行结果：
@@ -89,7 +91,7 @@ launchd 任务: com.audit.skill.box (期望每天 9:00 自动跑 evolve.sh)
 
 6. **手动模拟 launchd 跑脚本**（关键测试——如果这条命令能跑通，脚本本身 OK，问题只在 launchd 传环境变量）：
    ```bash
-   cd /Users/rockymary/Documents/ai-audit-skills/repo
+   cd /Users/rockymary/ai-audit-skills/repo
    env $(/usr/libexec/PlistBuddy -c "Print :EnvironmentVariables" ~/Library/LaunchAgents/com.audit.skill.box.plist | grep = | sed 's/^/export /' | tr '\n' ' ') /bin/bash ./evolve.sh 2>&1 | tail -40
    ```
    （这一行从 plist 读出 EnvironmentVariables 并 export，然后跑脚本）
@@ -131,8 +133,8 @@ launchctl start com.audit.skill.box
 sleep 30
 
 # 验证
-ls -lt ~/Documents/ai-audit-skills/repo/evolution/log/ | head -3
-cat ~/Documents/ai-audit-skills/repo/evolution/state.json | python3 -m json.tool | grep -A 2 "health\|iteration_count" | head -10
+ls -lt ~/ai-audit-skills/repo/evolution/log/ | head -3
+cat ~/ai-audit-skills/repo/evolution/state.json | python3 -m json.tool | grep -A 2 "health\|iteration_count" | head -10
 ```
 
 期望：
@@ -158,7 +160,7 @@ cat ~/Documents/ai-audit-skills/repo/evolution/state.json | python3 -m json.tool
 ## 已知文件结构（你可以直接读）
 
 ```
-/Users/rockymary/Documents/ai-audit-skills/repo/
+/Users/rockymary/ai-audit-skills/repo/
 ├── AGENTS.md
 ├── README.md
 ├── evolve.sh                                  ← 主循环脚本
@@ -204,8 +206,8 @@ cat ~/Documents/ai-audit-skills/repo/evolution/state.json | python3 -m json.tool
 1. **找到的根因**（一句话）
 2. **做了什么修复**（列步骤）
 3. **最终验证**：
-   - `cat ~/Documents/ai-audit-skills/repo/evolution/state.json | python3 -m json.tool | grep -A 2 health`
-   - `cat ~/Documents/ai-audit-skills/repo/evolution/log/launchd-stdout.log | tail -10`
+   - `cat ~/ai-audit-skills/repo/evolution/state.json | python3 -m json.tool | grep -A 2 health`
+   - `cat ~/ai-audit-skills/repo/evolution/log/launchd-stdout.log | tail -10`
 4. **是否需要修文档/setup 脚本？**（这次暴露的 bug 应该写进 setup-mac-mini.sh 防止再发生）
 
 ---
