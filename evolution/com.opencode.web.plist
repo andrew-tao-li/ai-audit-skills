@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.opencode.web</string>
+
+    <!-- ProgramArguments: 启动 opencode 网页服务，监听所有网卡 -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/opencode</string>
+        <string>serve</string>
+        <string>--hostname</string>
+        <string>0.0.0.0</string>
+        <string>--port</string>
+        <string>4096</string>
+    </array>
+
+    <!-- EnvironmentVariables: OPENCODE_SERVER_PASSWORD 由 setup 脚本注入，模板里放占位符 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OPENCODE_SERVER_USERNAME</key>
+        <string>opencode</string>
+        <key>OPENCODE_SERVER_PASSWORD</key>
+        <string>CHANGE_ME</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/rockymary</string>
+    </dict>
+
+    <!-- RunAtLoad: 加载时立即启动 -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- KeepAlive: 崩溃自动重启 -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/rockymary/Library/Logs/opencode-serve.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/rockymary/Library/Logs/opencode-serve.err</string>
+</dict>
+</plist>

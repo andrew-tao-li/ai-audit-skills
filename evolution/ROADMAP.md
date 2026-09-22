@@ -75,10 +75,11 @@ Layer 4 (自适应): 跨 skill 协同 + 自我优化 ← 长期
 
 ### 任务清单
 
-- [ ] **2.1 OpenCode web server**（1-2 天）
-  - [ ] 在 Mac mini 后台跑 `opencode serve`
-  - [ ] 设置 `OPENCODE_SERVER_PASSWORD`
-  - [ ] 用户通过浏览器访问 `http://macmini.local:4096`
+- [x] **2.1 OpenCode web server**（1-2 天）✅ 2026-09-22
+  - [x] 在 Mac mini 后台跑 `opencode serve`（launchd 常驻，`com.opencode.web`，端口 4096）
+  - [x] 设置 `OPENCODE_SERVER_PASSWORD`（basic auth，用户名 opencode）
+  - [x] 用户通过浏览器访问（Tailscale `100.118.163.58:4096` / 局域网 `192.168.100.147:4096`）
+  - [x] 落地脚本：`scripts/setup-opencode-web.sh` + 模板 `evolution/com.opencode.web.plist`
 
 - [ ] **2.2 半自动 apply 命令**（1 周）
   - [ ] OpenCode 接受 "应用 proposal #N" 指令
