@@ -87,10 +87,10 @@ Layer 4 (自适应): 跨 skill 协同 + 自我优化 ← 长期
   - [ ] 用户输入 y/n 决定
   - [ ] AI 应用 patch + 跑测试 + git commit
 
-- [ ] **2.3 A/B 测试保护**（3 天）
-  - [ ] 每次改动必须保持 F1 不退步
-  - [ ] 如果退步 → 自动回滚
-  - [ ] 在 state.json 记录每次改动的 before/after 分数
+- [x] **2.3 A/B 测试保护**（已完成 2026-09-22）
+  - [x] 每次改动必须保持 F1 不退步（`evolution/guardrail.py`）
+  - [x] 如果退步 → 自动回滚（`guardrail.py verify --rollback`，只回滚 skills-v2/skills 代码）
+  - [x] 在 state.json 记录每次改动的 before/after 分数（`guardrail_history`）
 
 - [ ] **2.4 半自动 fixture 生成**（1 周）
   - [ ] LLM 生成 N 个候选 fixture

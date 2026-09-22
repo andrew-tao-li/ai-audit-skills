@@ -101,9 +101,10 @@
   │  ✅ LLM 调用         call_llm.py (直接 curl MiniMax)             │
   │  ✅ 端到端跑通       test → score → LLM → proposal 全跑通        │
   │  ✅ 通知机制         企业微信 Webhook（notify.sh 已修复）        │
-  │  ✅ 健康检查         ping MiniMax API + 状态写入 state.json     │
+  │  ✅ 健康检查         ping MiniMax/DeepSeek + 状态写入 state.json │
   │  ✅ launchd 部署     每天 9:00 自动跑（已迁出 ~/Documents）      │
   │  ✅ GitHub 公开仓库   andrew-tao-li/ai-audit-skills 已推        │
+  │  ✅ A/B 护栏         guardrail.py（退步检测 + 自动回滚）        │
   └──────────────────────────────────────────────────────────────────┘
 
   ┌─ 待做 (❌) ────────────────────────────────────────────────────┐

@@ -46,15 +46,25 @@ def git(args, check=True):
 
 
 def run_tests():
-    """跑一遍黑盒测试，返回最新 log 的 JSON（summary + results）。"""
+    """跑一遍黑盒测试，返回最新 log 的 JSON；护栏自建的 log 读完后即清理，避免污染 evolution/log。"""
+    before = set(LOG_DIR.glob(f"*-test-{VERSION}.json"))
     subprocess.run(
         ["python3", "evals/blackbox/score_blackbox.py", "--version", VERSION],
         cwd=ROOT, capture_output=True, text=True,
     )
-    logs = sorted(LOG_DIR.glob(f"*-test-{VERSION}.json"))
-    if not logs:
+    after = set(LOG_DIR.glob(f"*-test-{VERSION}.json"))
+    new_logs = sorted(after - before)
+    if not new_logs:
+        new_logs = sorted(after)[-1:]  # 兜底：取最新
+    if not new_logs:
         raise SystemExit("ERROR: 未找到评分日志，先确保 score_blackbox.py 能正常产出 log")
-    return json.loads(logs[-1].read_text(encoding="utf-8"))
+    data = json.loads(new_logs[-1].read_text(encoding="utf-8"))
+    for f in new_logs:
+        try:
+            f.unlink()
+        except OSError:
+            pass
+    return data
 
 
 def fixture_map(log):
