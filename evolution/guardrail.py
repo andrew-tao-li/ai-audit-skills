@@ -6,6 +6,7 @@ A/B 测试护栏（L2.3）：改动前快照分数，改动后跑测试对比，
     python3 evolution/guardrail.py baseline            # 快照当前 git HEAD + 分数
     python3 evolution/guardrail.py verify              # 跑测试对比；退步则退出码 1（不修改任何东西）
     python3 evolution/guardrail.py verify --rollback   # 退步时自动回滚到 baseline 的 git HEAD
+    python3 evolution/guardrail.py apply -m "fix: ..." # 半自动 apply：通过则 commit，退步则自动回滚
 
 语义：
     - baseline：跑一遍黑盒测试，把「git HEAD + 每 skill 的 F1/P/R + 每个 fixture 的结果」存到
@@ -13,9 +14,9 @@ A/B 测试护栏（L2.3）：改动前快照分数，改动后跑测试对比，
     - verify：再跑一遍测试，与 baseline 逐 skill 对比 F1：
         * 任何一个 skill 的 F1 下降（超过 1e-6）即判为「退步」（regression）。
         * 默认只报告、退出码 1，不碰代码。
-        * --rollback 时：确认 baseline 的 git HEAD 是当前 HEAD 的祖先后，执行
-          `git reset --hard <baseline_head>` 丢弃改动，并重跑测试确认分数回到 baseline。
-    - 无论退步与否，都会把 before/after 分数记进 evolution/state.json 的 guardrail_history。
+        * --rollback 时：把 skills-v2/skills 代码恢复到 baseline 的 git HEAD，并重跑测试确认。
+    - apply：跑测试对比；通过则 `git add skills-v2 skills` + `git commit`；退步则自动回滚，不提交。
+    - 无论结果如何，都会把 before/after 分数记进 evolution/state.json 的 guardrail_history。
 
 设计约束（对应 docs 的 Pareto 改进理念）：
     改动必须「不牺牲原有优点 + 让能力更强」——所以任何 skill 的 F1 都不允许退步。
@@ -145,6 +146,31 @@ def compare(before, after):
     return rows, regressed
 
 
+def print_report(rows):
+    print("\n===== A/B 对比 =====")
+    for r in rows:
+        print(f"  {r['skill']:15s} F1 {r['before_f1']:.4f} → {r['after_f1']:.4f} "
+              f"({r['delta']:+.4f})  [{r['status']}]")
+        if "broken_fixtures" in r:
+            print(f"      破坏的 fixture: {r['broken_fixtures']}")
+        if "fixed_fixtures" in r:
+            print(f"      修复的 fixture: {r['fixed_fixtures']}")
+
+
+def rollback_to_baseline(before):
+    """把 skills-v2/skills 代码恢复到基线，返回回滚后的快照。不动 HEAD、不动数据文件。"""
+    head = git(["rev-parse", "HEAD"]).stdout.strip()
+    base_head = before["git_head"]
+    print(f"  回滚范围：skills-v2 skills（基线 {base_head[:12]}）")
+    print("  → git checkout <baseline> -- skills-v2 skills")
+    git(["checkout", base_head, "--", "skills-v2", "skills"])
+    if base_head != head:
+        print(f"  注：代码已恢复到基线，但 HEAD 仍在 {head[:8]}；"
+              f"如需彻底丢弃其上提交：git reset --hard {base_head[:12]}")
+    print("  → 重跑测试确认…")
+    return snapshot(run_tests())
+
+
 def record_state(before, after, verdict, rolled_back=False):
     """把 before/after 记录进 state.json 的 guardrail_history。"""
     if not STATE_FILE.exists():
@@ -194,15 +220,7 @@ def cmd_verify(rollback=False):
     after = snapshot(run_tests())
 
     rows, regressed = compare(before, after)
-
-    print("\n===== A/B 对比 =====")
-    for r in rows:
-        print(f"  {r['skill']:15s} F1 {r['before_f1']:.4f} → {r['after_f1']:.4f} "
-              f"({r['delta']:+.4f})  [{r['status']}]")
-        if "broken_fixtures" in r:
-            print(f"      破坏的 fixture: {r['broken_fixtures']}")
-        if "fixed_fixtures" in r:
-            print(f"      修复的 fixture: {r['fixed_fixtures']}")
+    print_report(rows)
 
     if not regressed:
         print("\n✓ PASS：无任何 skill 的 F1 退步。")
@@ -216,18 +234,8 @@ def cmd_verify(rollback=False):
         record_state(before, after, "regressed")
         return 1
 
-    # 回滚：只把「技能代码目录」恢复到基线，不动 HEAD，也不动 state.json / log / proposals 等数据
-    #（避免 reset --hard 把护栏自己的审计轨迹也一并抹掉）
-    head = git(["rev-parse", "HEAD"]).stdout.strip()
-    base_head = before["git_head"]
-    print(f"  回滚范围：skills-v2 skills（基线 {base_head[:12]}）")
-    print("  → git checkout <baseline> -- skills-v2 skills")
-    git(["checkout", base_head, "--", "skills-v2", "skills"])
-    if base_head != head:
-        print(f"  注：代码已恢复到基线，但 HEAD 仍在 {head[:8]}；"
-              f"如需彻底丢弃其上提交：git reset --hard {base_head[:12]}")
-    print("  → 重跑测试确认…")
-    after_rollback = snapshot(run_tests())
+    # 回滚
+    after_rollback = rollback_to_baseline(before)
     rows2, regressed2 = compare(before, after_rollback)
     if regressed2:
         print("  ✗ 回滚后仍未恢复到基线分数，请人工检查。")
@@ -238,13 +246,55 @@ def cmd_verify(rollback=False):
     return 0
 
 
+def cmd_apply(message):
+    """半自动 apply：跑测试对比基线；通过则 git commit，退步则自动回滚。"""
+    if not BASELINE_FILE.exists():
+        raise SystemExit("ERROR: 无基线。请先运行 `python3 evolution/guardrail.py baseline`")
+    before = json.loads(BASELINE_FILE.read_text(encoding="utf-8"))
+
+    print("▶ 跑测试以验证改动…")
+    after = snapshot(run_tests())
+    rows, regressed = compare(before, after)
+    print_report(rows)
+
+    if regressed:
+        print("\n✗ 退步，自动回滚（不提交）…")
+        after_rollback = rollback_to_baseline(before)
+        _, still_regressed = compare(before, after_rollback)
+        if still_regressed:
+            print("  ✗ 回滚后仍未恢复到基线分数，请人工检查。")
+            record_state(before, after_rollback, "rollback_failed", rolled_back=True)
+            return 1
+        print("  ✓ 已回滚，分数恢复到基线。")
+        record_state(before, after_rollback, "rollback", rolled_back=True)
+        return 1
+
+    # 通过 → 提交
+    print("\n✓ 通过，准备提交 skills-v2/skills …")
+    staged = git(["add", "skills-v2", "skills"])
+    if git(["diff", "--cached", "--quiet"], check=False).returncode == 0:
+        print("  ⚠ 没有可提交的改动（skills-v2/skills 无变化），跳过 commit。")
+        record_state(before, after, "applied_no_change")
+        return 0
+    stat = git(["diff", "--cached", "--stat"], check=False).stdout.strip()
+    print(stat)
+    msg = message or f"auto: apply fix ({len(rows)} skills checked)"
+    git(["commit", "-m", msg])
+    print(f"  ✓ 已提交: {msg}")
+    record_state(before, after, "applied")
+    return 0
+
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("command", choices=["baseline", "verify"])
+    p.add_argument("command", choices=["baseline", "verify", "apply"])
     p.add_argument("--rollback", action="store_true", help="verify 检测到退步时自动回滚")
+    p.add_argument("--message", "-m", default=None, help="apply 时的 commit message")
     args = p.parse_args()
     if args.command == "baseline":
         sys.exit(cmd_baseline())
+    if args.command == "apply":
+        sys.exit(cmd_apply(args.message))
     sys.exit(cmd_verify(rollback=args.rollback))
 
 
