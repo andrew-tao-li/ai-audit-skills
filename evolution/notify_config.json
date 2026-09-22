@@ -1,0 +1,5 @@
+{
+  "wecom_webhook": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=43f72564-a512-47ca-8b52-4a18fc8b4978",
+  "enabled": true,
+  "created_at": "2026-09-22T01:24:15Z"
+}
