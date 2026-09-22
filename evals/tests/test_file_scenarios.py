@@ -10,9 +10,9 @@ from pathlib import Path
 
 PACK_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = PACK_ROOT / "evals" / "fixtures"
-EXPENSE_SCRIPT = PACK_ROOT / "skills" / "expense-audit" / "scripts" / "run_expense_audit.py"
-PROCUREMENT_SCRIPT = PACK_ROOT / "skills" / "procurement-fraud" / "scripts" / "run_procurement_audit.py"
-INVESTIGATION_SCRIPT = PACK_ROOT / "skills" / "investigation-assistant" / "scripts" / "build_case_workspace.py"
+EXPENSE_SCRIPT = PACK_ROOT / "skills-v2" / "expense-audit-v2" / "scripts" / "run_expense_audit.py"
+PROCUREMENT_SCRIPT = PACK_ROOT / "skills-v2" / "procurement-fraud-v2" / "scripts" / "run_procurement_audit.py"
+INVESTIGATION_SCRIPT = PACK_ROOT / "skills-v2" / "investigation-assistant-v2" / "scripts" / "build_case_workspace.py"
 
 
 def read_csv(path):

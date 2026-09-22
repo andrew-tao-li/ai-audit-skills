@@ -25,18 +25,18 @@ class TriggerEvalHarnessTest(unittest.TestCase):
                 rows = list(csv.DictReader(handle))
             self.assertEqual(len(rows), 120)
             counts = Counter((row["skill"], row["expected_trigger"]) for row in rows)
-            for skill in ("expense-audit", "procurement-fraud", "investigation-assistant"):
+            for skill in ("expense-audit-v2", "procurement-fraud-v2", "investigation-assistant-v2"):
                 self.assertEqual(counts[(skill, "true")], 20)
                 self.assertEqual(counts[(skill, "false")], 20)
             self.assertTrue(all(row["observed_skill"] == "" for row in rows))
 
     def test_score_excludes_blanks_and_builds_confusion_matrix(self):
         rows = [
-            ["T1", "expense-audit", "true", "p1", "Codex", "test", "expense-audit", "true", "true", "true", ""],
-            ["T2", "expense-audit", "false", "p2", "Codex", "test", "none", "false", "false", "true", ""],
-            ["T3", "procurement-fraud", "true", "p3", "Codex", "test", "none", "false", "false", "true", ""],
-            ["T4", "procurement-fraud", "false", "p4", "Codex", "test", "procurement-fraud", "true", "false", "true", ""],
-            ["T5", "investigation-assistant", "true", "p5", "Codex", "test", "", "", "", "", ""],
+            ["T1", "expense-audit-v2", "true", "p1", "Codex", "test", "expense-audit-v2", "true", "true", "true", ""],
+            ["T2", "expense-audit-v2", "false", "p2", "Codex", "test", "none", "false", "false", "true", ""],
+            ["T3", "procurement-fraud-v2", "true", "p3", "Codex", "test", "none", "false", "false", "true", ""],
+            ["T4", "procurement-fraud-v2", "false", "p4", "Codex", "test", "procurement-fraud-v2", "true", "false", "true", ""],
+            ["T5", "investigation-assistant-v2", "true", "p5", "Codex", "test", "", "", "", "", ""],
         ]
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "results.csv"
@@ -52,8 +52,8 @@ class TriggerEvalHarnessTest(unittest.TestCase):
             result = json.loads(completed.stdout)
             self.assertEqual(result["tested_rows"], 4)
             self.assertEqual(result["incomplete_rows"], 1)
-            self.assertEqual(result["per_skill"]["expense-audit"]["accuracy"], 1.0)
-            self.assertEqual(result["per_skill"]["procurement-fraud"]["accuracy"], 0.0)
+            self.assertEqual(result["per_skill"]["expense-audit-v2"]["accuracy"], 1.0)
+            self.assertEqual(result["per_skill"]["procurement-fraud-v2"]["accuracy"], 0.0)
             self.assertFalse(result["complete"])
 
 

@@ -14,8 +14,8 @@ A/B 测试护栏（L2.3）：改动前快照分数，改动后跑测试对比，
     - verify：再跑一遍测试，与 baseline 逐 skill 对比 F1：
         * 任何一个 skill 的 F1 下降（超过 1e-6）即判为「退步」（regression）。
         * 默认只报告、退出码 1，不碰代码。
-        * --rollback 时：把 skills-v2/skills 代码恢复到 baseline 的 git HEAD，并重跑测试确认。
-    - apply：跑测试对比；通过则 `git add skills-v2 skills` + `git commit`；退步则自动回滚，不提交。
+        * --rollback 时：把 skills-v2 代码恢复到 baseline 的 git HEAD，并重跑测试确认。
+    - apply：跑测试对比；通过则 `git add skills-v2` + `git commit`；退步则自动回滚，不提交。
     - 无论结果如何，都会把 before/after 分数记进 evolution/state.json 的 guardrail_history。
 
 设计约束（对应 docs 的 Pareto 改进理念）：
@@ -158,12 +158,12 @@ def print_report(rows):
 
 
 def rollback_to_baseline(before):
-    """把 skills-v2/skills 代码恢复到基线，返回回滚后的快照。不动 HEAD、不动数据文件。"""
+    """把 skills-v2 代码恢复到基线，返回回滚后的快照。不动 HEAD、不动数据文件。"""
     head = git(["rev-parse", "HEAD"]).stdout.strip()
     base_head = before["git_head"]
-    print(f"  回滚范围：skills-v2 skills（基线 {base_head[:12]}）")
-    print("  → git checkout <baseline> -- skills-v2 skills")
-    git(["checkout", base_head, "--", "skills-v2", "skills"])
+    print(f"  回滚范围：skills-v2（基线 {base_head[:12]}）")
+    print("  → git checkout <baseline> -- skills-v2")
+    git(["checkout", base_head, "--", "skills-v2"])
     if base_head != head:
         print(f"  注：代码已恢复到基线，但 HEAD 仍在 {head[:8]}；"
               f"如需彻底丢弃其上提交：git reset --hard {base_head[:12]}")
@@ -270,10 +270,10 @@ def cmd_apply(message):
         return 1
 
     # 通过 → 提交
-    print("\n✓ 通过，准备提交 skills-v2/skills …")
-    staged = git(["add", "skills-v2", "skills"])
+    print("\n✓ 通过，准备提交 skills-v2 …")
+    staged = git(["add", "skills-v2"])
     if git(["diff", "--cached", "--quiet"], check=False).returncode == 0:
-        print("  ⚠ 没有可提交的改动（skills-v2/skills 无变化），跳过 commit。")
+        print("  ⚠ 没有可提交的改动（skills-v2 无变化），跳过 commit。")
         record_state(before, after, "applied_no_change")
         return 0
     stat = git(["diff", "--cached", "--stat"], check=False).stdout.strip()

@@ -1,6 +1,0 @@
-interface:
-  display_name: "费用与报销审计"
-  short_description: "全量扫描费用与报销异常，生成可追溯证据和人工复核线索"
-  default_prompt: "Use $expense-audit to inspect my expense ledger and produce traceable findings for human review."
-policy:
-  allow_implicit_invocation: true

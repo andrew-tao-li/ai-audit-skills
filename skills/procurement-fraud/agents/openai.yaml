@@ -1,6 +1,0 @@
-interface:
-  display_name: "采购舞弊红旗识别"
-  short_description: "连接供应商、员工、采购、付款与标书，生成可追溯风险线索"
-  default_prompt: "Use $procurement-fraud to screen my procurement data and tender documents for traceable red flags."
-policy:
-  allow_implicit_invocation: true

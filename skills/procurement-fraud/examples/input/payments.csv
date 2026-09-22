@@ -1,3 +1,0 @@
-payment_id,po_id,vendor_id,amount,currency,payment_date,bank_account
-PAY-001,PO-009,V001,12000,CNY,2026-06-02,BA-001
-PAY-002,PO-010,V005,1000,CNY,2026-06-15,BA-005

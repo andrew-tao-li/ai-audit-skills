@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 PROMPTS = ROOT / "trigger-prompts.jsonl"
-SKILLS = {"expense-audit", "procurement-fraud", "investigation-assistant"}
+SKILLS = {"expense-audit-v2", "procurement-fraud-v2", "investigation-assistant-v2"}
 OBSERVED = SKILLS | {"none", "other"}
 FIELDS = (
     "case_id",

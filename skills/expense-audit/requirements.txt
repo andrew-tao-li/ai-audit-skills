@@ -1,2 +1,0 @@
-# CSV mode has no third-party dependency.
-openpyxl>=3.1,<4

@@ -1,6 +1,6 @@
 interface:
   display_name: "合规调查辅助"
   short_description: "把获授权案件材料整理为含保管链和时间线的可追溯调查工作空间"
-  default_prompt: "Use $investigation-assistant to organize these authorized case files into a traceable investigation workspace."
+  default_prompt: "Use $investigation-assistant-v2 to organize these authorized case files into a traceable investigation workspace."
 policy:
   allow_implicit_invocation: true

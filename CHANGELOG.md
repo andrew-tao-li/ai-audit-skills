@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.0 — 2026-09-22（canonical）
+
+- **v0.2.0 成为唯一 canonical 版本**：`skills-v2/` 取代 `skills/`，`dist-v2/` 取代 `dist/`。v0.1.x（`skills/`、`dist/`）已退役删除。
+- 三个 skill 命名为 `expense-audit-v2` / `procurement-fraud-v2` / `investigation-assistant-v2`。
+- 黑盒黄金测试集 F1 全部 100%（expense 16 / procurement 8 / investigation 3 fixture）。
+- 修完 11 个复合场景暴露的失败：校准 split-expense、robust-outlier、sequential-invoice、near-duplicate、split-order、price-outlier、process 流程检测器；补全 2 处 ground truth。
+- `opencode.json` 注册 `skills-v2/`；`validate_pack.py` 与 `trigger-prompts.jsonl` 同步到 v2 命名。
+
 ## Unreleased — 2026-09-17
 
 - 新增 6 个文件级正反向回归场景及 `expectations.json`，覆盖正常对照、坏行隔离、缺失可选表、范围过滤、只读证据副本和未授权拒绝。

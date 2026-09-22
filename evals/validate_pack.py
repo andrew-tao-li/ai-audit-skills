@@ -12,8 +12,8 @@ from pathlib import Path
 
 
 PACK_ROOT = Path(__file__).resolve().parents[1]
-SKILLS_ROOT = PACK_ROOT / "skills"
-EXPECTED_SKILLS = {"expense-audit", "procurement-fraud", "investigation-assistant"}
+SKILLS_ROOT = PACK_ROOT / "skills-v2"
+EXPECTED_SKILLS = {"expense-audit-v2", "procurement-fraud-v2", "investigation-assistant-v2"}
 NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 FORBIDDEN_IMPORTS = {
     "openai",

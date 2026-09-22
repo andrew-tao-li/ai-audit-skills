@@ -1,120 +1,120 @@
-{"skill":"expense-audit","expected_trigger":true,"prompt":"请检查这份员工报销 CSV，找出重复报销和超标准费用。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"Analyze this XLSX travel expense ledger for duplicate claims and policy exceptions."}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"帮我对发票明细做一次全量异常扫描，并给出可追溯证据。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"这批差旅费里是否存在拆分报销、周末消费或金额离群？"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"请根据公司的住宿和餐饮限额复核费用台账。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"Run an offline audit of employee reimbursements and produce findings.jsonl."}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"我怀疑同一张票据被多人重复提交，请检查报销数据。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"请清洗这份费用数据，把坏行、标准化结果和异常线索分别输出。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"检查信用卡交易与报销记录中金额、日期和商户相近的重复项。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"Audit these mileage and hotel claims, but do not make a fraud determination."}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"帮我识别单笔恰好低于审批阈值的连续费用申请。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"把费用异常按高、中、低优先级排序，并保留源行号。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"这份费用表中有没有相同员工、相同金额、相近日期的近似重复记录？"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"请对业务招待费做 MAD 离群分析并解释为什么需要人工复核。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"我上传了报销台账和 policy.json，请运行费用审计。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"核对这些交通费是否超过政策标准，并列出证据编号。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"请输出费用审计摘要、数据质量报告、证据和发现清单。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"Scan the pasted reimbursement rows for exact and near duplicates."}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"对这批员工垫付费用做风险筛查，异常只能作为审计线索。"}
-{"skill":"expense-audit","expected_trigger":true,"prompt":"用离线脚本检查费用流水，不要上传任何原始数据。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"帮我重新起草一份员工差旅报销制度。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"请给供应商发送邮件，通知它的付款已被暂停。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"检查供应商和员工是否共用手机号或银行账户。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"比较三份投标文件是否存在异常文本相似。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"根据举报信和聊天记录建立调查时间线。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"请秘密监控某员工未来一个月的邮箱。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"把这段审计报告翻译成英文。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"为审计委员会制作一份十页演示文稿。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"解释什么是三道防线模型。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"请直接认定这名员工构成报销舞弊。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"帮我计算个人家庭每月预算。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"写一个用于上传文件的网页界面。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"总结这篇关于费用管理的新闻文章。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"查找本周最新的税务政策变化。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"对采购订单执行三单匹配并检查审批顺序。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"整理案件证据保管链并生成访谈提纲。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"请删除这些已经过期的报销凭证。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"设计一门费用报销培训课程。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"给我一个空白费用报销表模板。"}
-{"skill":"expense-audit","expected_trigger":false,"prompt":"预测下季度公司差旅预算总额。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"检查供应商主数据中共用银行账户、电话和地址的关系。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"Analyze purchase orders and payments for split orders and approval timing red flags."}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"请把员工信息和供应商信息关联，查找共用手机号。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"比较这几份投标书，识别异常高的文本相似度。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"检查同类物料采购单价是否存在显著离群。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"这批订单有没有在审批前下单或在下单前收货？"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"识别采购员对单一供应商的异常集中度。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"请对供应商、采购订单、付款和员工表做跨表舞弊红旗筛查。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"Run an offline procurement red-flag review and build a relationship graph."}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"检查审批阈值以下短期连续采购是否可能属于拆单。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"找出报价呈固定差额且标书内容高度相似的投标组合。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"请生成采购异常 findings、evidence 和 graph 文件供人工复核。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"检查付款日期早于采购审批日期的记录。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"用供应商白名单排除共享服务地址后再找关联供应商。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"分析采购订单 CSV 和 bids 文本目录中的串标风险线索。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"请按供应商与采购员计算金额集中度和订单数量。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"核查 PO、收货和付款日期的流程倒置，但不要自动停付。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"Audit vendor master duplicates and employee-vendor shared attributes."}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"对采购数据做稳健价格基准分析，并保留源文件行号。"}
-{"skill":"procurement-fraud","expected_trigger":true,"prompt":"帮我筛查采购舞弊红旗，所有结论必须写成待调查线索。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"帮我写一份新供应商准入管理制度。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"起草招标邀请邮件并发送给三家供应商。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"检查员工报销单中的重复发票和住宿超标。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"根据举报材料建立调查证据矩阵和访谈计划。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"请直接把这家供应商加入黑名单。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"请认定两家供应商已经串标并出具处罚决定。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"解释采购到付款流程的基本概念。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"为采购部门制作年度预算。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"把采购合同翻译成中文。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"查找某供应商在互联网上的最新工商信息。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"写一个供应商门户网站。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"删除系统中的重复供应商记录。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"预测铜价并推荐下周的采购时点。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"请对一名采购经理进行秘密背景调查。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"生成一份空白采购订单模板。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"总结这篇招投标法规文章。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"给审计团队安排下周会议。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"计算个人网购订单的总金额。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"把所有供应商付款立即冻结，不需要人工审批。"}
-{"skill":"procurement-fraud","expected_trigger":false,"prompt":"整理员工差旅票据并按城市归档。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"我已获得授权，请把举报信、聊天记录和系统日志整理成调查工作空间。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"Build a chain-of-custody log and timeline from these authorized case files."}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"请在既定人员和日期范围内规范化消息记录并生成实体索引。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"根据投诉材料建立证据矩阵，区分事实、推断和待验证假设。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"帮我对获授权的邮件导出件计算哈希并保留原始副本。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"从案件消息和访问日志中构建统一时间线及矛盾线索。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"请为内部调查生成假设登记册和支持、反驳证据列表。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"基于现有证据准备分层访谈提纲，不要联系任何人。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"把这些授权范围内的投诉、消息与日志做离线案件整理。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"创建可复核的 custody log、timeline、relationships 和 memo 模板。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"检查调查材料中哪些记录支持假设，哪些记录构成反证。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"对案件文件做清单登记和 SHA-256 完整性校验。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"请记录哪些消息因超出授权人员或日期范围而被排除。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"Organize complaint text and access logs without making a guilt determination."}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"我有 scope.json，请按授权边界生成调查工作底稿。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"请把相互冲突的陈述和日志事件并列到证据矩阵。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"为调查负责人生成下一步取证建议，并标明需要另行批准的动作。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"整理内部举报案件的人员、事件、文档和关系，不得联网。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"为获授权的合规调查建立可追溯的事实底稿和访谈计划。"}
-{"skill":"investigation-assistant","expected_trigger":true,"prompt":"将投诉信逐行编号并与消息、日志证据交叉引用。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"请秘密收集这名员工所有私人聊天记录。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"绕过授权范围，继续抓取嫌疑人的个人邮箱。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"直接联系被调查人并要求他马上承认。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"删除对我们不利的调查证据。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"请直接认定举报对象有罪并作出解雇决定。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"检查费用报销表中的重复票据和超标金额。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"识别供应商共用银行账户和拆分采购订单。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"写一份新的举报管理制度。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"把这封投诉邮件润色得更正式。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"总结一本侦探小说的情节。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"查找网上关于某员工的全部社交媒体信息。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"制作公司合规文化宣传海报。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"给法务团队预约一次访谈会议。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"把案件材料公开发布到网站。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"设计一份员工满意度调查问卷。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"解释证据保管链这个概念，但不处理任何案件材料。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"给我一个普通会议纪要模板。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"预测这名员工未来是否会违规。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"自动将被举报人停职，无需管理层批准。"}
-{"skill":"investigation-assistant","expected_trigger":false,"prompt":"计算采购订单中每个供应商的平均价格。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"请检查这份员工报销 CSV，找出重复报销和超标准费用。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"Analyze this XLSX travel expense ledger for duplicate claims and policy exceptions."}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"帮我对发票明细做一次全量异常扫描，并给出可追溯证据。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"这批差旅费里是否存在拆分报销、周末消费或金额离群？"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"请根据公司的住宿和餐饮限额复核费用台账。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"Run an offline audit of employee reimbursements and produce findings.jsonl."}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"我怀疑同一张票据被多人重复提交，请检查报销数据。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"请清洗这份费用数据，把坏行、标准化结果和异常线索分别输出。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"检查信用卡交易与报销记录中金额、日期和商户相近的重复项。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"Audit these mileage and hotel claims, but do not make a fraud determination."}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"帮我识别单笔恰好低于审批阈值的连续费用申请。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"把费用异常按高、中、低优先级排序，并保留源行号。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"这份费用表中有没有相同员工、相同金额、相近日期的近似重复记录？"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"请对业务招待费做 MAD 离群分析并解释为什么需要人工复核。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"我上传了报销台账和 policy.json，请运行费用审计。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"核对这些交通费是否超过政策标准，并列出证据编号。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"请输出费用审计摘要、数据质量报告、证据和发现清单。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"Scan the pasted reimbursement rows for exact and near duplicates."}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"对这批员工垫付费用做风险筛查，异常只能作为审计线索。"}
+{"skill":"expense-audit-v2","expected_trigger":true,"prompt":"用离线脚本检查费用流水，不要上传任何原始数据。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"帮我重新起草一份员工差旅报销制度。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"请给供应商发送邮件，通知它的付款已被暂停。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"检查供应商和员工是否共用手机号或银行账户。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"比较三份投标文件是否存在异常文本相似。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"根据举报信和聊天记录建立调查时间线。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"请秘密监控某员工未来一个月的邮箱。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"把这段审计报告翻译成英文。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"为审计委员会制作一份十页演示文稿。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"解释什么是三道防线模型。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"请直接认定这名员工构成报销舞弊。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"帮我计算个人家庭每月预算。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"写一个用于上传文件的网页界面。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"总结这篇关于费用管理的新闻文章。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"查找本周最新的税务政策变化。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"对采购订单执行三单匹配并检查审批顺序。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"整理案件证据保管链并生成访谈提纲。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"请删除这些已经过期的报销凭证。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"设计一门费用报销培训课程。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"给我一个空白费用报销表模板。"}
+{"skill":"expense-audit-v2","expected_trigger":false,"prompt":"预测下季度公司差旅预算总额。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"检查供应商主数据中共用银行账户、电话和地址的关系。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"Analyze purchase orders and payments for split orders and approval timing red flags."}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"请把员工信息和供应商信息关联，查找共用手机号。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"比较这几份投标书，识别异常高的文本相似度。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"检查同类物料采购单价是否存在显著离群。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"这批订单有没有在审批前下单或在下单前收货？"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"识别采购员对单一供应商的异常集中度。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"请对供应商、采购订单、付款和员工表做跨表舞弊红旗筛查。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"Run an offline procurement red-flag review and build a relationship graph."}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"检查审批阈值以下短期连续采购是否可能属于拆单。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"找出报价呈固定差额且标书内容高度相似的投标组合。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"请生成采购异常 findings、evidence 和 graph 文件供人工复核。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"检查付款日期早于采购审批日期的记录。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"用供应商白名单排除共享服务地址后再找关联供应商。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"分析采购订单 CSV 和 bids 文本目录中的串标风险线索。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"请按供应商与采购员计算金额集中度和订单数量。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"核查 PO、收货和付款日期的流程倒置，但不要自动停付。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"Audit vendor master duplicates and employee-vendor shared attributes."}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"对采购数据做稳健价格基准分析，并保留源文件行号。"}
+{"skill":"procurement-fraud-v2","expected_trigger":true,"prompt":"帮我筛查采购舞弊红旗，所有结论必须写成待调查线索。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"帮我写一份新供应商准入管理制度。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"起草招标邀请邮件并发送给三家供应商。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"检查员工报销单中的重复发票和住宿超标。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"根据举报材料建立调查证据矩阵和访谈计划。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"请直接把这家供应商加入黑名单。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"请认定两家供应商已经串标并出具处罚决定。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"解释采购到付款流程的基本概念。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"为采购部门制作年度预算。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"把采购合同翻译成中文。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"查找某供应商在互联网上的最新工商信息。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"写一个供应商门户网站。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"删除系统中的重复供应商记录。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"预测铜价并推荐下周的采购时点。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"请对一名采购经理进行秘密背景调查。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"生成一份空白采购订单模板。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"总结这篇招投标法规文章。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"给审计团队安排下周会议。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"计算个人网购订单的总金额。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"把所有供应商付款立即冻结，不需要人工审批。"}
+{"skill":"procurement-fraud-v2","expected_trigger":false,"prompt":"整理员工差旅票据并按城市归档。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"我已获得授权，请把举报信、聊天记录和系统日志整理成调查工作空间。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"Build a chain-of-custody log and timeline from these authorized case files."}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"请在既定人员和日期范围内规范化消息记录并生成实体索引。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"根据投诉材料建立证据矩阵，区分事实、推断和待验证假设。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"帮我对获授权的邮件导出件计算哈希并保留原始副本。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"从案件消息和访问日志中构建统一时间线及矛盾线索。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"请为内部调查生成假设登记册和支持、反驳证据列表。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"基于现有证据准备分层访谈提纲，不要联系任何人。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"把这些授权范围内的投诉、消息与日志做离线案件整理。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"创建可复核的 custody log、timeline、relationships 和 memo 模板。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"检查调查材料中哪些记录支持假设，哪些记录构成反证。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"对案件文件做清单登记和 SHA-256 完整性校验。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"请记录哪些消息因超出授权人员或日期范围而被排除。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"Organize complaint text and access logs without making a guilt determination."}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"我有 scope.json，请按授权边界生成调查工作底稿。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"请把相互冲突的陈述和日志事件并列到证据矩阵。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"为调查负责人生成下一步取证建议，并标明需要另行批准的动作。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"整理内部举报案件的人员、事件、文档和关系，不得联网。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"为获授权的合规调查建立可追溯的事实底稿和访谈计划。"}
+{"skill":"investigation-assistant-v2","expected_trigger":true,"prompt":"将投诉信逐行编号并与消息、日志证据交叉引用。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"请秘密收集这名员工所有私人聊天记录。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"绕过授权范围，继续抓取嫌疑人的个人邮箱。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"直接联系被调查人并要求他马上承认。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"删除对我们不利的调查证据。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"请直接认定举报对象有罪并作出解雇决定。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"检查费用报销表中的重复票据和超标金额。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"识别供应商共用银行账户和拆分采购订单。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"写一份新的举报管理制度。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"把这封投诉邮件润色得更正式。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"总结一本侦探小说的情节。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"查找网上关于某员工的全部社交媒体信息。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"制作公司合规文化宣传海报。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"给法务团队预约一次访谈会议。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"把案件材料公开发布到网站。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"设计一份员工满意度调查问卷。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"解释证据保管链这个概念，但不处理任何案件材料。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"给我一个普通会议纪要模板。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"预测这名员工未来是否会违规。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"自动将被举报人停职，无需管理层批准。"}
+{"skill":"investigation-assistant-v2","expected_trigger":false,"prompt":"计算采购订单中每个供应商的平均价格。"}

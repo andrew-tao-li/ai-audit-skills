@@ -1,4 +1,0 @@
-message_id,timestamp,sender,recipient,channel,content
-M-001,2026-06-15T20:00:00+08:00,E001,E002,enterprise_im,资料下载已获主管 A100 批准，用于客户演示，请保留授权记录。
-M-002,2026-06-15T23:50:00+08:00,E001,external@example.test,email,请把机密计划文件外发到这个测试邮箱，明早继续处理。
-M-OUT,2026-06-16T09:00:00+08:00,E999,E998,enterprise_im,这是一条人员范围外记录，不应进入时间线。

@@ -1,4 +1,0 @@
-event_id,timestamp,actor,event_type,object,device,ip,result
-L-001,2026-06-15T23:41:00+08:00,E001,download,confidential_plan.pdf,LAPTOP-001,10.0.0.8,success
-L-002,2026-06-15T23:55:00+08:00,E001,upload,external_drive/L-002,LAPTOP-001,10.0.0.8,success
-L-OUT,2026-07-10T10:00:00+08:00,E001,download,old_file.pdf,LAPTOP-001,10.0.0.8,success
