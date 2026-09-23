@@ -194,7 +194,9 @@ def generate(domain: str, count: int, focus: str) -> str:
         try:
             text, provider = call_llm(prompt, provider="auto", max_tokens=4000, temperature=0.8)
             fx = parse_json(text)
-            fid = str(fx.get("id", f"cand-{n:02d}"))
+            # 强制用循环计数做唯一 id（LLM 返回的 id 可能重复，导致后写覆盖先写）
+            fid = f"cand-{n:02d}"
+            fx["id"] = fid
             fx_dir = out_dir / fid
             fx_dir.mkdir(parents=True, exist_ok=True)
             if domain == "expense":
