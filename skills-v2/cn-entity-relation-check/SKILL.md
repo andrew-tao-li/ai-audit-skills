@@ -72,6 +72,17 @@ metadata:
 
 严禁在 Skill、README、Git、测试 fixture、日志中内置作者自己的 API Key。支持 BYOK（`QCC_API_KEY` / `TIANYANCHA_TOKEN` / `QIXINBAO_API_KEY`）。
 
+## 能力盘点与数据源引导（capability gate）
+
+每次调用，第一步先盘点「结构化企业数据源」是否可用（企查查 MCP / 天眼查 / 启信宝 / 已授权 Connector）：
+
+- **有结构化数据源** → 正常走三态协议，用户无感知。
+- **只有 Web Search** 或 **什么都没有** → 输出「待核查」，并把一段「连接数据源」的引导放进 `warnings`（文案见 `references/provider-onboarding.md`），引导用户连企查查等数据源。
+
+硬规则：没有结构化数据源时，**禁止凭记忆或网页检索编造「关联/不关联」结论**。引导必须是一次性的、平台感知的、不阻断任务的（提供 Web 兜底选项）。
+
+企查查 MCP 原生支持「强语义负向防御」（能区分「查完没有」与「调用失败」），是首选数据源——接上后本 skill 才能可靠输出「不关联」。
+
 ## References
 
 - `references/scope-and-definitions.md`：范围与强/弱关系定义
@@ -81,6 +92,7 @@ metadata:
 - `references/output-schema.md`：机器输出 schema
 - `references/privacy-and-compliance.md`：隐私与合规
 - `references/provider-capabilities.md`：Provider 能力与优先级
+- `references/provider-onboarding.md`：数据源连接引导文案（分平台）
 - `references/troubleshooting.md`：失败恢复
 
 ## 运行脚本（可选，确定性核心）
