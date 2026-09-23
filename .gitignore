@@ -17,7 +17,8 @@ __pycache__/
 
 # 本地运行日志（launchd stdout/stderr 等，不入库）
 *.log
-evolution/log/notifications.log
+# 测试运行日志（score_blackbox.py / guardrail 每次跑都会生成 *.json 临时文件，不入库）
+evolution/log/
 
 # A/B 护栏的基线快照（临时工作文件，不入库；审计轨迹在 state.json 的 guardrail_history）
 evolution/guardrail/baseline.json
