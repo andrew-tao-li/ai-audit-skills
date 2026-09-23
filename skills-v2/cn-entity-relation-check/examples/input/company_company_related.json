@@ -1,0 +1,13 @@
+{
+  "capabilities": {"structured_company_data": true, "company_entity_resolution": true, "company_shareholders": true, "company_key_people": true, "shortest_path": false, "web_search": false},
+  "negative_semantics_supported": true,
+  "nodes": [
+    {"node_id": "A", "type": "company", "name": "上海甲科技有限公司", "canonical_id": "91310000MA1K3A000X"},
+    {"node_id": "B", "type": "company", "name": "上海乙科技有限公司", "canonical_id": "91310000MA1K3B000Y"},
+    {"node_id": "P1", "type": "person", "name": "张三", "canonical_id": "person-zhangsan-001"}
+  ],
+  "edges": [
+    {"from": "P1", "to": "A", "relation_type": "LEGAL_REP", "current": true, "source": "mock"},
+    {"from": "P1", "to": "B", "relation_type": "SHAREHOLDER", "holding_percent": 35.0, "current": true, "source": "mock"}
+  ]
+}

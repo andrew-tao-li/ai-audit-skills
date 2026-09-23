@@ -1,0 +1,26 @@
+{
+  "synthetic_data": true,
+  "examples": [
+    {
+      "id": "company_company_related",
+      "entities": ["上海甲科技有限公司", "上海乙科技有限公司"],
+      "evidence_file": "company_company_related.json",
+      "flags": {"entities_resolved": true, "structured_provider": true, "scope_complete": true},
+      "expected_status": "RELATED"
+    },
+    {
+      "id": "company_person_related",
+      "entities": ["上海甲科技有限公司", "张三"],
+      "evidence_file": "company_person_related.json",
+      "flags": {"entities_resolved": true, "structured_provider": true, "scope_complete": true},
+      "expected_status": "RELATED"
+    },
+    {
+      "id": "person_person_ambiguous",
+      "entities": ["张三", "李四"],
+      "evidence_file": "person_person_ambiguous.json",
+      "flags": {"entities_resolved": false, "person_ambiguous": true, "web_search_only": true},
+      "expected_status": "NEEDS_VERIFICATION"
+    }
+  ]
+}

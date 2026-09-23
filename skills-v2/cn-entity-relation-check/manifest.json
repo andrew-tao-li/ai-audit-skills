@@ -1,0 +1,15 @@
+{
+  "id": "cn-entity-relation-check",
+  "name": "关联排查",
+  "name_en": "Entity Relation Check",
+  "version": "0.1.0",
+  "description": "对两个主体（公司/自然人）核查中国公开工商信息中是否存在可验证关联，支持公司-公司、公司-自然人、自然人-自然人三类组合，输出关联/不关联/待核查三态结论，绝不把「没查到」当「不关联」。",
+  "author": "andrew-tao-li",
+  "homepage": "https://github.com/andrew-tao-li/ai-audit-skills",
+  "type": "script",
+  "runtime": "python",
+  "triggers": ["关联排查", "关联分析", "关系穿透", "共同股东", "共同高管", "实际控制", "最终受益人", "related party", "relationship screening", "shareholder overlap"],
+  "tags": ["审计", "尽调", "合规", "反舞弊", "工商"],
+  "license": "MIT-0",
+  "offline": true
+}

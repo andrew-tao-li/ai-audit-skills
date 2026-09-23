@@ -13,7 +13,7 @@ SCRIPT = ROOT / "run_trigger_eval.py"
 
 
 class TriggerEvalHarnessTest(unittest.TestCase):
-    def test_init_creates_balanced_120_case_sheet(self):
+    def test_init_creates_balanced_case_sheet(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "codex.csv"
             completed = subprocess.run(
@@ -23,9 +23,9 @@ class TriggerEvalHarnessTest(unittest.TestCase):
             self.assertEqual(completed.returncode, 0, completed.stderr)
             with output.open(encoding="utf-8-sig", newline="") as handle:
                 rows = list(csv.DictReader(handle))
-            self.assertEqual(len(rows), 120)
+            self.assertEqual(len(rows), 160)  # 4 技能 × 40
             counts = Counter((row["skill"], row["expected_trigger"]) for row in rows)
-            for skill in ("expense-audit-v2", "procurement-fraud-v2", "investigation-assistant-v2"):
+            for skill in ("expense-audit-v2", "procurement-fraud-v2", "investigation-assistant-v2", "cn-entity-relation-check"):
                 self.assertEqual(counts[(skill, "true")], 20)
                 self.assertEqual(counts[(skill, "false")], 20)
             self.assertTrue(all(row["observed_skill"] == "" for row in rows))

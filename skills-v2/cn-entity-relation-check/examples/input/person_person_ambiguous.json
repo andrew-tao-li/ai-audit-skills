@@ -1,0 +1,6 @@
+{
+  "capabilities": {"structured_company_data": false, "person_resolution": false, "web_search": true},
+  "negative_semantics_supported": false,
+  "nodes": [],
+  "edges": []
+}
