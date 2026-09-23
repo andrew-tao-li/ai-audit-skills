@@ -19,7 +19,7 @@
 set -e
 
 REPO="andrew-tao-li/ai-audit-skills"
-ALL_SKILLS=(expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2)
+ALL_SKILLS=(expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2 cn-entity-relation-check)
 
 # 是否显式指定了 PREFIX（用于头部标签显示 custom，避免误导）
 PREFIX_EXPLICIT=0

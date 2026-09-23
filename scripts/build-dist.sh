@@ -4,7 +4,7 @@ set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-SKILLS=(expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2)
+SKILLS=(expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2 cn-entity-relation-check)
 
 echo "▶ 重新打包 skills-v2 → dist-v2/zips/"
 rm -f dist-v2/zips/*.zip dist-v2/lobsterai/*.zip dist-v2/workbuddy/*.zip
