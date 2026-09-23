@@ -562,16 +562,16 @@ def add_process_findings(pos: List[Dict[str, Any]], payments: List[Dict[str, Any
                                 ["调取审批日志核实实际审批时间"], [{"factor": "order_approval_stale", "points": 1, "gap_days": gap_days}])
             else:
                 # forward（默认）：同日审批豁免；跨日才报但为弱信号
-                if same_day_grace and gap_days <= 1:
-                    continue  # 同日 + 1 天内豁免
-                builder.add("process-order-before-approval",
-                            "采购订单日期早于审批完成日期（跨日方报）" if same_day_grace else "采购订单日期早于审批完成日期",
-                            1, "weak", (po,),
-                            ("po_id", "order_date", "approval_date"),
-                            ["订单日期 %s 早于审批日期 %s，间隔 %d 天" % (order_date, approval_date, gap_days)],
-                            ["若非紧急采购授权，存在流程倒置嫌疑"], ["是否为紧急采购、口径差异或事后补录？"],
-                            ["调取审批日志和订单创建时间戳"],
-                            [{"factor": "order_before_approval", "points": 1, "gap_days": gap_days, "weak_signal": True}])
+                # 注意：不能用 continue——那会跳过下面同一 PO 的收货时序检查（receipt-before-order/approval）
+                if not (same_day_grace and gap_days <= 1):
+                    builder.add("process-order-before-approval",
+                                "采购订单日期早于审批完成日期（跨日方报）" if same_day_grace else "采购订单日期早于审批完成日期",
+                                1, "weak", (po,),
+                                ("po_id", "order_date", "approval_date"),
+                                ["订单日期 %s 早于审批日期 %s，间隔 %d 天" % (order_date, approval_date, gap_days)],
+                                ["若非紧急采购授权，存在流程倒置嫌疑"], ["是否为紧急采购、口径差异或事后补录？"],
+                                ["调取审批日志和订单创建时间戳"],
+                                [{"factor": "order_before_approval", "points": 1, "gap_days": gap_days, "weak_signal": True}])
         if receipt_date and order_date and receipt_date < order_date:
             builder.add("process-receipt-before-order", "收货日期早于采购订单日期", 2, "strong", (po,),
                         ("po_id", "receipt_date", "order_date"), ["收货日期 %s 早于订单日期 %s" % (receipt_date, order_date)],
@@ -754,7 +754,6 @@ def add_vendor_age_findings(vendors: List[Dict[str, Any]], pos: List[Dict[str, A
     for po in pos:
         po_by_vendor[po["vendor_id"]].append(po)
 
-    today = date.today()
     for vendor in vendors:
         vendor_id = vendor.get("vendor_id")
         created_at = vendor.get("created_at")
@@ -764,20 +763,25 @@ def add_vendor_age_findings(vendors: List[Dict[str, Any]], pos: List[Dict[str, A
             created_date = date.fromisoformat(created_at)
         except (ValueError, TypeError):
             continue
-        age_days = (today - created_date).days
-        if age_days > days_threshold:
-            continue
-        # 新供应商，找它的首笔大单
+        # 找该供应商的首笔订单
         vendor_pos = po_by_vendor.get(vendor_id, [])
         first_po = min(vendor_pos, key=lambda po: po.get("order_date", "9999-12-31"), default=None)
-        if first_po is None:
+        if first_po is None or not first_po.get("order_date"):
+            continue
+        try:
+            first_order_date = date.fromisoformat(first_po["order_date"])
+        except (ValueError, TypeError):
+            continue
+        # 新供应商 = 从「成立日期」到「首单日期」在阈值内（用数据自身时间轴，不用系统时钟，避免非确定性）
+        age_days = (first_order_date - created_date).days
+        if age_days < 0 or age_days > days_threshold:
             continue
         first_amount = first_po.get("total_amount", 0) or 0
         if first_amount < amount_threshold:
             continue
         builder.add("new-vendor-large-order", "新成立供应商短期内接大单", 3, "strong", (vendor, first_po),
                     ("vendor_id", "vendor_name", "created_at", "po_id", "total_amount", "order_date"),
-                    ["供应商 %s 成立于 %s（%d 天内），首单金额 %.2f 超过阈值 %.2f" % (
+                    ["供应商 %s 成立于 %s，%d 天后即接到首单金额 %.2f（超过阈值 %.2f）" % (
                         vendor_id, created_at, age_days, first_amount, amount_threshold)],
                     ["新供应商缺少合作历史，首单金额过大需重点关注"],
                     ["是否为关系户、走账或合规盲区？"],
