@@ -1,0 +1,8 @@
+{
+  "fixture_id": "auto_weekend_hotel",
+  "description": "周末酒店消费",
+  "expected_findings": [
+    "weekend-signal"
+  ],
+  "policy_overrides": {}
+}

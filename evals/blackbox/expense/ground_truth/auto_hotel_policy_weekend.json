@@ -1,0 +1,9 @@
+{
+  "fixture_id": "auto_hotel_policy_weekend",
+  "description": "酒店超限 + 周末复合场景",
+  "expected_findings": [
+    "policy-threshold",
+    "weekend-signal"
+  ],
+  "policy_overrides": {}
+}

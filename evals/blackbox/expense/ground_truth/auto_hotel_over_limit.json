@@ -1,0 +1,8 @@
+{
+  "fixture_id": "auto_hotel_over_limit",
+  "description": "多笔酒店费用超过制度上限",
+  "expected_findings": [
+    "policy-threshold"
+  ],
+  "policy_overrides": {}
+}

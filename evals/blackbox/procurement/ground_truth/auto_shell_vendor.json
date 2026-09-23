@@ -1,0 +1,11 @@
+{
+  "fixture_id": "auto_shell_vendor",
+  "description": "马甲供应商共享电话/地址 + 新供应商接大单",
+  "expected_findings": [
+    "shared-phone",
+    "shared-address",
+    "process-order-before-approval",
+    "new-vendor-large-order"
+  ],
+  "policy_overrides": {}
+}

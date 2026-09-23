@@ -1,0 +1,5 @@
+﻿expense_id,employee_id,expense_type,expense_date,submit_date,amount,currency,vendor_name,invoice_number,approver
+EXP-1401,EMP-2031,hotel,2026-03-12,2026-03-15,580.00,CNY,如家精选酒店苏州工业园店,H202603120871,MGR-LI-WEI
+EXP-1402,EMP-2031,hotel,2026-03-13,2026-03-15,560.00,CNY,如家精选酒店苏州工业园店,H202603130089,MGR-LI-WEI
+EXP-1403,EMP-2031,meal,2026-03-13,2026-03-15,95.00,CNY,兰州拉面吴中区店,MEAL-20260313-44,MGR-LI-WEI
+EXP-1404,EMP-2031,taxi,2026-03-14,2026-03-15,42.50,CNY,苏州工业园区出租,TX-20260314-991,MGR-LI-WEI

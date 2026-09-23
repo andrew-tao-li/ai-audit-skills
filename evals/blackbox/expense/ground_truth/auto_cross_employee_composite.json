@@ -1,0 +1,10 @@
+{
+  "fixture_id": "auto_cross_employee_composite",
+  "description": "跨员工复用发票 + 酒店超限 + 周末复合场景",
+  "expected_findings": [
+    "cross-employee-invoice",
+    "policy-threshold",
+    "weekend-signal"
+  ],
+  "policy_overrides": {}
+}

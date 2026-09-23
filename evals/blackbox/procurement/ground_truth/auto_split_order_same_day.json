@@ -1,0 +1,8 @@
+{
+  "fixture_id": "auto_split_order_same_day",
+  "description": "同供应商同日拆单",
+  "expected_findings": [
+    "split-order"
+  ],
+  "policy_overrides": {}
+}

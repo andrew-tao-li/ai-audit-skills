@@ -1,0 +1,8 @@
+{
+  "fixture_id": "auto_weekend_taxi",
+  "description": "周末出租车消费",
+  "expected_findings": [
+    "weekend-signal"
+  ],
+  "policy_overrides": {}
+}

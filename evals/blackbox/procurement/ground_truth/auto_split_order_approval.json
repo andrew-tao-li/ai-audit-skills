@@ -1,0 +1,9 @@
+{
+  "fixture_id": "auto_split_order_approval",
+  "description": "同日拆单 + 下单早于审批",
+  "expected_findings": [
+    "split-order",
+    "process-order-before-approval"
+  ],
+  "policy_overrides": {}
+}

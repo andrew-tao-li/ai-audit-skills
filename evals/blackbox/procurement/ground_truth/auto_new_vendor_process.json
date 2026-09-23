@@ -1,0 +1,12 @@
+{
+  "fixture_id": "auto_new_vendor_process",
+  "description": "新供应商接大单 + 流程倒置 + 采购员集中复合场景",
+  "expected_findings": [
+    "new-vendor-large-order",
+    "process-order-before-approval",
+    "process-receipt-before-order",
+    "process-receipt-before-approval",
+    "buyer-vendor-concentration"
+  ],
+  "policy_overrides": {}
+}

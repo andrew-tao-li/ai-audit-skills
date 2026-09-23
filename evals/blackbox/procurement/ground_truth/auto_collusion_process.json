@@ -1,0 +1,11 @@
+{
+  "fixture_id": "auto_collusion_process",
+  "description": "供应商共享账户 + 收货早于下单/审批 + 报价聚集复合场景",
+  "expected_findings": [
+    "shared-bank-account",
+    "process-receipt-before-order",
+    "process-receipt-before-approval",
+    "bid-price-subcluster"
+  ],
+  "policy_overrides": {}
+}
