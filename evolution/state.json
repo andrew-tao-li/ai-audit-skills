@@ -2,9 +2,10 @@
   "schema_version": "1.0",
   "current_version": "v0.2.0-baseline",
   "last_action": {
-    "type": "llm-analysis",
-    "timestamp": "2026-09-22T06:49:27Z",
-    "summary": "LLM analyzed 11 failures → evolution/proposals/2026-09-22T06:49:27Z-llm-analysis.md"
+    "type": "test",
+    "timestamp": "2026-09-23T01:00:04Z",
+    "run_by": "manual",
+    "summary": "precision=100% recall=100%"
   },
   "baseline_scores": {
     "expense": {
@@ -31,18 +32,18 @@
   },
   "latest_scores": {
     "expense": {
-      "tests": 15,
+      "tests": 16,
       "errors": 0,
-      "precision": 0.9089,
-      "recall": 0.9667,
-      "f1": 0.9304
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
     },
     "procurement": {
       "tests": 8,
       "errors": 0,
-      "precision": 0.9125,
-      "recall": 0.9125,
-      "f1": 0.9125
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
     },
     "investigation": {
       "tests": 3,
@@ -52,77 +53,10 @@
       "f1": 1.0
     }
   },
-  "open_failures": [
-    {
-      "skill": "expense",
-      "fixture": "complex_01_full_audit",
-      "type": "false_positive",
-      "detail": "split-expense"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_02_procurement_abuse",
-      "type": "false_positive",
-      "detail": "robust-outlier"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_02_procurement_abuse",
-      "type": "false_positive",
-      "detail": "sequential-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_02_procurement_abuse",
-      "type": "false_negative",
-      "detail": "near-duplicate"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_03_hr_falsified",
-      "type": "false_positive",
-      "detail": "exact-duplicate-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_03_hr_falsified",
-      "type": "false_positive",
-      "detail": "policy-threshold"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_03_hr_falsified",
-      "type": "false_positive",
-      "detail": "submit-before-expense"
-    },
-    {
-      "skill": "procurement",
-      "fixture": "complex_01_ma_carton",
-      "type": "false_positive",
-      "detail": "split-order"
-    },
-    {
-      "skill": "procurement",
-      "fixture": "complex_01_ma_carton",
-      "type": "false_negative",
-      "detail": "price-outlier"
-    },
-    {
-      "skill": "procurement",
-      "fixture": "complex_02_emergence",
-      "type": "false_positive",
-      "detail": "process-order-before-approval"
-    },
-    {
-      "skill": "procurement",
-      "fixture": "complex_02_emergence",
-      "type": "false_negative",
-      "detail": "process-receipt-before-approval"
-    }
-  ],
-  "iteration_count": 17,
+  "open_failures": [],
+  "iteration_count": 18,
   "created_at": "2026-09-20T23:57:00Z",
-  "last_modified": "2026-09-22T07:30:34Z",
+  "last_modified": "2026-09-23T01:00:04Z",
   "next_action": "run_baseline",
   "proposals": [
     {
@@ -178,7 +112,7 @@
     "status": "ok",
     "message": "MiniMax API 可达",
     "provider": "minimax",
-    "checked_at": "2026-09-22T06:49:27Z"
+    "checked_at": "2026-09-23T01:00:04Z"
   },
   "guardrail_history": [
     {
@@ -538,5 +472,6 @@
         }
       }
     }
-  ]
+  ],
+  "baseline_warning": "Baseline 100% 通过，但所有 fixture 都是'单 finding'设计。建议增加复合场景 fixture 来测试真正的业务复杂度。"
 }
