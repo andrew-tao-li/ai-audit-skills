@@ -12,6 +12,7 @@
 - **新增字段别名**：`origin_city`（出发城市）、`dest_city`（目的城市）。
 - **黄金测试集**：expense 22→25 fixture（新增 13/14/15 三个新规则回归用例），F1 保持 100%。
 - **外部盲测基准**：新增 `evals/blackbox/expense/auditor-scenario/`（行级覆盖率评分器），16/16 场景检出。
+- **业务实质性声明**：由审计师口头反馈驱动，在 `summary.md` 新增结构化「业务实质性声明」（数据匹配 ≠ 业务实质、未发现 ≠ 没问题、附深入核查佐证清单）；新增 `references/business-substance.md`；SKILL.md 补充原则并更新人工复核必查项表（频繁小额/跨期入账现标为已支持）。
 
 ## v0.2.0 — 2026-09-22（canonical）
 

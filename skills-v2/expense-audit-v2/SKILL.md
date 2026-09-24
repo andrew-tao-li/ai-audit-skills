@@ -38,6 +38,7 @@ metadata:
 3. 确定性规则和稳健统计先行；宿主 Agent 负责解释、补证问题和沟通草稿。
 4. 异常不等于舞弊。把事实、推断、假设和最终判断分开；本 skill 不形成最终判断。
 5. 金额阈值只能来自用户制度或配置。未提供制度时，明确跳过制度超标和基于审批阈值的拆单规则。
+6. **数据匹配 ≠ 业务实质**。本 skill 只验证「数据之间对得上」，不验证「业务真实发生」。未发现问题不等于没有问题；交付时必须在 `summary.md` 明确划清这条边界，并给出「补充佐证深入核查」的下一步（见 [references/business-substance.md](references/business-substance.md)）。
 
 ## Inputs and profile selection
 
@@ -121,13 +122,13 @@ python3 scripts/run_expense_audit.py \
 | 1 | 发票真伪（票面 OCR / 发票查验平台） | 必查 | 脚本无法验证发票真伪 |
 | 2 | 关联交易与利益冲突申报 | 必查 | 需要 HR/合规系统配合 |
 | 3 | 票据与原始凭证（合同、行程、签收单） | 必查 | 脚本不持有原始凭证 |
-| 4 | 报销与业务实质（是否真实发生） | 必查 | 脚本只能识别异常，无法判定真伪 |
+| 4 | 报销与业务实质（是否真实发生） | 必查 | 脚本只能识别异常，无法判定真伪；见 [业务实质性声明](references/business-substance.md) |
 | 5 | 关联方资金往来与回扣嫌疑 | 必查 | 需要银行流水等外部数据 |
 | 6 | 审批层级匹配（金额是否超出审批人权限） | 抽查 | v0.2.0 已支持 large_amount_threshold + low_level_approver_keywords 配置 |
-| 7 | 频繁小额累计（高频套现模式） | 抽查 | 当前未实现，建议审计师人工按月累计 |
+| 7 | 频繁小额累计（高频套现模式） | 抽查 | v0.2.1 已支持 high-frequency-small-amount（high_frequency_min_count 等配置） |
 | 8 | 月度预算执行率 | 抽查 | 需要预算系统数据 |
 | 9 | 跨部门代报销（销售帮研发报销） | 抽查 | 需要结合组织架构判断 |
-| 10 | 跨期入账（费用期间与报销期间不一致） | 抽查 | 财务关账规则，需结合制度 |
+| 10 | 跨期入账（费用期间与报销期间不一致） | 抽查 | v0.2.1 已支持 cross-period（cross_period_months 配置） |
 
 > 上表中的"必查"项**必须**由人工在脚本结果之上独立验证；"抽查"项可作为扩展审计清单。
 
@@ -136,3 +137,4 @@ python3 scripts/run_expense_audit.py \
 - 字段映射与质量门槛：[references/data-contract.md](references/data-contract.md)
 - 规则、参数与合理解释：[references/rule-catalog.md](references/rule-catalog.md)
 - 输出 Schema 与 Agent 解读顺序：[references/output-contract.md](references/output-contract.md)
+- 业务实质性声明与深入核查佐证清单：[references/business-substance.md](references/business-substance.md)
