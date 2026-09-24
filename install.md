@@ -33,7 +33,7 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 ```
 
 脚本会自动：
-- 去 GitHub 查「最新 tag」下载最新版（**不写死 v0.2.0，永远最新版**）
+- 去 GitHub 查「最新 tag」下载最新版（**不写死版本号，永远最新版**）
 - 自动检测 Agent 类型（OpenCode / WorkBuddy / LobsterAI），装到对应 `skills/` 目录
 - 装完报告装到哪、装了哪些
 - 打错字会立刻报错，不会静默失败
@@ -80,7 +80,7 @@ curl ... | PREFIX=~/.my-custom-path bash
 
 默认装最新。如果想钉死某个版本：
 ```
-VERSION=v0.3.0 curl ... | bash -s -- expense-audit-v2
+VERSION=v0.3.1 curl ... | bash -s -- expense-audit-v2
 ```
 
 ### 验证（手动跑一次 example）
@@ -116,10 +116,10 @@ rm -rf ~/.config/opencode/skills/expense-audit-v2
 
 ### ZIP 直链（不走 install.sh，手动下载/检查用）
 
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.0/expense-audit-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.0/procurement-fraud-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.0/investigation-assistant-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.0/cn-entity-relation-check.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.1/expense-audit-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.1/procurement-fraud-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.1/investigation-assistant-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.1/cn-entity-relation-check.zip>
 
 最新版永远在 <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest>。
 

@@ -1,4 +1,4 @@
-# investigation-assistant v0.1.2
+# investigation-assistant v0.2.1
 
 此 skill 在明确授权和范围后，把 CSV/TXT/MD 调查材料整理成可追溯工作空间。它先登记和 hash，再复制 raw，之后生成时间线、实体、关系、证据矩阵、假设与反证、访谈计划和 memo 模板。
 

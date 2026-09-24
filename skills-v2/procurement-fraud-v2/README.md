@@ -1,4 +1,4 @@
-# procurement-fraud v0.1.1
+# procurement-fraud v0.2.1
 
 这是采购舞弊红旗筛查 skill，不是自动定性工具。它能在离线环境中连接供应商、员工、采购、付款和投标文本，输出多模块 finding、evidence、关系图和需要人工批准的调查移交建议。
 
