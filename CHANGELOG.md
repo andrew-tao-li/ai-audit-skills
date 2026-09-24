@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.3 — 2026-09-24（expense-audit-v2）
+
+- **修复匿名反馈不触发**：反馈邀请从「SKILL.md 可选软指令」改为「确定性产物」——`summary.md` 末尾新增反馈邀请段 + 脚本 stderr 打印反馈提示 + SKILL.md 改为「交付结果时必须呈现」。
+
 ## v0.2.2 — 2026-09-24（expense-audit-v2）
 
 - **版本检查与一键更新**：`VERSION` / `VERSIONS.json` 版本清单 + SKILL.md 指引（宿主 Agent 可选检查版本，有新版询问用户是否更新）；`install.sh --check` 手动检查。

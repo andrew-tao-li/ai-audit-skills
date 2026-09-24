@@ -2,7 +2,7 @@
   "id": "expense-audit-v2",
   "name": "费用审计",
   "name_en": "Expense Audit",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "清洗、体检和审计员工费用、报销、发票与差旅台账，识别重复报销、制度例外、拆分报销、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等异常，输出可追溯的 findings 与证据。",
   "author": "andrew-tao-li",
   "homepage": "https://github.com/andrew-tao-li/ai-audit-skills",

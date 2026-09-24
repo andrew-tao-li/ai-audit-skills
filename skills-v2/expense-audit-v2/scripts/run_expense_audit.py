@@ -17,7 +17,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -997,7 +997,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "3. 周末信号单独保持低优先级，主动寻找值班、出差和客户现场等合理解释。", "",
         "## 输出文件", "",
         "**审计结论（给人看）**：summary.md、findings.csv、findings.jsonl", "",
-        "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、clean_expenses.csv、bad_rows.csv、evidence.jsonl",
+        "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、clean_expenses.csv、bad_rows.csv、evidence.jsonl", "",
+        "## 匿名反馈（可选）", "",
+        "本次运行可生成匿名反馈（仅 findings 数、类型计数、风险分布等非敏感统计，不含员工/供应商/发票号/金额）。如愿意帮助改进本工具，请告知 AI「反馈」。",
     ]
     (output / "summary.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
 
@@ -1019,6 +1021,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     }
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
+    print("（可选）如愿意匿名反馈本次运行统计帮助改进本工具，请回复「反馈」。", file=sys.stderr)
     return 0
 
 
