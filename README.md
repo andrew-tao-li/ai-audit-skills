@@ -1,12 +1,13 @@
 # AI Audit Skill Pack
 
-一组可独立安装、默认离线、结果可追溯的审计 Agent Skills（v0.2.0，canonical 版本）：
+一组可独立安装、默认离线、结果可追溯的审计 Agent Skills（v0.3.0）：
 
 - `expense-audit-v2`：费用、报销与发票异常全量扫描。
 - `procurement-fraud-v2`：采购舞弊红旗、供应商关系、价格、拆单、流程和标书相似度筛查。
 - `investigation-assistant-v2`：把举报、邮件、消息和日志整理成证据清单、时间线与调查工作空间。
+- `cn-entity-relation-check`：核查两个公司/自然人的中国公开工商关联，输出关联/不关联/待核查。
 
-三个 skill 都遵循同一原则：确定性计算先行；事实、推断和假设分开；异常只用于确定复核优先级；正式 finding 必须能回到证据；最终认定由有权人员完成。
+四个 skill 都遵循同一原则：确定性计算先行；事实、推断和假设分开；异常只用于确定复核优先级；正式 finding 必须能回到证据；最终认定由有权人员完成。
 
 关键取舍及其理由见 [docs/design-decisions.md](docs/design-decisions.md)，安全与权限边界见 [docs/security-model.md](docs/security-model.md)。
 
@@ -73,7 +74,7 @@ python3 evals/run_trigger_eval.py score \
 curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash -s -- expense-audit-v2
 ```
 
-只装一个就把 `expense-audit-v2` 换成你要的（`procurement-fraud-v2` / `investigation-assistant-v2`）；不带参数就是装全部 3 个。脚本会自动取 GitHub 最新版、检测 Agent 类型、装到对应 skills 目录。详见 [install.md](install.md)。
+只装一个就把 `expense-audit-v2` 换成你要的（`procurement-fraud-v2` / `investigation-assistant-v2` / `cn-entity-relation-check`）；不带参数就是装全部 4 个。脚本会自动取 GitHub 最新版、检测 Agent 类型、装到对应 skills 目录。详见 [install.md](install.md)。
 
 **② 平台原生导入（WorkBuddy / 有道龙虾推荐，不弹沙箱）**
 
@@ -92,7 +93,7 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 
 ```text
 ai-audit-skills/
-├── skills-v2/              三个独立 skill（v0.2.0 canonical）
+├── skills-v2/              四个独立 skill（v0.3.0）
 ├── docs/                   公共数据协议与方法边界
 ├── adapters/               各 Agent 的安装说明
 ├── dist-v2/                按 skill 分开的 ZIP 快照

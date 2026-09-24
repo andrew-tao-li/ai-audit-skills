@@ -16,9 +16,9 @@
 | 调查助手 / 内部调查 | `investigation-assistant-v2` | 举报、邮件、消息和日志整理为可追溯调查工作空间 |
 | 关联排查 / 关联分析 | `cn-entity-relation-check` | 核查两个公司/自然人的中国公开工商关联，输出关联/不关联/待核查 |
 
-> **默认行为（开关 = 单装）**：表里列全部 3 个，**只是为了让 agent 把中文友好名映射到 skill-id**。**不要**因为表里有 3 个就主动推荐用户顺便把其他两个也装了。用户问装哪一个，就只装哪一个。
+> **默认行为（开关 = 单装）**：表里列全部 4 个，**只是为了让 agent 把中文友好名映射到 skill-id**。**不要**因为表里有 4 个就主动推荐用户顺便把其他几个也装了。用户问装哪一个，就只装哪一个。
 >
-> **全装开关（开关 = 装全部）**：**只有**用户明确说「全部 3 个」「全套」「full set」「all of them」「三个都装」等明显要全套的措辞时，才跑不带 `--skill-id` 的命令（即装全部 3 个）。其他情况默认走单装。
+> **全装开关（开关 = 装全部）**：**只有**用户明确说「全部 4 个」「全套」「full set」「all of them」「四个都装」等明显要全套的措辞时，才跑不带 `--skill-id` 的命令（即装全部 4 个）。其他情况默认走单装。
 
 ## Install 命令
 
@@ -27,7 +27,7 @@
 curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash -s -- <skill-id>
 ```
 
-**装全部 3 个**（不带参数就是全部）：
+**装全部 4 个**（不带参数就是全部）：
 ```
 curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash
 ```
@@ -80,7 +80,7 @@ curl ... | PREFIX=~/.my-custom-path bash
 
 默认装最新。如果想钉死某个版本：
 ```
-VERSION=v0.2.0 curl ... | bash -s -- expense-audit-v2
+VERSION=v0.3.0 curl ... | bash -s -- expense-audit-v2
 ```
 
 ### 验证（手动跑一次 example）
@@ -116,14 +116,15 @@ rm -rf ~/.config/opencode/skills/expense-audit-v2
 
 ### ZIP 直链（不走 install.sh，手动下载/检查用）
 
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/expense-audit-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/procurement-fraud-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.2.0/investigation-assistant-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.0/expense-audit-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.0/procurement-fraud-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.0/investigation-assistant-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.0/cn-entity-relation-check.zip>
 
 最新版永远在 <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest>。
 
 ### 源码 & 自定义
-- 三个 skill 的源码：`skills-v2/<skill-name>/`
+- 四个 skill 的源码：`skills-v2/<skill-name>/`
 - 重新打包 release zip：跑 `./scripts/build-dist.sh`
 - 黑盒黄金测试：`python3 evals/blackbox/score_blackbox.py --version v0.2.0-baseline`
 - 端到端校验：`python3 evals/validate_pack.py --run-tests`

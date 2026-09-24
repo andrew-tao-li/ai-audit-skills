@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.3.0 — 2026-09-24（pack release）
+
+包级发布：发布标签对齐内容版本，收口上一阶段的所有增量。
+
+- **第 4 个 skill 上线**：`cn-entity-relation-check`（关联排查 v0.1.0）——三态判定协议 + capability gate + 分平台数据源引导。
+- **expense-audit-v2 0.2.1**：修 missing-expense-type max/min bug；新增时空冲突 / 跨期入账 / 高频小额三规则；业务实质性声明。
+- **黄金测试集**：expense 22→25 fixture，F1 全 100%。
+- **文档**：install.md / README 的版本号与 skill 计数（3→4）对齐；ZIP 直链补上第 4 个 skill。
+
 ## v0.2.1 — 2026-09-24（expense-audit-v2）
 
 由真实审计师提供的「16 场景带答案」数据（`出差费用模拟数据.xlsx`，含「审计说明」答案表）驱动。
