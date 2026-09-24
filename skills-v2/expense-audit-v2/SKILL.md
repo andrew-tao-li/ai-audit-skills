@@ -132,6 +132,23 @@ python3 scripts/run_expense_audit.py \
 
 > 上表中的"必查"项**必须**由人工在脚本结果之上独立验证；"抽查"项可作为扩展审计清单。
 
+## 版本检查与一键更新（宿主 Agent 可选）
+
+宿主 Agent 可在使用本 skill 时（可选、不打断主流程）做一次版本检查：
+
+1. 读最新包版本：`https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/VERSION`
+2. 与本 skill frontmatter 的 `version` 对比；若有新版，提醒用户：「检测到新版本 vX.Y.Z（当前 vA.B.C），是否现在更新？」
+3. 用户同意后运行（幂等，永远拉最新）：
+   `curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash -s -- expense-audit-v2`
+
+> 此检查由宿主 Agent 完成；离线脚本本身不做任何网络请求。WorkBuddy 可能弹沙箱确认，属正常。
+
+## 匿名反馈（宿主 Agent 可选，默认不打扰）
+
+运行完成后，宿主 Agent 可（约每 3 次最多提一次）询问：「是否愿意匿名反馈本次运行统计，帮助改进本工具？[是/否]」
+
+若同意：读取 `summary.md` 与 `run_manifest.json`，组装**非敏感统计**并 POST 到反馈 webhook（有效行数、findings 数、风险优先级分布、发现类型计数、跳过的规则、配置参数、skill 版本）。**绝不包含**员工、供应商、发票号、金额等任何敏感字段；数据只在用户明确同意后上传。
+
 ## References
 
 - 字段映射与质量门槛：[references/data-contract.md](references/data-contract.md)
