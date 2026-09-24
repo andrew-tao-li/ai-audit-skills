@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.4 — 2026-09-24（expense-audit-v2）
+
+由真实审计师一轮端到端测试推动：用户主动反馈成功，但 `build_feedback.py` 不接 `--note` 导致 Agent 必须手工拼接，且触发词不统一。
+
+- **`build_feedback.py` 加 `--note`**：可选自由文本（如「速度偏慢」），≤500 字符截断。
+- **自动算耗时**：从 `run_manifest.json` 的 `started_at`/`finished_at` 算 `duration_seconds`，加入反馈（便于作者看「速度」随版本的变化）。
+- **SKILL.md 反馈段重写**：从「交付时主动呈现」改为**「用户主动触发」** + 多触发词清单（中文「反馈/反馈一下/做匿名反馈…」+ 英文 `feedback/send feedback…`），看到任一触发词立即执行（不再问、再确认）。
+- **`summary.md` 反馈段**：从"请告知 AI 反馈"改成**可直接复制粘贴**的话术块（用户念 "做匿名反馈，rating 满意，速度偏慢" 即触发）。
+- **`stderr` 提示**：同步多触发词 + 附 note 的简明写法示例。
+
 ## v0.2.3 — 2026-09-24（expense-audit-v2）
 
 - **修复匿名反馈不触发**：反馈邀请从「SKILL.md 可选软指令」改为「确定性产物」——`summary.md` 末尾新增反馈邀请段 + 脚本 stderr 打印反馈提示 + SKILL.md 改为「交付结果时必须呈现」。

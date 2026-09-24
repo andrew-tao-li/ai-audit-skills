@@ -17,7 +17,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -977,6 +977,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     for finding in builder.findings:
         counts[FINDING_TYPE_ZH.get(finding["finding_type"], finding["finding_type"])] += 1
         priorities[PRIORITY_ZH.get(finding["risk_priority"], finding["risk_priority"])] += 1
+    feedback_high = priorities.get("critical", 0) + priorities.get("high", 0)
+    feedback_stats_line = "本次运行已自动统计：Findings %d（high %d / medium %d / low %d），各类型、风险分布、耗时等统计见上。" % (
+        len(builder.findings), feedback_high, priorities.get("medium", 0), priorities.get("low", 0)
+    )
     summary = [
         "# 费用审计确定性摘要", "", "- 分析有效记录：%d；排除坏行：%d。" % (len(clean), len(bad)),
         "- Findings：%d；Evidence：%d。" % (len(builder.findings), len(builder.evidence)),
@@ -999,7 +1003,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "**审计结论（给人看）**：summary.md、findings.csv、findings.jsonl", "",
         "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、clean_expenses.csv、bad_rows.csv、evidence.jsonl", "",
         "## 匿名反馈（可选）", "",
-        "本次运行可生成匿名反馈（仅 findings 数、类型计数、风险分布等非敏感统计，不含员工/供应商/发票号/金额）。如愿意帮助改进本工具，请告知 AI「反馈」。",
+        feedback_stats_line,
+        "反馈给作者可让他改进本工具。**说「反馈」/「反馈一下」/「feedback」即可触发**（默认 rating 满意；用户主动说明则按其说法）。", "",
+        "可直接复制粘贴这句话给 AI：", "",
+        "> 做匿名反馈，rating 满意",
+        "> （如跑得慢或有意见，可连同一起说，例如：做匿名反馈，rating 满意，速度偏慢）", "",
+        "只上传 findings 数 / 类型计数 / 风险分布 / 耗时 / 你的备注 / skill 版本，**不含员工/供应商/发票号/金额**。",
     ]
     (output / "summary.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
 
@@ -1021,7 +1030,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     }
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
-    print("（可选）如愿意匿名反馈本次运行统计帮助改进本工具，请回复「反馈」。", file=sys.stderr)
+    print("（可选）匿名反馈帮助作者改进本工具。说「反馈」/「反馈一下」/「feedback」之类即可；如要附理由（如跑得慢），可一起说（如：反馈，rating 满意，速度偏慢）。", file=sys.stderr)
     return 0
 
 

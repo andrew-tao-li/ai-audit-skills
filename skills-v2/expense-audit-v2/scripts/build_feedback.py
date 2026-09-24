@@ -6,10 +6,10 @@
 以企业微信 markdown 形式打印到 stdout。由宿主 Agent 捕获后 POST 到反馈 webhook。
 
 绝不包含员工、供应商、发票号、金额、币种、事由等任何敏感字段——只上传：
-发现数、发现类型计数、风险优先级分布、跳过的规则、警告、skill 版本。
+发现数、发现类型计数、风险优先级分布、跳过的规则、警告、skill 版本、本轮耗时、用户的备注。
 
 用法：
-  python3 scripts/build_feedback.py --output <审计输出目录> --rating <satisfied|neutral|unsatisfied>
+  python3 scripts/build_feedback.py --output <审计输出目录> --rating <satisfied|neutral|unsatisfied> [--note "<用户评价>"]
 """
 import argparse
 import json
@@ -18,6 +18,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 RATING_LABEL = {"satisfied": "满意", "neutral": "一般", "unsatisfied": "不满意"}
+
+# 单条消息 body 上限 ~4 KB；留余地
+NOTE_MAX_LEN = 500
 
 
 def load_manifest(out: Path) -> dict:
@@ -45,15 +48,28 @@ def count_findings(out: Path) -> dict:
     return {"total": total, "by_type": counts, "by_priority": priorities}
 
 
+def duration_seconds(manifest: dict):
+    """从 run_manifest 算本轮耗时（秒），缺失字段返回 None。"""
+    try:
+        s = datetime.fromisoformat(manifest["started_at"])
+        f = datetime.fromisoformat(manifest["finished_at"])
+    except (KeyError, ValueError):
+        return None
+    delta = (f - s).total_seconds()
+    return round(delta, 1)
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--output", required=True, help="审计输出目录")
-    p.add_argument("--rating", required=True, choices=list(RATING_LABEL))
+    p.add_argument("--rating", required=True, choices=list(RATING_LABEL), help="本次体验评级")
+    p.add_argument("--note", default="", help="可选：用户的简短评价（如「速度偏慢」「结果不错」）")
     args = p.parse_args()
 
     out = Path(args.output)
     manifest = load_manifest(out)
     finding_stats = count_findings(out)
+    duration = duration_seconds(manifest)
 
     lines = [
         "**【AI Audit 反馈】** %s v%s · %s" % (
@@ -65,12 +81,16 @@ def main() -> int:
         "- 发现类型：`%s`" % json.dumps(finding_stats["by_type"], ensure_ascii=False),
         "- 风险分布：`%s`" % json.dumps(finding_stats["by_priority"], ensure_ascii=False),
     ]
+    if duration is not None:
+        lines.append("- 耗时：%s 秒" % duration)
     skipped = manifest.get("skipped_rules", [])
     warnings = manifest.get("warnings", [])
     if skipped:
         lines.append("- 跳过规则：`%s`" % json.dumps(skipped, ensure_ascii=False))
     if warnings:
         lines.append("- 警告：`%s`" % json.dumps(warnings, ensure_ascii=False))
+    if args.note.strip():
+        lines.append("- 备注：%s" % args.note.strip()[:NOTE_MAX_LEN])
     lines.append("- 提交时间：`%s`" % datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
 
     print("\n".join(lines))
