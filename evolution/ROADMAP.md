@@ -25,6 +25,16 @@
   - 测试需一个企查查 API Key（BYOK，只本地用，绝不进仓库）。
   - 优先级：等第 4 技能在 WorkBuddy 等平台实机跑通三态后，再回头做。
 
+- **审批闭环（半自动 AI 提案 → 人类审批 → 自动应用）**（已定位缺口，待接，2026-09-24）：Layer 2 的「工具」都写好了（`guardrail.py` 的 apply/verify/rollback、`evolve.sh` 的提案生成、OpenCode web），但「闭环」没接起来——现状是「半自动的工具箱，不是半自动的流水线」。
+  三个缺口：
+  1. `evolve.sh` 的 LLM 提案**只在「失败数 > 0」时生成** → 现在 F1=100% 天天跳过，健康时永远不进化（等于 F1 满后停摆）。
+  2. 提案生成后**不推送审批**：通知只说「有提案」+ 路径，从不问「批不批」。
+  3. `guardrail.py apply` **没有 y/n 交互**：所谓「人类审批」实际就是「作者自己决定要不要手敲这条命令」。
+  设计要点（下次可直接开工）：
+  - 先定一个产品决策：**健康时（F1=100%）要不要也定期让 LLM 主动提议改进**（比如基于 baseline_warning「单 finding 设计」这类提示），否则这套框架在满分后就失去进化动力。
+  - evolve.sh 有提案时，通知文案加一句引导（如「有新提案 evolution/proposals/xxx.md，可上 OpenCode 网页审阅并决定是否 apply」）。
+  - 给 `guardrail.py apply` 加真正的 approve 入口（至少 `--confirm` 的 y/n 交互；更完整则是 OpenCode web 里的审批流），把「审阅 diff → 批准 → 自动 apply」串起来。
+
 ---
 
 ## 路线图总览（4 个 Layer）
