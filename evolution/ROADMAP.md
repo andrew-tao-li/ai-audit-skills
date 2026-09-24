@@ -35,6 +35,10 @@
   - evolve.sh 有提案时，通知文案加一句引导（如「有新提案 evolution/proposals/xxx.md，可上 OpenCode 网页审阅并决定是否 apply」）。
   - 给 `guardrail.py apply` 加真正的 approve 入口（至少 `--confirm` 的 y/n 交互；更完整则是 OpenCode web 里的审批流），把「审阅 diff → 批准 → 自动 apply」串起来。
 
+- **expense 输出打磨（低优先级）**（暂缓，2026-09-24）：审计师盲测暴露的两个 UX 项，**非正确性问题，可缓**。① config 驱动规则（split-expense / policy-threshold / large-amount-low-level / missing-expense-type 等）缺配置时静默跳过，虽有 `data_quality` 记录「未提供 limits」等，但首跑用户可能误以为「漏检」；② weekend-signal 占 findings 约 88% 噪声，虽已标 weak/low 且 `summary` 给了复核顺序，但 `findings.csv` 仍是一屏噪声。
+   - 诚实评估：两项都是「打磨」而非「大问题」。①② 已有兜底（data_quality 记录 + weak 标记 + 复核顺序），只是呈现不够醒目。
+   - 若要做的方向：① 在 summary/README 把「因缺配置被跳过的规则」更醒目列出；② 把 weekend-signal 聚合为一条「N 条周末消费，按部门抽样」而非 N 条独立 finding。
+
 ---
 
 ## 路线图总览（4 个 Layer）
