@@ -61,6 +61,7 @@ if [ "$#" -eq 0 ]; then
 else
     SELECTED=()
     for arg in "$@"; do
+        [ "$arg" = "--check" ] && continue
         matched=""
         for s in "${ALL_SKILLS[@]}"; do
             [ "$arg" = "$s" ] && matched="$s" && break
@@ -100,6 +101,22 @@ fi
 if [ -z "$VERSION" ]; then
     echo "⚠ 无法获取最新版本（GitHub API 与重定向都失败/返回非 tag 页）。请设置 VERSION=v0.X.Y 重试。" >&2
     exit 1
+fi
+
+# --check：只检查版本，不安装
+if [ "$1" = "--check" ]; then
+    echo "▶ 最新包版本：$VERSION"
+    echo "▶ 已安装（$PREFIX）："
+    for s in "${ALL_SKILLS[@]}"; do
+        if [ -f "$PREFIX/$s/SKILL.md" ]; then
+            local_v=$(grep -m1 '^version:' "$PREFIX/$s/SKILL.md" 2>/dev/null | tr -d ' ' | sed 's/version://')
+            echo "  · $s: ${local_v:-未知}"
+        else
+            echo "  · $s: 未安装"
+        fi
+    done
+    echo "  （新版会自动覆盖，重跑安装命令即更新）"
+    exit 0
 fi
 
 # 头部摘要：明确告诉用户要装几个、装哪些、装到哪个 Agent

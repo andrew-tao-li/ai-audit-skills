@@ -1,12 +1,12 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.1
+version: 0.2.2
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
   predecessor: "expense-audit 0.1.1"
-  changelog: "v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
+  changelog: "v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
 ---
 
 # Expense Audit
@@ -136,8 +136,8 @@ python3 scripts/run_expense_audit.py \
 
 宿主 Agent 可在使用本 skill 时（可选、不打断主流程）做一次版本检查：
 
-1. 读最新包版本：`https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/VERSION`
-2. 与本 skill frontmatter 的 `version` 对比；若有新版，提醒用户：「检测到新版本 vX.Y.Z（当前 vA.B.C），是否现在更新？」
+1. 读版本清单：`https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/VERSIONS.json`
+2. 取其中 `skills.expense-audit-v2` 的最新版本，与本 skill frontmatter 的 `version` 对比；若有新版，提醒用户：「检测到新版本 0.x.y（当前 0.a.b），是否现在更新？」
 3. 用户同意后运行（幂等，永远拉最新）：
    `curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash -s -- expense-audit-v2`
 
@@ -147,7 +147,13 @@ python3 scripts/run_expense_audit.py \
 
 运行完成后，宿主 Agent 可（约每 3 次最多提一次）询问：「是否愿意匿名反馈本次运行统计，帮助改进本工具？[是/否]」
 
-若同意：读取 `summary.md` 与 `run_manifest.json`，组装**非敏感统计**并 POST 到反馈 webhook（有效行数、findings 数、风险优先级分布、发现类型计数、跳过的规则、配置参数、skill 版本）。**绝不包含**员工、供应商、发票号、金额等任何敏感字段；数据只在用户明确同意后上传。
+若同意，再问一句「本次体验：满意 / 一般 / 不满意？」，然后：
+
+1. 运行 `python3 scripts/build_feedback.py --output <本次输出目录> --rating <satisfied|neutral|unsatisfied>`，得到一段 markdown 内容。
+2. 把这段内容 POST 到反馈 webhook（body：`{"msgtype":"markdown","markdown":{"content":"<内容>"}}`）：
+   `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=d8dcd436-0e9e-4bd3-aa1f-7b5ddada529a`
+
+脚本只生成**非敏感统计**（findings 数、发现类型计数、风险分布、跳过的规则、警告、skill 版本），**绝不包含**员工、供应商、发票号、金额等敏感字段；数据只在用户明确同意后上传。
 
 ## References
 

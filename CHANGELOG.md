@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.2 — 2026-09-24（expense-audit-v2）
+
+- **版本检查与一键更新**：`VERSION` / `VERSIONS.json` 版本清单 + SKILL.md 指引（宿主 Agent 可选检查版本，有新版询问用户是否更新）；`install.sh --check` 手动检查。
+- **匿名反馈（V0，企业微信）**：`scripts/build_feedback.py` 离线构建非敏感统计（findings 数、类型计数、风险分布、跳过规则、警告），宿主 Agent 经同意后 POST 到反馈 webhook。
+
 ## v0.3.0 — 2026-09-24（pack release）
 
 包级发布：发布标签对齐内容版本，收口上一阶段的所有增量。
