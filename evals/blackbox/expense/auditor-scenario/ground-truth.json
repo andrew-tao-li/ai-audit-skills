@@ -1,0 +1,181 @@
+{
+  "source": "出差费用模拟数据.xlsx（真实审计师提供，含「审计说明」答案表）",
+  "source_hash": "sha256:1b551ec250c012491ae1fce7b294341d4daa2ec41591484ebcea8cedee3ad39e",
+  "note": "16 个植入场景，答案表直接给出费用编号与场景说明。rule_status 分 implemented / config-gated / not-implemented / data-quality。",
+  "scenarios": [
+    {
+      "id": 1,
+      "category": "重复报销-完全重复",
+      "expense_ids": [
+        "EXP-0783",
+        "EXP-0784"
+      ],
+      "expected_finding_type": "exact-duplicate-invoice",
+      "rule_status": "implemented"
+    },
+    {
+      "id": 2,
+      "category": "近似重复",
+      "expense_ids": [
+        "EXP-0785",
+        "EXP-0786"
+      ],
+      "expected_finding_type": "near-duplicate",
+      "rule_status": "implemented"
+    },
+    {
+      "id": 3,
+      "category": "时空不符-同日异城(京沪)",
+      "expense_ids": [
+        "EXP-0787",
+        "EXP-0788"
+      ],
+      "expected_finding_type": "space-time-conflict",
+      "rule_status": "not-implemented"
+    },
+    {
+      "id": 4,
+      "category": "时空不符-同日异城(蓉穗)",
+      "expense_ids": [
+        "EXP-0789",
+        "EXP-0790"
+      ],
+      "expected_finding_type": "space-time-conflict",
+      "rule_status": "not-implemented"
+    },
+    {
+      "id": 5,
+      "category": "发票跨人复用",
+      "expense_ids": [
+        "EXP-0791",
+        "EXP-0792"
+      ],
+      "expected_finding_type": "cross-employee-invoice",
+      "rule_status": "implemented"
+    },
+    {
+      "id": 6,
+      "category": "拆单报销",
+      "expense_ids": [
+        "EXP-0793",
+        "EXP-0794",
+        "EXP-0795",
+        "EXP-0796"
+      ],
+      "expected_finding_type": "split-expense",
+      "rule_status": "config-gated"
+    },
+    {
+      "id": 7,
+      "category": "自审自批",
+      "expense_ids": [
+        "EXP-0797"
+      ],
+      "expected_finding_type": "self-approval",
+      "rule_status": "implemented"
+    },
+    {
+      "id": 8,
+      "category": "大额低层级审批",
+      "expense_ids": [
+        "EXP-0798"
+      ],
+      "expected_finding_type": "large-amount-low-level-approval",
+      "rule_status": "config-gated"
+    },
+    {
+      "id": 9,
+      "category": "提交日期倒挂",
+      "expense_ids": [
+        "EXP-0799"
+      ],
+      "expected_finding_type": "submit-before-expense",
+      "rule_status": "implemented"
+    },
+    {
+      "id": 10,
+      "category": "未来日期",
+      "expense_ids": [
+        "EXP-0800"
+      ],
+      "expected_finding_type": "future-date",
+      "rule_status": "config-gated"
+    },
+    {
+      "id": 11,
+      "category": "周末出差-弱信号",
+      "expense_ids": [
+        "EXP-0801"
+      ],
+      "expected_finding_type": "weekend-signal",
+      "rule_status": "implemented"
+    },
+    {
+      "id": 12,
+      "category": "数据质量异常",
+      "expense_ids": [
+        "EXP-0802",
+        "EXP-0803"
+      ],
+      "expected_finding_type": "data-quality",
+      "rule_status": "data-quality"
+    },
+    {
+      "id": 13,
+      "category": "发票连号",
+      "expense_ids": [
+        "EXP-0804",
+        "EXP-0805",
+        "EXP-0806"
+      ],
+      "expected_finding_type": "sequential-invoice",
+      "rule_status": "implemented"
+    },
+    {
+      "id": 14,
+      "category": "频繁小额套现",
+      "expense_ids": [
+        "EXP-0807",
+        "EXP-0808",
+        "EXP-0809",
+        "EXP-0810",
+        "EXP-0811",
+        "EXP-0812",
+        "EXP-0813",
+        "EXP-0814",
+        "EXP-0815",
+        "EXP-0816",
+        "EXP-0817",
+        "EXP-0818",
+        "EXP-0819",
+        "EXP-0820",
+        "EXP-0821",
+        "EXP-0822",
+        "EXP-0823",
+        "EXP-0824",
+        "EXP-0825",
+        "EXP-0826"
+      ],
+      "expected_finding_type": "high-frequency-small-amount",
+      "rule_status": "not-implemented"
+    },
+    {
+      "id": 15,
+      "category": "缺费用类型",
+      "expense_ids": [
+        "EXP-0827"
+      ],
+      "expected_finding_type": "missing-expense-type",
+      "rule_status": "config-gated"
+    },
+    {
+      "id": 16,
+      "category": "跨期入账",
+      "expense_ids": [
+        "EXP-0828"
+      ],
+      "expected_finding_type": "cross-period",
+      "rule_status": "not-implemented"
+    }
+  ]
+}

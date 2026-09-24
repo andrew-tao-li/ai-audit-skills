@@ -1,0 +1,46 @@
+{
+  "policy_version": "AUDITOR-EXP-V1",
+  "default_currency": "CNY",
+  "limits": [
+    {
+      "rule_id": "HOTEL",
+      "expense_type": "hotel",
+      "currency": "CNY",
+      "max_amount": 700
+    },
+    {
+      "rule_id": "MEAL",
+      "expense_type": "meal",
+      "currency": "CNY",
+      "max_amount": 200
+    },
+    {
+      "rule_id": "TAXI",
+      "expense_type": "taxi",
+      "currency": "CNY",
+      "max_amount": 150
+    },
+    {
+      "rule_id": "TRAVEL",
+      "expense_type": "travel",
+      "currency": "CNY",
+      "max_amount": 150
+    }
+  ],
+  "approval_thresholds": [
+    {
+      "rule_id": "GENERAL",
+      "currency": "CNY",
+      "amount": 5000
+    }
+  ],
+  "large_amount_threshold": 5000,
+  "low_level_approver_keywords": [
+    "实习生",
+    "INTERN",
+    "ASSIST",
+    "助理"
+  ],
+  "weekend_check": true,
+  "as_of_date": "2026-09-22"
+}
