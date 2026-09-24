@@ -130,7 +130,7 @@ class InvestigationAssistantEndToEndTest(unittest.TestCase):
         try:
             manifest = json.loads((output / "run_manifest.json").read_text(encoding="utf-8"))
             self.assertFalse(manifest["network_access"])
-            self.assertEqual(manifest["skill_version"], "0.2.0")
+            self.assertEqual(manifest["skill_version"], "0.2.1")
             self.assertEqual(manifest["case_id"], "CASE-SYNTHETIC-001")
             self.assertEqual(manifest["scope"]["persons_in_scope"], ["E001", "E002"])
         finally:

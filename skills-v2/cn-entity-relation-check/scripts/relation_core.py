@@ -11,6 +11,9 @@ from evidence_normalizer import Edge, Node, normalize_edge, STRONG_RELATION_TYPE
 from path_finder import find_paths
 from result_validator import QueryContext, deterministic_decision, validate_result
 
+VERSION = "0.1.1"
+SKILL = "cn-entity-relation-check"
+
 STATUS_DISPLAY = {
     "RELATED": "关联",
     "NOT_RELATED_IN_SCOPE": "不关联",
@@ -101,6 +104,8 @@ def run_relation_check(
     temporality = "historical" if any(p.get("historical") for p in paths) else "current"
 
     return {
+        "skill": SKILL,
+        "skill_version": VERSION,
         "status": status,
         "display_status": STATUS_DISPLAY.get(status, status),
         "relationship_temporality": temporality,

@@ -90,7 +90,7 @@ class ProcurementAuditEndToEndTest(unittest.TestCase):
             self.assertEqual(handoff["status"], "recommended")
             self.assertTrue(handoff["human_approval_required"])
             self.assertFalse(manifest["network_access"])
-            self.assertEqual(manifest["skill_version"], "0.2.0")
+            self.assertEqual(manifest["skill_version"], "0.2.1")
             self.assertEqual(manifest["parameters"]["config_version"], "SYNTHETIC-PROCUREMENT-CONFIG-1.0")
         finally:
             temp.cleanup()

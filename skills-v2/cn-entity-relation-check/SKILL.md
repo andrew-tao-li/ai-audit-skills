@@ -1,12 +1,12 @@
 ---
 name: cn-entity-relation-check
 description: "对两个主体（公司/自然人）核查中国公开工商信息中是否存在可验证关联，支持公司-公司、公司-自然人、自然人-自然人三类组合，输出关联/不关联/待核查三态结论。Use when the user asks whether two companies or people are related, requests 关联排查/关联分析/关系穿透, supplier-employee relationship checks, related-party screening, 共同股东/高管/法人 overlap, 实际控制/最终受益人, or Chinese corporate due-diligence tasks. Do not use for risk scoring, fraud conviction, benefit-transfer conclusions, personal background investigation (family, private contact, social media), or internal hidden-relationship mining."
-version: 0.1.0
+version: 0.1.1
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline decision core; Python 3.10+ for scripts; structured corporate data (MCP/API) preferred, web search as fallback"
   predecessor: null
-  changelog: "v0.1.0: 三态判定协议（关联/不关联/待核查）/ 实体锚定 + 自然人重名消歧 / 强弱证据分层 / 确定性决策引擎 + result_validator / max_depth=3 的 BFS 路径查找 / Provider Adapter 抽象 / 零真实 Key"
+  changelog: "v0.1.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）；结果 JSON 增 skill/skill_version 字段。v0.1.0: 三态判定协议（关联/不关联/待核查）/ 实体锚定 + 自然人重名消歧 / 强弱证据分层 / 确定性决策引擎 + result_validator / max_depth=3 的 BFS 路径查找 / Provider Adapter 抽象 / 零真实 Key"
 ---
 
 # 关联排查（中国公开工商关系）
@@ -82,6 +82,43 @@ metadata:
 硬规则：没有结构化数据源时，**禁止凭记忆或网页检索编造「关联/不关联」结论**。引导必须是一次性的、平台感知的、不阻断任务的（提供 Web 兜底选项）。
 
 企查查 MCP 原生支持「强语义负向防御」（能区分「查完没有」与「调用失败」），是首选数据源——接上后本 skill 才能可靠输出「不关联」。
+
+## 版本检查与一键更新（宿主 Agent 可选）
+
+宿主 Agent 可在使用本 skill 时（可选、不打断主流程）做一次版本检查：
+
+1. 读版本清单：`https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/VERSIONS.json`
+2. 取其中 `skills.cn-entity-relation-check` 的最新版本，与本 skill frontmatter 的 `version` 对比；若有新版，提醒用户：「检测到新版本 0.x.y（当前 0.a.b），是否现在更新？」
+3. 用户同意后运行（幂等，永远拉最新）：
+   `curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash -s -- cn-entity-relation-check`
+
+> 此检查由宿主 Agent 完成；离线脚本本身不做任何网络请求。
+
+## 匿名反馈（用户主动触发，不要主动问）
+
+**不要**主动问用户要不要反馈。交付结论时把输出里的「匿名反馈」邀请原样呈现给用户，由用户决定。
+
+### 触发词（任意一种，**看见就执行**，不要解释、不要再确认）
+
+- 中文：「反馈」「反馈一下」「做匿名反馈」「给作者反馈」「匿名反馈一下」
+- 英文：`feedback` / `send feedback` / `give feedback`
+
+### 执行（执行后只回一句「✓ 已匿名反馈给作者，谢谢」，不要展开对话）
+
+1. 把本次 `cli.py` 的结果 JSON 存成文件（若尚未存）：`python3 scripts/cli.py ... > result.json`
+2. 运行 `python3 scripts/build_feedback.py --result result.json --rating satisfied [--note "<用户评价>"]`
+   - 默认 `satisfied`；用户明确说「一般 / 不满意」则改值；用户带了评价用 `--note` 传入。
+3. 把 stdout 内容 POST 到反馈 webhook：
+   - URL: `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=d8dcd436-0e9e-4bd3-aa1f-7b5ddada529a`
+   - body（JSON）：`{"msgtype":"markdown","markdown":{"content":"<stdout 内容>"}}`
+
+### 关键：每次触发词 = 一次 POST
+
+用户多次说触发词时，每次都要 POST 一次，不要因为"上次已反馈过"就跳过。
+
+### 只上传非敏感统计
+
+脚本只构建：结论状态、路径数、警告数、备注、skill 版本。**绝不含**主体名称、统一社会信用代码、证据路径细节等敏感字段。
 
 ## References
 

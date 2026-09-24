@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.1 — 2026-09-24（pack release）
+
+把 expense 的「反馈 + 版本检查」成功经验复制到其余 3 个 skill。
+
+- **procurement-fraud-v2 0.2.1** / **investigation-assistant-v2 0.2.1**：新增 `scripts/build_feedback.py`（读 run_manifest + findings 组装非敏感统计）；SKILL.md 加「版本检查与一键更新」+「匿名反馈（用户主动触发）」两段。
+- **cn-entity-relation-check 0.1.1**：新增 `scripts/build_feedback.py`（读结果 JSON）；结果 JSON 增 `skill`/`skill_version` 字段；SKILL.md 加同样的两段。
+- 反馈 webhook 统一为作者反馈专用群。
+
 ## v0.2.4 — 2026-09-24（expense-audit-v2）
 
 由真实审计师一轮端到端测试推动：用户主动反馈成功，但 `build_feedback.py` 不接 `--note` 导致 Agent 必须手工拼接，且触发词不统一。

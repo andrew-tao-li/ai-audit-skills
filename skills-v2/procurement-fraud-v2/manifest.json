@@ -2,14 +2,30 @@
   "id": "procurement-fraud-v2",
   "name": "采购舞弊",
   "name_en": "Procurement Fraud",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "对供应商主数据、采购订单、付款、员工与投标文本做采购舞弊红旗筛查，识别共享属性（银行账号/电话/地址/邮箱/法人）、员工-供应商关联、价格离群、拆单、流程时序倒置、采购员集中度、投标文本相似度、新供应商接大单、超额付款等。",
   "author": "andrew-tao-li",
   "homepage": "https://github.com/andrew-tao-li/ai-audit-skills",
   "type": "script",
   "runtime": "python",
-  "triggers": ["采购舞弊", "采购审计", "供应商筛查", "围标", "串标", "拆单", "采购合规", "procurement fraud"],
-  "tags": ["审计", "采购", "反舞弊", "供应商", "招投标", "合规"],
+  "triggers": [
+    "采购舞弊",
+    "采购审计",
+    "供应商筛查",
+    "围标",
+    "串标",
+    "拆单",
+    "采购合规",
+    "procurement fraud"
+  ],
+  "tags": [
+    "审计",
+    "采购",
+    "反舞弊",
+    "供应商",
+    "招投标",
+    "合规"
+  ],
   "license": "MIT-0",
   "offline": true
 }
