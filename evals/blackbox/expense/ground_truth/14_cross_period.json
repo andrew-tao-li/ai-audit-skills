@@ -1,0 +1,7 @@
+{
+  "fixture_id": "14_cross_period",
+  "description": "测试 cross-period：提交日期距费用发生超过 3 个月",
+  "expected_findings": [
+    "cross-period"
+  ]
+}

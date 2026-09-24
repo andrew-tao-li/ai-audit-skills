@@ -1,0 +1,7 @@
+{
+  "fixture_id": "13_space_time_conflict",
+  "description": "测试 space-time-conflict：同一员工同一天在两个城市产生住宿",
+  "expected_findings": [
+    "space-time-conflict"
+  ]
+}

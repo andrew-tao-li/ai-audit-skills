@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.2.1 — 2026-09-24（expense-audit-v2）
+
+由真实审计师提供的「16 场景带答案」数据（`出差费用模拟数据.xlsx`，含「审计说明」答案表）驱动。
+
+- **修复 bug**：`missing-expense-type` 计算「最严格上限」误用 `max()` 应为 `min()`（单限额时不暴露，多限额时漏报）。
+- **新增三条规则**（均为真实盲点）：
+  - `space-time-conflict`（时空冲突）：同一员工同一天在多个城市产生定位型消费。
+  - `cross-period`（跨期入账）：提交日期距费用发生超过 N 个月（`cross_period_months`，默认 3）。
+  - `high-frequency-small-amount`（高频小额）：同一员工短期内 ≥N 笔同类型小额（`high_frequency_min_count`/`window_days`/`max_amount`）。
+- **新增字段别名**：`origin_city`（出发城市）、`dest_city`（目的城市）。
+- **黄金测试集**：expense 22→25 fixture（新增 13/14/15 三个新规则回归用例），F1 保持 100%。
+- **外部盲测基准**：新增 `evals/blackbox/expense/auditor-scenario/`（行级覆盖率评分器），16/16 场景检出。
+
 ## v0.2.0 — 2026-09-22（canonical）
 
 - **v0.2.0 成为唯一 canonical 版本**：`skills-v2/` 取代 `skills/`，`dist-v2/` 取代 `dist/`。v0.1.x（`skills/`、`dist/`）已退役删除。

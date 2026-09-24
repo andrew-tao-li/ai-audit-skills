@@ -17,7 +17,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -28,6 +28,7 @@ FINDING_TYPE_ZH = {
     "self-approval": "自审自批", "cross-employee-invoice": "发票跨人复用", "submit-before-expense": "提交早于消费",
     "future-date": "未来日期", "missing-expense-type": "缺费用类型", "sequential-invoice": "发票连号",
     "invoice-format-anomaly": "发票格式异常", "large-amount-low-level-approval": "大额低层级审批",
+    "space-time-conflict": "时空冲突", "cross-period": "跨期入账", "high-frequency-small-amount": "高频小额",
 }
 PRIORITY_ZH = {"critical": "严重", "high": "高", "medium": "中", "low": "低"}
 STRENGTH_ZH = {"strong": "强", "moderate": "中", "weak": "弱"}
@@ -48,6 +49,8 @@ ALIASES = {
     "approver": ["approver", "approved_by", "审批人"],
     "payment_date": ["payment_date", "付款日期", "支付日期"],
     "business_purpose": ["business_purpose", "purpose", "description", "事由", "用途", "业务目的"],
+    "origin_city": ["origin_city", "from_city", "departure_city", "出发城市", "出发地"],
+    "dest_city": ["dest_city", "destination_city", "to_city", "arrival_city", "目的城市", "目的地", "到达城市"],
 }
 CORE_FIELDS = ("expense_id", "employee_id", "amount", "expense_date")
 OUTPUT_FIELDS = tuple(ALIASES.keys())
@@ -154,6 +157,8 @@ POLICY_KEYS = frozenset({
     "holidays",
     "large_amount_threshold", "low_level_approver_keywords",
     "as_of_date",  # v0.2.0: future-date 基准日
+    "cross_period_months",  # v0.2.1: 跨期入账阈值（月）
+    "high_frequency_window_days", "high_frequency_min_count", "high_frequency_max_amount",  # v0.2.1: 高频小额
 })
 
 
@@ -750,11 +755,13 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     # 规则：缺费用类型按最严格类别处理（policy-threshold 已经在 limit 匹配时通过 continue 跳过，
     # 这里我们改为：缺类型且单笔 > 通用最严上限时报警）
     if policy.get("limits"):
-        strictest_max = max(
-            (parse_amount(limit.get("max_amount")) or 0)
-            for limit in policy.get("limits", [])
-            if parse_amount(limit.get("max_amount")) is not None
-        )
+        # 最严格上限 = 各限额里最小的 max_amount（越小越严），此前误用 max() 导致多限额时漏报
+        parsed_limits = []
+        for limit in policy.get("limits", []):
+            a = parse_amount(limit.get("max_amount"))
+            if a is not None and a > 0:
+                parsed_limits.append(a)
+        strictest_max = min(parsed_limits) if parsed_limits else 0
         missing_type_records = [
             row for row in rows
             if not norm_text(row.get("expense_type")) and strictest_max and row["amount"] > strictest_max
@@ -769,6 +776,85 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                         ["补充 expense_type 后重新跑"],
                         [{"factor": "missing_expense_type", "points": 2, "strictest_max": strictest_max}])
 
+    # 规则：时空冲突（同一员工同一天在多个城市产生定位型消费，物理上无法同时在场）
+    conflict_groups: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        city = norm_text(row.get("dest_city"))
+        etype = match_key(row.get("expense_type"))
+        if not city or etype == "travel" or not row.get("expense_date"):
+            continue
+        conflict_groups[(row["employee_id"], row["expense_date"])].append(row)
+    for (emp, day), group in conflict_groups.items():
+        cities = sorted({norm_text(r.get("dest_city")) for r in group if norm_text(r.get("dest_city"))})
+        if len(cities) >= 2:
+            builder.add("space-time-conflict", "同一员工同一天在多个城市产生消费", 3, "strong", group,
+                        ("expense_id", "employee_id", "expense_date", "origin_city", "dest_city"),
+                        ["%d 条记录在 %s 同一天出现在 %s 等多个城市" % (len(group), day, "、".join(cities))],
+                        ["同一人同一天在多个城市产生定位型消费，物理上无法同时在场"],
+                        ["是否为差旅分段、城市同名误录或系统定位口径差异？"],
+                        ["核对行程单、车票/机票和入住记录"],
+                        [{"factor": "space_time_conflict", "points": 3, "cities": cities}])
+
+    # 规则：跨期入账（提交日期距费用发生日期超过 N 个月）
+    cross_months = int(policy.get("cross_period_months", 3))
+    if cross_months > 0:
+        cross_records = []
+        for row in rows:
+            exp = row.get("expense_date")
+            sub = row.get("submit_date")
+            if not exp or not sub:
+                continue
+            try:
+                d_exp = date.fromisoformat(exp)
+                d_sub = date.fromisoformat(sub)
+            except ValueError:
+                continue
+            month_diff = (d_sub.year - d_exp.year) * 12 + (d_sub.month - d_exp.month)
+            if month_diff >= cross_months:
+                cross_records.append(row)
+        if cross_records:
+            builder.add("cross-period", "费用提交距发生跨期过久", 2, "moderate", cross_records,
+                        ("expense_id", "employee_id", "expense_date", "submit_date", "amount"),
+                        ["%d 条记录的提交日期距费用发生日期超过 %d 个月" % (len(cross_records), cross_months)],
+                        ["跨期过久可能指向补录、费用归属期异常或账务处理延迟"],
+                        ["是否为历史补录、系统迁移或跨期结账？"],
+                        ["核对费用归属期间和入账批次"],
+                        [{"factor": "cross_period", "points": 2, "months": cross_months}])
+    else:
+        skipped.append("cross-period：cross_period_months ≤ 0 已禁用")
+
+    # 规则：高频小额（同一员工短期内多笔小额，疑似套现/拆单模式）
+    hf_min = int(policy.get("high_frequency_min_count", 10))
+    if hf_min > 1:
+        hf_days = int(policy.get("high_frequency_window_days", 30))
+        hf_max = float(policy.get("high_frequency_max_amount", 100))
+        small = [r for r in rows if r["amount"] is not None and r["amount"] <= hf_max]
+        by_emp: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
+        for r in small:
+            by_emp[(r["employee_id"], match_key(r.get("expense_type")))].append(r)
+        for (emp, etype), grp in by_emp.items():
+            grp = sorted(grp, key=lambda r: r["expense_date"])
+            dates = [date.fromisoformat(r["expense_date"]) for r in grp]
+            flagged: Dict[str, Dict[str, Any]] = {}
+            i = 0
+            for j in range(len(grp)):
+                while i < j and (dates[j] - dates[i]).days > hf_days:
+                    i += 1
+                if j - i + 1 >= hf_min:
+                    for k in range(i, j + 1):
+                        flagged[grp[k]["expense_id"]] = grp[k]
+            if flagged:
+                recs = list(flagged.values())
+                builder.add("high-frequency-small-amount", "同一员工短期内高频小额消费", 3, "moderate", recs,
+                            ("expense_id", "employee_id", "expense_type", "expense_date", "amount"),
+                            ["%d 笔小额（≤%.0f）集中在 %d 天内" % (len(recs), hf_max, hf_days)],
+                            ["短期内高频小额消费，可能指向套现、拆分或虚构小额业务"],
+                            ["是否为通勤、市内交通等正常高频小额场景？"],
+                            ["对照行程、事由和支付流水"],
+                            [{"factor": "high_frequency_small_amount", "points": 3, "count": len(recs)}])
+    else:
+        skipped.append("high-frequency-small-amount：high_frequency_min_count ≤ 1 已禁用")
+
     return skipped, {
         "near_duplicate_window_days": near_days,
         "near_duplicate_amount_tolerance": near_tolerance,
@@ -777,6 +863,10 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
         "outlier_min_group_size": min_group,
         "outlier_robust_z": z_threshold,
         "policy_version": policy.get("policy_version"),
+        "cross_period_months": policy.get("cross_period_months", 3),
+        "high_frequency_window_days": policy.get("high_frequency_window_days", 30),
+        "high_frequency_min_count": policy.get("high_frequency_min_count", 10),
+        "high_frequency_max_amount": policy.get("high_frequency_max_amount", 100),
     }
 
 

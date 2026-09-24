@@ -31,7 +31,7 @@
         "EXP-0788"
       ],
       "expected_finding_type": "space-time-conflict",
-      "rule_status": "not-implemented"
+      "rule_status": "implemented"
     },
     {
       "id": 4,
@@ -41,7 +41,7 @@
         "EXP-0790"
       ],
       "expected_finding_type": "space-time-conflict",
-      "rule_status": "not-implemented"
+      "rule_status": "implemented"
     },
     {
       "id": 5,
@@ -157,7 +157,7 @@
         "EXP-0826"
       ],
       "expected_finding_type": "high-frequency-small-amount",
-      "rule_status": "not-implemented"
+      "rule_status": "implemented"
     },
     {
       "id": 15,
@@ -175,7 +175,7 @@
         "EXP-0828"
       ],
       "expected_finding_type": "cross-period",
-      "rule_status": "not-implemented"
+      "rule_status": "implemented"
     }
   ]
 }

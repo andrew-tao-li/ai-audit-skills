@@ -1,0 +1,13 @@
+﻿expense_id,employee_id,expense_type,expense_date,amount,currency,vendor_name,invoice_number,approver
+E-HF-01,E-EMP-C,taxi,2026-06-01,30,CNY,网约车平台01,INV-HF-01,A-3
+E-HF-02,E-EMP-C,taxi,2026-06-02,52,CNY,网约车平台02,INV-HF-02,A-3
+E-HF-03,E-EMP-C,taxi,2026-06-03,74,CNY,网约车平台03,INV-HF-03,A-3
+E-HF-04,E-EMP-C,taxi,2026-06-04,96,CNY,网约车平台04,INV-HF-04,A-3
+E-HF-05,E-EMP-C,taxi,2026-06-05,41,CNY,网约车平台05,INV-HF-05,A-3
+E-HF-06,E-EMP-C,taxi,2026-06-08,63,CNY,网约车平台06,INV-HF-06,A-3
+E-HF-07,E-EMP-C,taxi,2026-06-09,85,CNY,网约车平台07,INV-HF-07,A-3
+E-HF-08,E-EMP-C,taxi,2026-06-10,31,CNY,网约车平台08,INV-HF-08,A-3
+E-HF-09,E-EMP-C,taxi,2026-06-11,53,CNY,网约车平台09,INV-HF-09,A-3
+E-HF-10,E-EMP-C,taxi,2026-06-12,75,CNY,网约车平台10,INV-HF-10,A-3
+E-HF-11,E-EMP-C,taxi,2026-06-15,97,CNY,网约车平台11,INV-HF-11,A-3
+E-HF-12,E-EMP-C,taxi,2026-06-16,42,CNY,网约车平台12,INV-HF-12,A-3

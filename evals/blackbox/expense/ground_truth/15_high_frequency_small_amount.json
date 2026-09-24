@@ -1,0 +1,7 @@
+{
+  "fixture_id": "15_high_frequency_small_amount",
+  "description": "测试 high-frequency-small-amount：同一员工 30 天内 ≥10 笔同类型小额",
+  "expected_findings": [
+    "high-frequency-small-amount"
+  ]
+}

@@ -42,5 +42,9 @@
     "助理"
   ],
   "weekend_check": true,
-  "as_of_date": "2026-09-22"
+  "as_of_date": "2026-09-22",
+  "cross_period_months": 3,
+  "high_frequency_window_days": 30,
+  "high_frequency_min_count": 10,
+  "high_frequency_max_amount": 100
 }
