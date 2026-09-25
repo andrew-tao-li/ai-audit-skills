@@ -1000,7 +1000,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "2. 再按员工、商户和期间合并 near duplicate、split 和 outlier 模式。",
         "3. 周末信号单独保持低优先级，主动寻找值班、出差和客户现场等合理解释。", "",
         "## 输出文件", "",
-        "**审计结论（给人看）**：summary.md、findings.csv、findings.jsonl", "",
+        "**审计结论（给人看）**：dashboard.html（全景图，给经理/管理层快速看）、summary.md（完整结论）、findings.csv、findings.jsonl", "",
         "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、clean_expenses.csv、bad_rows.csv、evidence.jsonl", "",
         "## 匿名反馈（可选）", "",
         feedback_stats_line,
@@ -1025,14 +1025,437 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "input_files": input_files, "parameters": parameters, "field_mapping": mapping,
         "scripts": {script_path.name: "sha256:" + sha256_file(script_path)},
         "warnings": warnings, "skipped_rules": skipped, "network_access": False,
-        "outputs": ["clean_expenses.csv", "bad_rows.csv", "findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json"],
+        "outputs": ["clean_expenses.csv", "bad_rows.csv", "findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", "dashboard.html"],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    build_dashboard_html(manifest, builder.findings, len(clean), len(bad), output)
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
     print("（可选）匿名反馈帮助作者改进本工具。说「反馈」/「反馈一下」/「feedback」之类即可；如要附理由（如跑得慢），可一起说（如：反馈，rating 满意，速度偏慢）。", file=sys.stderr)
     return 0
 
+
+def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir):
+    """Generate a self-contained HTML dashboard for at-a-glance audit review.
+
+    No external dependencies (no CDN, no JS libs). Inline CSS + HTML progress bars.
+    Opens in any browser, works offline. Renders a panoramic view with:
+      - Status badge (CRITICAL / REVIEW / PASS)
+      - One-sentence audit conclusion (big text)
+      - KPI cards (rows / bad / findings / duration)
+      - Risk distribution bar chart
+      - Top finding types
+      - Data quality (field null rates, parsed from data_quality.md)
+      - Bad rows summary
+      - Detail links to summary.md / findings.csv / data_quality.md / etc.
+      - 业务实质 disclaimer
+    """
+    import csv as _csv
+    from collections import Counter
+    from html import escape
+
+    # Status determination
+    counts = Counter(f.get("risk_priority", "?") for f in findings)
+    critical = counts.get("critical", 0)
+    high = counts.get("high", 0)
+    medium = counts.get("medium", 0)
+    low = counts.get("low", 0)
+    if critical + high > 0:
+        status = "CRITICAL"
+        status_class = "critical"
+        status_icon = "✗"
+    elif findings:
+        status = "REVIEW"
+        status_class = "review"
+        status_icon = "⚠"
+    else:
+        status = "PASS"
+        status_class = "pass"
+        status_icon = "✓"
+
+    # Top finding types
+    type_counts = Counter(f.get("finding_type", "?") for f in findings)
+    top_types = type_counts.most_common(5)
+
+    # Duration
+    duration_str = "—"
+    try:
+        from datetime import datetime
+        s = datetime.fromisoformat(manifest["started_at"])
+        f_end = datetime.fromisoformat(manifest["finished_at"])
+        duration_str = "%ss" % round((f_end - s).total_seconds(), 1)
+    except (KeyError, ValueError):
+        pass
+
+    # Date
+    date_str = "—"
+    try:
+        date_str = datetime.fromisoformat(manifest["started_at"]).strftime("%Y-%m-%d %H:%M")
+    except (KeyError, ValueError):
+        pass
+
+    version = manifest.get("skill_version", "?")
+
+    # Audit statement
+    if status == "CRITICAL":
+        statement = "发现 <strong>%d</strong> 条异常需人工复核 — 其中 <strong>%d</strong> 条高/严重风险，建议立即查看。" % (len(findings), critical + high)
+    elif status == "REVIEW":
+        parts = []
+        if critical + high: parts.append("%d 条高风险" % (critical + high))
+        if medium: parts.append("%d 条中风险" % medium)
+        if low: parts.append("%d 条低风险" % low)
+        statement = "发现 <strong>%d</strong> 条异常需人工复核 — %s。建议逐条确认。" % (len(findings), "、".join(parts) or "无")
+    else:
+        statement = "未发现明显异常。数据完整性通过体检，可作为进一步分析的可靠基线。"
+
+    # Data quality: parse data_quality.md for null rates
+    null_rates = []
+    qf = output_dir / "data_quality.md"
+    if qf.exists():
+        for line in qf.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("- `") and "%" in line and ":" in line:
+                try:
+                    field_part, rate_part = line.split(":", 1)
+                    field = field_part.strip("- `").strip("`")
+                    rate = float(rate_part.strip().rstrip("%"))
+                    if rate > 0:
+                        null_rates.append((field, rate))
+                except (ValueError, IndexError):
+                    continue
+
+    # Bad rows summary
+    bad_reasons = []
+    bf = output_dir / "bad_rows.csv"
+    if bf.exists():
+        with bf.open(encoding="utf-8-sig", newline="") as fh:
+            for row in _csv.DictReader(fh):
+                reasons = row.get("reasons", "")
+                for r in reasons.split("；"):
+                    r = r.strip()
+                    if r:
+                        bad_reasons.append(r)
+
+    reason_counts = Counter(bad_reasons).most_common(5)
+
+    # Render
+    risk_max = max(critical + high, medium, low, 1)
+    risk_bars_html = ""
+    risk_items = [
+        ("高风险 (high)", critical + high, "risk-high", critical + high > 0),
+        ("中风险 (medium)", medium, "risk-medium", medium > 0),
+        ("低风险 (low)", low, "risk-low", low > 0),
+    ]
+    for label, cnt, cls, active in risk_items:
+        width = (cnt / risk_max) * 100 if active else 0
+        risk_bars_html += (
+            '<div class="chart-bar">'
+            '<div class="label"><span>%s</span><span>%d</span></div>'
+            '<div class="track"><div class="fill %s" style="width: %.1f%%">%d</div></div>'
+            '</div>' % (label, cnt, cls, width, cnt)
+        )
+
+    type_max = max((cnt for _, cnt in top_types), default=1)
+    type_bars_html = ""
+    for ft, cnt in top_types:
+        width = (cnt / type_max) * 100
+        type_bars_html += (
+            '<div class="chart-bar">'
+            '<div class="label"><span>%s</span><span>%d</span></div>'
+            '<div class="track"><div class="fill type" style="width: %.1f%%">%d</div></div>'
+            '</div>' % (escape(ft), cnt, width, cnt)
+        )
+    if not type_bars_html:
+        type_bars_html = '<p class="empty">无 finding 类型。</p>'
+
+    quality_html = ""
+    if null_rates:
+        quality_items = "".join(
+            '<li><span class="field">%s</span><span class="rate">%.2f%%</span></li>' % (escape(f), r)
+            for f, r in null_rates
+        )
+        quality_html = '<section class="section"><h3>数据质量 · 字段空值率</h3><ul>%s</ul></section>' % quality_items
+    elif findings:
+        quality_html = '<section class="section"><h3>数据质量</h3><p class="empty">所有字段空值率均为 0%，数据完整。</p></section>'
+
+    bad_rows_html = ""
+    if bad_reasons:
+        reason_items = "".join(
+            '<li><span class="reason">%s</span>× %d</li>' % (escape(r), c)
+            for r, c in reason_counts
+        )
+        bad_rows_html = (
+            '<section class="section">'
+            '<h3>坏行摘要 · %d 条</h3>'
+            '<ul class="bad-list">%s</ul>'
+            '</section>'
+        ) % (bad_count, reason_items)
+    elif bad_count == 0:
+        bad_rows_html = ''  # 隐式：没坏行就不显示
+
+    html = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>费用审计全景 · expense-audit-v2</title>
+<style>
+:root {
+  --bg: #fafaf7;
+  --surface: #ffffff;
+  --ink: #1c1917;
+  --ink-muted: #57534e;
+  --ink-subtle: #a8a29e;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+  --accent: #0c4a6e;
+  --good: #15803d;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  --good-bg: #dcfce7;
+  --good-border: #86efac;
+  --warn-bg: #fef3c7;
+  --warn-border: #fcd34d;
+  --bad-bg: #fee2e2;
+  --bad-border: #fca5a5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1917;
+    --surface: #292524;
+    --ink: #fafaf9;
+    --ink-muted: #d6d3d1;
+    --ink-subtle: #78716c;
+    --border: #44403c;
+    --border-strong: #57534e;
+    --accent: #7dd3fc;
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --good-bg: #14532d;
+    --good-border: #166534;
+    --warn-bg: #422006;
+    --warn-border: #713f12;
+    --bad-bg: #450a0a;
+    --bad-border: #7f1d1d;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  padding: 2rem 1rem;
+}
+.dashboard { max-width: 1100px; margin: 0 auto; }
+.header {
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: 1.5rem 2rem; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.status-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 1rem; border-radius: 999px;
+  font-weight: 600; font-size: 0.875rem; letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.status-badge.critical { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-border); }
+.status-badge.review { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+.status-badge.pass { background: var(--good-bg); color: var(--good); border: 1px solid var(--good-border); }
+.header-text h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; }
+.header-text .meta { font-size: 0.875rem; color: var(--ink-muted); margin-top: 0.25rem; }
+.statement-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.5rem;
+}
+.statement-card h2 {
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--ink-muted); margin-bottom: 0.75rem;
+}
+.statement-card .statement { font-size: 1.125rem; line-height: 1.7; }
+.statement-card .statement strong { color: var(--accent); font-weight: 700; }
+.kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem; margin-bottom: 1.5rem;
+}
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; }
+.kpi-value { font-size: 2rem; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+.kpi-label {
+  font-size: 0.8125rem; color: var(--ink-muted); margin-top: 0.25rem;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.charts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 1.5rem; margin-bottom: 1.5rem;
+}
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem 2rem;
+}
+.chart-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--ink); }
+.chart-bar { margin: 0.625rem 0; }
+.chart-bar .label {
+  font-size: 0.875rem; color: var(--ink-muted); margin-bottom: 0.25rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.chart-bar .label > span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.chart-bar .track {
+  height: 22px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+}
+.chart-bar .fill {
+  height: 100%%; display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 0.5rem; color: #fff; font-size: 0.8125rem; font-weight: 600;
+  white-space: nowrap; min-width: 1.5rem;
+}
+.chart-bar .fill.risk-high { background: var(--bad); }
+.chart-bar .fill.risk-medium { background: var(--warn); }
+.chart-bar .fill.risk-low { background: var(--ink-subtle); }
+.chart-bar .fill.type { background: var(--accent); }
+.section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.5rem;
+}
+.section h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+.section ul { list-style: none; columns: 2; column-gap: 2rem; }
+.section ul li {
+  padding: 0.375rem 0; font-size: 0.875rem; color: var(--ink-muted);
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px dashed var(--border);
+  break-inside: avoid;
+}
+.section ul li .field { color: var(--ink); font-weight: 500; }
+.section ul li .rate { font-variant-numeric: tabular-nums; color: var(--ink); }
+.section p.empty { color: var(--ink-muted); font-size: 0.875rem; }
+.section .bad-list { list-style: none; columns: 1; }
+.section .bad-list li {
+  padding: 0.5rem 0; font-size: 0.875rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.section .bad-list .reason {
+  display: inline-block; padding: 0.125rem 0.5rem; background: var(--bad-bg);
+  color: var(--bad); border-radius: 4px; font-weight: 600; font-size: 0.8125rem;
+}
+.section .bad-list .count { color: var(--ink-muted); font-size: 0.8125rem; }
+.details {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.5rem;
+}
+.details h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+.details-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+.details-grid a {
+  display: block; padding: 0.875rem 1rem; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  text-decoration: none; color: var(--ink); font-size: 0.875rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.details-grid a:hover { border-color: var(--accent); background: var(--surface); }
+.details-grid a .name { font-weight: 600; display: block; margin-bottom: 0.125rem; }
+.details-grid a .desc { font-size: 0.75rem; color: var(--ink-muted); }
+.disclaimer {
+  margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--warn-bg);
+  border: 1px solid var(--warn-border); border-radius: 8px;
+  font-size: 0.8125rem; line-height: 1.6; color: var(--ink);
+}
+.disclaimer a { color: var(--accent); }
+footer.foot { text-align: center; color: var(--ink-subtle); font-size: 0.75rem; padding: 1rem; }
+@media print {
+  body { background: #fff; padding: 0; }
+  .chart-card, .section, .statement-card, .kpi, .details, .header {
+    box-shadow: none; page-break-inside: avoid;
+  }
+}
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .header { flex-direction: column; align-items: flex-start; gap: 1rem; padding: 1rem 1.25rem; }
+  .header-text h1 { font-size: 1.25rem; }
+  .statement-card { padding: 1.25rem; }
+  .statement-card .statement { font-size: 1rem; }
+  .chart-card { padding: 1.25rem; }
+  .section { padding: 1.25rem; }
+  .section ul { columns: 1; }
+  .kpi-value { font-size: 1.75rem; }
+  .details { padding: 1.25rem; }
+}
+</style>
+</head>
+<body>
+<main class="dashboard">
+<header class="header">
+  <div class="status-badge %s">%s %s</div>
+  <div class="header-text">
+    <h1>费用审计全景</h1>
+    <div class="meta">expense-audit-v2 v%s · %s · 耗时 %s</div>
+  </div>
+</header>
+
+<section class="statement-card">
+  <h2>审计结论</h2>
+  <p class="statement">%s</p>
+</section>
+
+<section class="kpis">
+  <div class="kpi"><div class="kpi-value">%d</div><div class="kpi-label">有效行数</div></div>
+  <div class="kpi"><div class="kpi-value">%d</div><div class="kpi-label">坏行</div></div>
+  <div class="kpi"><div class="kpi-value">%d</div><div class="kpi-label">Findings</div></div>
+  <div class="kpi"><div class="kpi-value">%s</div><div class="kpi-label">耗时</div></div>
+</section>
+
+<section class="charts">
+  <div class="chart-card">
+    <h3>风险分布</h3>
+    %s
+  </div>
+  <div class="chart-card">
+    <h3>Finding 类型 Top %d</h3>
+    %s
+  </div>
+</section>
+
+%s
+
+%s
+
+<section class="details">
+  <h3>细节参考</h3>
+  <div class="details-grid">
+    <a href="summary.md"><span class="name">summary.md</span><span class="desc">完整审计结论与建议复核顺序</span></a>
+    <a href="findings.csv"><span class="name">findings.csv</span><span class="desc">finding 明细（按风险排序）</span></a>
+    <a href="findings.jsonl"><span class="name">findings.jsonl</span><span class="desc">finding 行级 JSON</span></a>
+    <a href="data_quality.md"><span class="name">data_quality.md</span><span class="desc">数据体检报告</span></a>
+    <a href="bad_rows.csv"><span class="name">bad_rows.csv</span><span class="desc">被隔离的坏行（%d）</span></a>
+    <a href="clean_expenses.csv"><span class="name">clean_expenses.csv</span><span class="desc">通过体检的有效行</span></a>
+    <a href="run_manifest.json"><span class="name">run_manifest.json</span><span class="desc">运行参数 / 哈希 / 跳过规则</span></a>
+    <a href="evidence.jsonl"><span class="name">evidence.jsonl</span><span class="desc">行级证据（可回溯）</span></a>
+  </div>
+  <div class="disclaimer">
+    业务定位：<strong>辅助分析，不替代专业审计判断</strong>。本工具不连接银行流水等外部数据源；最终结论必须由有资质的审计师做出。详细见 <code>references/business-substance.md</code>。
+  </div>
+</section>
+
+</main>
+<footer class="foot">本 dashboard 由 expense-audit-v2 v%s 自动生成 · 离线可看 · 无外部依赖</footer>
+</body>
+</html>
+""" % (
+        status_class, status_icon, status,           # status badge
+        version, date_str, duration_str,             # meta line
+        statement,                                   # audit statement
+        clean_count, bad_count, len(findings), duration_str,  # 4 KPIs
+        risk_bars_html,                              # risk distribution chart
+        len(top_types),                               # "Top N" title
+        type_bars_html,                               # finding types chart
+        quality_html,                                 # data quality section
+        bad_rows_html,                                # bad rows section
+        bad_count,                                    # details link text
+        version,                                      # footer version
+    )
+
+    (output_dir / "dashboard.html").write_text(html, encoding="utf-8")
 
 if __name__ == "__main__":
     try:
@@ -1040,3 +1463,4 @@ if __name__ == "__main__":
     except Exception as exc:
         print("ERROR: %s" % exc, file=sys.stderr)
         raise SystemExit(2)
+
