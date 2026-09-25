@@ -100,4 +100,4 @@ ai-audit-skills/
 └── evals/                  pack 级结构、黑盒评分、触发和跨 Agent 评估
 ```
 
-当前版本：`expense-audit-v2`、`procurement-fraud-v2`、`investigation-assistant-v2`（均 0.2.0）。
+当前版本：见 [VERSIONS.json](VERSIONS.json)（各 skill 独立版本号）。

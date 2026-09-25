@@ -86,6 +86,30 @@ def has_open_proposal(token, label="proposal"):
         return False
 
 
+def start_proposal_branch(branch):
+    """隔离工作区：先把无关改动 stash 起来，再建提案分支。
+
+    否则 `git add -A` 会把工作区里所有未提交的东西（如例行写出的 state.json、日志、
+    甚至未提交的手工改动）一起扫进 PR。返回 (是否需要恢复 stash, 建分支是否成功)。
+    """
+    dirty = run(["git", "status", "--porcelain"]).stdout.strip()
+    stashed = False
+    if dirty:
+        r = run(["git", "stash", "push", "-u", "-m", "pre-proposal-isolation"])
+        stashed = r.returncode == 0
+    ok = run(["git", "checkout", "-b", branch]).returncode == 0
+    return stashed, ok
+
+
+def finish_proposal(stashed):
+    """回到 main（或原分支）并恢复之前 stash 的改动。"""
+    cur = run(["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip()
+    if cur != "main":
+        run(["git", "checkout", "main"])
+    if stashed:
+        run(["git", "stash", "pop"])
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
@@ -115,8 +139,9 @@ def main() -> int:
         print(json.dumps(failures, ensure_ascii=False, indent=2)[:1500])
         return 0
 
-    # 1. 建分支
-    if run(["git", "checkout", "-b", branch]).returncode != 0:
+    # 1. 隔离工作区 + 建分支
+    stashed, ok = start_proposal_branch(branch)
+    if not ok:
         print("建分支失败（可能已存在）", file=sys.stderr)
         return 1
 
@@ -134,7 +159,7 @@ def main() -> int:
     changed = run(["git", "status", "--porcelain"]).stdout.strip()
     if not changed:
         print("OpenCode 未产生改动，放弃提案。")
-        run(["git", "checkout", "-"])
+        finish_proposal(stashed)
         run(["git", "branch", "-D", branch])
         return 0
 
@@ -179,8 +204,8 @@ def main() -> int:
             subprocess.run(["bash", str(notify_sh), "[Audit Box] 有新的改进提案",
                             "自动生成了 1 条修复提案（%d 条失败），请在 GitHub 审阅并决定是否合并：\n%s" % (n, pr_url)],
                            cwd=str(ROOT), capture_output=True, text=True)
-        # 回到 main
-        run(["git", "checkout", "main"])
+        # 回到 main + 恢复工作区
+        finish_proposal(stashed)
     except Exception as e:  # noqa: BLE001
         print("开 PR 失败：%s" % e, file=sys.stderr)
         return 1

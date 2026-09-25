@@ -10,12 +10,12 @@
 
 四个独立 skill，针对国内审计师/合规/财务/采购/HR 的常见场景：
 
-| Skill | 版本 | 用途 |
-|---|---|---|
-| **expense-audit-v2** | 0.2.2 | 费用/差旅台账异常扫描：重复、超限、拆单、自审自批、跨人复用、日期倒挂等 |
-| **procurement-fraud-v2** | 0.2.1 | 采购舞弊红旗筛查：共享账号、员工-供应商关联、价格离群、流程倒置、投标相似度等 |
-| **investigation-assistant-v2** | 0.2.1 | 调查材料整理：证据哈希、时间线、关系图、证据矩阵、反证、假设登记、访谈计划 |
-| **cn-entity-relation-check** | 0.1.1 | 公开工商关联排查：公司-公司、公司-人、人-人三态判定（关联/不关联/待核查） |
+| Skill | 用途 |
+|---|---|
+| **expense-audit-v2** | 费用/差旅台账异常扫描：重复、超限、拆单、自审自批、跨人复用、日期倒挂等 |
+| **procurement-fraud-v2** | 采购舞弊红旗筛查：共享账号、员工-供应商关联、价格离群、流程倒置、投标相似度等 |
+| **investigation-assistant-v2** | 调查材料整理：证据哈希、时间线、关系图、证据矩阵、反证、假设登记、访谈计划 |
+| **cn-entity-relation-check** | 公开工商关联排查：公司-公司、公司-人、人-人三态判定（关联/不关联/待核查） |
 
 四个 skill 都已通过 F1 100% 的黑盒测试（expense 25 个、procurement 14 个、investigation 3 个黄金测试集，cn-entity 16 场景行级盲测 16/16 通过）。
 
@@ -171,7 +171,7 @@ ai-audit-skills/
 
 ---
 
-**最后更新**：最新版见 <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest>（当前 pack `v0.3.2`，各 skill 版本见 `VERSIONS.json`）。
+**最后更新**：最新版见 <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest>（各 skill 版本见 `VERSIONS.json`）。
 **作者**：andrew-tao-li（@andrew-tao-li）
 **项目主页**：https://github.com/andrew-tao-li/ai-audit-skills
 **公众号**：「美会侠」（美丽的美、会计的会、侠客的侠）
