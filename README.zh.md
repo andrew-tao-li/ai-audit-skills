@@ -146,7 +146,7 @@ ai-audit-skills/
 - **SkillHub（skillhub.cn）**：中国版 "Top 50 精选"，腾讯云 CDN + 百度 SEO 优化。**已上架准备中**（需先完成实名认证）。
 - **ClawHub（OpenClaw 生态）**：WorkBuddy / 有道龙虾用户一键装。**发布脚本就绪**。
 - **微信公众号**：「美会侠」（美丽的美、会计的会、侠客的侠）——国内审计师日常工作案例 + 工具应用。
-- **知识星球**：「涛哥」（也叫「安德鲁」）——深度交流与真实案例。
+- **知识星球**：「涛哥也叫安德鲁」——深度交流与真实案例。
 - **知乎 / 掘金**：技术分享。
 
 ## 参与贡献
@@ -175,7 +175,7 @@ ai-audit-skills/
 **作者**：andrew-tao-li（@andrew-tao-li）
 **项目主页**：https://github.com/andrew-tao-li/ai-audit-skills
 **公众号**：「美会侠」（美丽的美、会计的会、侠客的侠）
-**知识星球**：「涛哥」（也叫「安德鲁」）
+**知识星球**：「涛哥也叫安德鲁」
 
 > 业务实质性提醒：本工具为**辅助分析**，不替代专业审计/合规/法律判断。
 > 详见 `skills-v2/expense-audit-v2/references/business-substance.md`。
