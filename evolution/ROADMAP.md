@@ -27,14 +27,16 @@
 
 - **审批闭环（半自动 AI 提案 → 人类审批 → 自动应用）**（机制已建，2026-09-26）：Layer 2 的「工具」都写好了（`guardrail.py` 的 apply/verify/rollback、`evolve.sh` 的提案生成、OpenCode web），但「闭环」没接起来——现状是「半自动的工具箱，不是半自动的流水线」。
   **已实现（2026-09-26）**：
-  - `evolution/propose_fix.py`：读失败（state.json 的 `open_failures` + OpenCode 验收结果）→ 建分支 → 用 OpenCode（`opencode run --auto`）尝试修复 → push → **开 PR** → 企业微信通知。
+  - `evolution/propose_fix.py`：读失败（state.json 的 `open_failures` + **OpenCode 验收结果**）→ 隔离工作区 → 建分支 → 用 OpenCode（`opencode run --auto`）尝试修复 → push → **开 PR** → 企业微信通知。
+  - `evolution/patrol.py`：**定期主动巡检**（每 7 天，4 个审视角度轮换：描述触发准确性 / 文档一致性 / 规则覆盖盲点 / 审计语言可用性）→ 没失败也主动找一条最小改进 → 开 PR。
   - `.github/workflows/pr-verify.yml`：每个 PR 自动跑 `validate_pack --run-tests` + 黑盒 F1，任一退步则 PR 检查失败。
   - **审批 = 在 GitHub 上合并 PR**（原生 diff 审阅 + CI 校验 + 合并即生效）；拒绝 = 关闭 PR。
-  - `evolve.sh` Step 4b：有 `GITHUB_TOKEN` 时自动跑 propose_fix。
-  **待用户**：当前 fine-grained PAT 缺 `Pull requests: read and write` 权限（`403 Resource not accessible`），需在 GitHub 上给该 token 勾上，或换一个新 token。
+  - `evolve.sh`：Step 4b（有失败→propose_fix）、Step 4c（每 7 天→patrol）。
+  - 用户已给 PAT 补 `Pull requests: read and write` 权限；**全流程已实测通过**（PR #1 冒烟、PR #2、PR #3 真实巡检 + 合并生效）。
+  - **隔离修复**：propose_fix/patrol 先把无关改动 `git stash` 隔离，避免 `git add -A` 把未提交的手工改动/例行副作用扫进 PR。
   **仍未做**：
-  1. `evolve.sh` 的 LLM 提案**仍只在「失败数 > 0」时生成** → 健康时（F1=100%）不进化；若要"主动巡检"，需另加。
-  2. 通知仍是「有提案」，但提案现在能真正落到 PR（可审阅、可合并）。
+  - `evolve.sh` 的 LLM 分析步骤仍只在「失败数 > 0」时生成；不过巡检已覆盖了"健康时也进化"的需求。
+  - 通知里还没带上 PR 链接（目前打 PR URL 到 stdout + 通知标题；可后续把链接拼进通知正文）。
 
 - **expense 输出打磨（低优先级）**（暂缓，2026-09-24）：审计师盲测暴露的两个 UX 项，**非正确性问题，可缓**。① config 驱动规则（split-expense / policy-threshold / large-amount-low-level / missing-expense-type 等）缺配置时静默跳过，虽有 `data_quality` 记录「未提供 limits」等，但首跑用户可能误以为「漏检」；② weekend-signal 占 findings 约 88% 噪声，虽已标 weak/low 且 `summary` 给了复核顺序，但 `findings.csv` 仍是一屏噪声。
    - 诚实评估：两项都是「打磨」而非「大问题」。①② 已有兜底（data_quality 记录 + weak 标记 + 复核顺序），只是呈现不够醒目。
