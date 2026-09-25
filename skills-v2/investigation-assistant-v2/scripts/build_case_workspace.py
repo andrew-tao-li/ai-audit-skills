@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 SKILL = "investigation-assistant-v2"
 
 MESSAGE_FIELDS = {

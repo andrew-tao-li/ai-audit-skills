@@ -1,7 +1,6 @@
 # AI 审计技能包（中文版）
 
-> 一个由四位真实审计师、两位创始人打磨四个月的开源 AI 审计技能集。完全离线、纯本地运行。
-> 提供给 WorkBuddy / OpenCode / Claude Code / Cursor / OpenClaw 等智能体平台使用。
+> 四个可独立安装、完全离线运行的 AI 审计 skill。面向 WorkBuddy / OpenCode / Claude Code / Cursor / OpenClaw 等智能体平台。
 
 [English README](README.md) | 国内市场优先发布到 **SkillHub（skillhub.cn）** + **ClawHub（OpenClaw 生态）**。
 
@@ -146,7 +145,7 @@ ai-audit-skills/
 
 - **SkillHub（skillhub.cn）**：中国版 "Top 50 精选"，腾讯云 CDN + 百度 SEO 优化。**已上架准备中**（需先完成实名认证）。
 - **ClawHub（OpenClaw 生态）**：WorkBuddy / 有道龙虾用户一键装。**发布脚本就绪**。
-- **微信公众号**："费用审计那点事"——国内审计师日常工作案例 + 工具应用。
+- **微信公众号**：（公众号名称待作者填写）——国内审计师日常工作案例 + 工具应用。
 - **知乎 / 掘金**：技术分享。
 
 ## 参与贡献
@@ -160,7 +159,7 @@ ai-audit-skills/
 
 ## 致谢
 
-- 4 位真实审计师（admin/chenhailong + 其他）— 他们的盲测 + 安全审计让这个项目从"作者自嗨"变成"真实可用"。
+- 两位给出真实反馈的测试者（@admin、@chenhailong）——他们的功能测试与安全审计暴露了真实问题，让项目从"作者自测"走向"真实可用"。
 - OpenClaw / ClawHub / SkillHub 平台的开源生态。
 - 所有贡献者。
 
@@ -174,7 +173,7 @@ ai-audit-skills/
 **最后更新**：v0.3.1 已在 GitHub Release 公开。Pack 版本 `v0.3.0`。
 **作者**：andrew-tao-li（@andrew-tao-li）
 **项目主页**：https://github.com/andrew-tao-li/ai-audit-skills
-**公众号**：「费用审计那点事」（同名 ID / 二维码见各发布页）
+**公众号**：（名称待作者填写，二维码见各发布页）
 
 > 业务实质性提醒：本工具为**辅助分析**，不替代专业审计/合规/法律判断。
 > 详见 `skills-v2/expense-audit-v2/references/business-substance.md`。

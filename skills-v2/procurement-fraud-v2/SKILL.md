@@ -1,7 +1,7 @@
 ---
 name: procurement-fraud-v2
 description: "对供应商主数据、采购订单、付款、员工和投标文本执行采购舞弊红旗筛查，识别共享属性（银行账号/电话/地址/邮箱/法人）、员工—供应商关联、peer-group 价格离群、拆单、流程时序倒置、采购员集中度、投标文本余弦相似度、报价子簇异常、新成立供应商接大单、超额付款、付款早于下单、收货早于审批。Use when the user asks to screen procurement CSV/XLSX data, vendor master, purchase orders, payments, bid text, or mentions shared accounts, split orders, three-way match, approval timing, red flags, collusion indicators, new vendor with large order, overpayment, or asks for findings.jsonl/relationship_graph.json/investigation_handoff.json. Do not use for employee expense claims, draft policies, write contracts, vendor onboarding/offboarding, automatic blacklisting, payment freezes, final collusion/corruption/guilt decisions, vendor email drafting, internet lookups, or summarization."
-version: 0.2.1
+version: 0.2.2
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"

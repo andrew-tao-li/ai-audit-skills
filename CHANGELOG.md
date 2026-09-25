@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.2 — 2026-09-25（pack release）
+
+- **流程修复**：v0.3.1 的 release zip 漏了重打包（改完 skills-v2/ 后没重跑 build-dist + 重传），本次修正。
+- **expense-audit-v2 0.2.5**：新增 `dashboard.html`——自包含 HTML 全景图（CRITICAL/REVIEW/PASS 徽章 + 4 KPI + 风险分布柱状图 + Finding 类型 Top5 + 数据质量字段空值率 + 坏行摘要 + 8 个细节跳转链接 + "不替代专业判断"声明；0 外部资源，离线可看，支持深色模式与打印）。
+- **四个 skill 的 manifest description** 加边界声明（"辅助分析，不替代专业判断；不含敏感数据"）。
+- **文档**：新增 `README.zh.md`（中文版，如实描述）、`docs/wechat-article.md`（公众号草稿）；`install.md` 重写为「GitHub 是唯一主安装路径」，ClawHub/SkillHub 移入「已发布用户」尾部小节。
+
 ## v0.3.1 — 2026-09-24（pack release）
 
 把 expense 的「反馈 + 版本检查」成功经验复制到其余 3 个 skill。

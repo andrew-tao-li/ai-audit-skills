@@ -2,7 +2,7 @@
   "id": "investigation-assistant-v2",
   "name": "调查助手",
   "name_en": "Investigation Assistant",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "在授权、人员、期间和数据来源已明确后，把举报、投诉、邮件、消息和日志整理为可追溯的调查工作空间，含证据清单与哈希、只读副本、时间线、关系、证据矩阵、反证、假设登记、访谈计划和保管链。 辅助整理证据链与时间线，不替代专业调查/法律判断；不含身份证号/账号/凭证/未授权客户资料等敏感信息。",
   "author": "andrew-tao-li",
   "homepage": "https://github.com/andrew-tao-li/ai-audit-skills",
