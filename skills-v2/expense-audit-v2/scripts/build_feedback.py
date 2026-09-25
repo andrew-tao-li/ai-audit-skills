@@ -19,6 +19,32 @@ from pathlib import Path
 
 RATING_LABEL = {"satisfied": "满意", "neutral": "一般", "unsatisfied": "不满意"}
 
+# 风险等级英文 → 中文
+PRIORITY_ZH = {"critical": "严重", "high": "高风险", "medium": "中风险", "low": "低风险"}
+
+# finding_type 英文 key → 中文显示名（与 dashboard 一致）
+TYPE_ZH = {
+    "exact-duplicate-invoice": "发票号重复",
+    "exact-duplicate-employee-date-amount": "同员工同日同金额",
+    "near-duplicate": "金额近似",
+    "policy-threshold": "超制度上限",
+    "split-expense": "拆单报销",
+    "weekend-signal": "周末消费",
+    "holiday-signal": "节假日消费",
+    "robust-outlier": "异常高额",
+    "self-approval": "自审自批",
+    "cross-employee-invoice": "发票跨人复用",
+    "submit-before-expense": "提交早于消费",
+    "future-date": "未来日期",
+    "missing-expense-type": "缺费用类型",
+    "sequential-invoice": "发票连号",
+    "invoice-format-anomaly": "发票格式异常",
+    "large-amount-low-level-approval": "大额低层级审批",
+    "space-time-conflict": "时空冲突",
+    "cross-period": "跨期入账",
+    "high-frequency-small-amount": "高频小额",
+}
+
 # 单条消息 body 上限 ~4 KB；留余地
 NOTE_MAX_LEN = 500
 
@@ -78,8 +104,8 @@ def main() -> int:
         ),
         "",
         "- Findings：%d" % finding_stats["total"],
-        "- 发现类型：`%s`" % json.dumps(finding_stats["by_type"], ensure_ascii=False),
-        "- 风险分布：`%s`" % json.dumps(finding_stats["by_priority"], ensure_ascii=False),
+        "- 发现类型：`%s`" % json.dumps({TYPE_ZH.get(k, k): v for k, v in finding_stats["by_type"].items()}, ensure_ascii=False),
+        "- 风险分布：`%s`" % json.dumps({PRIORITY_ZH.get(k, k): v for k, v in finding_stats["by_priority"].items()}, ensure_ascii=False),
     ]
     if duration is not None:
         lines.append("- 耗时：%s 秒" % duration)
