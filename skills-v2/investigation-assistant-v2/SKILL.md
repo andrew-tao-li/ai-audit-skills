@@ -1,7 +1,7 @@
 ---
 name: investigation-assistant-v2
 description: "在授权、人员、期间和数据来源已明确后，把举报、投诉、邮件、消息和日志整理为可追溯调查工作空间，包括证据清单与哈希、只读副本、时间线、关系、证据矩阵、反证、假设登记、访谈计划和保管链。必须先取得显式授权（authorization_confirmed=true）、明确范围（persons_in_scope/date_range/allowed_sources）和禁用联网（network_access=false）。Use when the user asks to organize an authorized internal investigation; mentions chain-of-custody, custody log, SHA-256 integrity check, scope filter, out-of-scope exclusion, entity index, evidence matrix, hypothesis register, interview plan, case memo, authorized whistleblower case files, or timezone-aware timeline. Do not use for initial expense/procurement screening, covert collection, secret monitoring, private chat scraping, social media lookups, contacting subjects directly, deleting evidence, expunging records, or automatic discipline/guilt decisions."
-version: 0.2.2
+version: 0.2.3
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; tzdata required for IANA timezones (auto-install hint on Windows); openpyxl for XLSX"
@@ -80,7 +80,7 @@ python3 scripts/build_case_workspace.py \
 
 ## Output contract
 
-输出包括 `evidence_inventory.jsonl`、`evidence.jsonl`、`chain_of_custody.jsonl`、`evidence/raw/`、`derived/normalized_messages.csv`、`derived/normalized_logs.csv`、`timeline.csv`、`entity_index.csv`、`relationships.json`、`evidence_matrix.csv`、`hypothesis_register.csv`、`findings.jsonl`、`interview_plan.csv`、`case_memo_template.md`、`run_manifest.json`。详见 [调查工作流](references/investigation-workflow.md)。
+输出包括 `dashboard.html`（面向调查负责人的全景：授权范围、证据覆盖、事项×证据矩阵、下一步）、`evidence_inventory.jsonl`、`evidence.jsonl`、`chain_of_custody.jsonl`、`evidence/raw/`、`derived/normalized_messages.csv`、`derived/normalized_logs.csv`、`timeline.csv`、`entity_index.csv`、`relationships.json`、`evidence_matrix.csv`、`hypothesis_register.csv`、`findings.jsonl`、`interview_plan.csv`、`case_memo_template.md`、`run_manifest.json`。详见 [调查工作流](references/investigation-workflow.md)。
 
 ## Failure and fallback
 

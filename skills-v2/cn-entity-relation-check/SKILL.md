@@ -1,7 +1,7 @@
 ---
 name: cn-entity-relation-check
 description: "对两个主体（公司/自然人）核查中国公开工商信息中是否存在可验证关联，支持公司-公司、公司-自然人、自然人-自然人三类组合，输出关联/不关联/待核查三态结论。Use when the user asks whether two companies or people are related, requests 关联排查/关联分析/关系穿透, supplier-employee relationship checks, related-party screening, 共同股东/高管/法人 overlap, 实际控制/最终受益人, or Chinese corporate due-diligence tasks. Do not use for risk scoring, fraud conviction, benefit-transfer conclusions, personal background investigation (family, private contact, social media), or internal hidden-relationship mining."
-version: 0.1.2
+version: 0.1.3
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline decision core; Python 3.10+ for scripts; structured corporate data (MCP/API) preferred, web search as fallback"
@@ -139,3 +139,5 @@ python3 scripts/cli.py --a "上海甲科技有限公司" --b "上海乙科技有
 ```
 
 脚本只做确定性判定（`relation_core.py` + `result_validator.py`），不联网、不内置 Key。宿主 Agent 可用它把关键判断确定性化，也可仅凭本协议人工执行。
+
+加 `--dashboard <路径>` 可把结论写成 HTML 全景报告（面向使用者，全中文，突出三态结论与关系路径）。

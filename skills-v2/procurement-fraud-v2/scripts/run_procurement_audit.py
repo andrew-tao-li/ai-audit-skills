@@ -17,7 +17,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 SKILL = "procurement-fraud-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -989,12 +989,209 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "parameters": {key: config.get(key) for key in ("config_version", "default_currency", "price_outlier_min_group_size", "price_outlier_robust_z", "split_window_days", "approval_thresholds", "bid_similarity_threshold", "bid_ngram_min", "bid_ngram_max", "bid_price_close_ratio", "concentration_share", "concentration_min_orders", "common_template_phrases", "whitelists")},
         "scripts": {script.name: "sha256:" + sha256_file(script)}, "warnings": warnings, "skipped_modules": skipped,
         "network_access": False,
-        "outputs": sorted(path.name for path in output.iterdir()) + ["run_manifest.json"],
+        "outputs": sorted(path.name for path in output.iterdir()) + ["run_manifest.json", "dashboard.html"],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    try:
+        build_dashboard_html(manifest, builder.findings, len(bad_rows), handoff, {"nodes": nodes, "edges": edges}, output)
+    except Exception as _e:
+        print("WARNING: dashboard.html generation failed: %s" % _e, file=sys.stderr)
     print(json.dumps({"output": str(output), "findings": len(builder.findings), "evidence": len(builder.evidence), "handoff": handoff["status"]}, ensure_ascii=False))
     return 0
+
+
+DASHBOARD_CSS = """*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f5f3ef;--card:#fff;--ink:#1a1a1a;--muted:#6b6b6b;--faint:#9a9a9a;--line:#e5e1da;--brand:#8b1f2f;--brand-soft:#f7ecec;--red:#b42318;--red-bg:#fdecea;--amber:#b54708;--amber-bg:#fdf3e7;--green:#067647;--green-bg:#eaf7ef}
+@media(prefers-color-scheme:dark){:root{--bg:#171614;--card:#211f1d;--ink:#f2efea;--muted:#b3ada4;--faint:#7d776e;--line:#33302c;--brand:#e8a0a8;--brand-soft:#2a1e20;--red:#f97066;--red-bg:#3a1e1c;--amber:#fdb022;--amber-bg:#33260f;--green:#4ade80;--green-bg:#13291c}}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;padding:40px 20px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto}
+.masthead{display:flex;align-items:center;gap:18px;margin-bottom:28px}
+.seal{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;flex:none}
+.seal.critical{background:var(--red-bg);color:var(--red)}
+.seal.review{background:var(--amber-bg);color:var(--amber)}
+.seal.pass{background:var(--green-bg);color:var(--green)}
+.masthead h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.masthead .sub{font-size:13px;color:var(--muted);margin-top:3px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:middle}
+.tag.critical{background:var(--red-bg);color:var(--red)}
+.tag.review{background:var(--amber-bg);color:var(--amber)}
+.tag.pass{background:var(--green-bg);color:var(--green)}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:12px;padding:22px 26px;margin-bottom:14px}
+.verdict .lbl{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--brand);text-transform:uppercase;margin-bottom:8px}
+.verdict p{font-size:17px;line-height:1.75}
+.verdict b{color:var(--brand);font-weight:800}
+.handoff{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:26px;font-size:14px}
+.handoff .hl{font-weight:800;color:var(--brand);margin-right:8px}
+h2.sec{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:30px 0 14px}
+.finding{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:12px}
+.finding.critical,.finding.high{border-left:5px solid var(--red)}
+.finding.medium{border-left:5px solid var(--amber)}
+.finding.low{border-left:5px solid var(--faint)}
+.finding-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.badge{font-size:12px;font-weight:800;padding:3px 10px;border-radius:6px}
+.badge.critical,.badge.high{background:var(--red-bg);color:var(--red)}
+.badge.medium{background:var(--amber-bg);color:var(--amber)}
+.badge.low{background:var(--line);color:var(--muted)}
+.finding-type{font-size:12px;color:var(--faint)}
+.fa-amount{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.finding-title{font-size:16px;font-weight:700;margin-bottom:10px}
+.finding-who{font-size:14px;color:var(--muted);margin-bottom:6px}
+.finding-body{font-size:14px;margin-bottom:4px}
+.k{display:inline-block;min-width:38px;color:var(--faint);font-size:12px;margin-right:6px}
+.more{font-size:13px;color:var(--muted);margin:4px 0 0}
+.bar-row{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:13px}
+.bar-name{width:210px;flex:none;color:var(--ink)}
+.bar-track{flex:1;height:12px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar-fill{display:block;height:100%;background:var(--brand);border-radius:99px}
+.bar-num{width:28px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:14px}
+.note b{font-weight:700}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 16px;text-decoration:none;color:var(--ink)}
+.links a:hover{border-color:var(--brand)}
+.lk-name{display:block;font-weight:700;font-size:14px}
+.lk-desc{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.disclaimer{margin-top:26px;background:var(--brand-soft);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:13px;color:var(--muted)}
+.disclaimer b{color:var(--brand)}
+.foot{text-align:center;color:var(--faint);font-size:12px;margin-top:22px}
+@media print{body{background:#fff;padding:0}.finding,.note,.links a,.verdict,.disclaimer,.handoff{break-inside:avoid}}
+@media(max-width:640px){body{padding:20px 12px}.masthead h1{font-size:21px}.bar-name{width:120px}.links{grid-template-columns:1fr}.finding-title{font-size:15px}}"""
+
+
+def build_dashboard_html(manifest, findings, bad_count, handoff, graph, output_dir):
+    """采购舞弊红旗全景报告（面向审计/采购经理，全中文，先说问题）。"""
+    from collections import Counter
+    from html import escape
+
+    ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+
+    def tzh(ft):
+        return FINDING_TYPE_ZH.get(ft, ft)
+
+    counts = Counter(f.get("risk_priority", "?") for f in findings)
+    critical, high = counts.get("critical", 0), counts.get("high", 0)
+    medium, low = counts.get("medium", 0), counts.get("low", 0)
+    if critical + high > 0:
+        status_class, status_label = "critical", "CRITICAL"
+    elif findings:
+        status_class, status_label = "review", "REVIEW"
+    else:
+        status_class, status_label = "pass", "PASS"
+
+    duration_str, date_str = "—", "—"
+    try:
+        s = datetime.fromisoformat(manifest["started_at"])
+        e = datetime.fromisoformat(manifest["finished_at"])
+        duration_str = "%.1f 秒" % (e - s).total_seconds()
+        date_str = s.strftime("%Y-%m-%d %H:%M")
+    except (KeyError, ValueError):
+        pass
+    version = manifest.get("skill_version", "?")
+
+    if status_class == "critical":
+        statement = "本次筛查发现 <b>%d 条</b>采购红旗线索，其中 <b>%d 条为高风险</b>。高风险项已在下方逐条列出，建议优先核对这些供应商与订单。" % (len(findings), critical + high)
+    elif status_class == "review":
+        statement = "本次筛查发现 <b>%d 条</b>采购红旗线索（%d 条中风险、%d 条低风险），均已在下方列出。建议按供应商与采购员合并后逐条确认。" % (len(findings), medium, low)
+    else:
+        statement = "本次未发现明显红旗。数据完整性通过体检，可作为进一步分析的可靠基线。"
+
+    def entities_human(f):
+        out = []
+        for ent in f.get("entities", []):
+            t, i = ent.get("type"), ent.get("id")
+            if t == "vendor":
+                out.append("供应商 %s" % i)
+            elif t == "employee":
+                out.append("员工 %s" % i)
+            else:
+                out.append(str(i))
+        return "、".join(out[:4]) if out else "（无明确对象）"
+
+    key = sorted([f for f in findings if f.get("risk_priority") in ("critical", "high", "medium")],
+                 key=lambda f: (ORDER.get(f.get("risk_priority"), 9), -f.get("risk_score", 0)))
+    shown, rest = key[:8], max(0, len(key) - 8)
+    cards = []
+    for f in shown:
+        pr = f.get("risk_priority", "low")
+        amt = f.get("max_amount")
+        amt_html = '<span class="fa-amount">涉及金额 %.0f</span>' % amt if isinstance(amt, (int, float)) else ""
+        cards.append(
+            '<article class="finding %s"><div class="finding-head">'
+            '<span class="badge badge-%s">%s</span><span class="finding-type">%s</span>%s</div>'
+            '<h3 class="finding-title">%s</h3>'
+            '<div class="finding-who"><span class="k">涉及</span>%s</div>'
+            '<div class="finding-body"><span class="k">发现</span>%s</div>'
+            '<div class="finding-body"><span class="k">建议</span>%s</div></article>' % (
+                pr, pr, {"critical": "严重", "high": "高风险", "medium": "中风险", "low": "低风险"}.get(pr, pr),
+                escape(tzh(f.get("finding_type", ""))), amt_html,
+                escape(f.get("title") or tzh(f.get("finding_type", ""))),
+                escape(entities_human(f)),
+                escape("；".join(f.get("facts", [])[:2]) or "—"),
+                escape("；".join(f.get("recommended_next_steps", [])[:2]) or "—"),
+            ))
+    findings_html = "".join(cards) if cards else '<p class="empty">未发现需复核的重点项。</p>'
+    if rest > 0:
+        findings_html += '<p class="more">另有 %d 条中低风险线索，详见下方 <b>findings.csv</b>。</p>' % rest
+
+    # handoff callout
+    hs = handoff.get("status") if isinstance(handoff, dict) else None
+    if hs == "recommended":
+        handoff_html = '<div class="handoff"><span class="hl">调查移交建议：</span>建议移交内部调查（%d 条红旗、%d 个关联主体）——需人工批准后方可启动。<br><span style="color:var(--muted)">理由：%s</span></div>' % (len(handoff.get("finding_ids", [])), len(handoff.get("entities", [])), escape(handoff.get("reason_for_handoff", "")))
+    else:
+        handoff_html = '<div class="handoff"><span class="hl">调查移交建议：</span>暂不建议移交（未达到多类独立红旗的建议条件）。</div>'
+
+    type_counts = Counter(tzh(f.get("finding_type", "?")) for f in findings)
+    tmax = max(type_counts.values(), default=1)
+    bars = "".join(
+        '<div class="bar-row"><span class="bar-name">%s</span><span class="bar-track"><span class="bar-fill" style="width:%.1f%%"></span></span><span class="bar-num">%d</span></div>' % (escape(n), c / tmax * 100, c)
+        for n, c in type_counts.most_common(8)
+    ) or '<p class="empty">无。</p>'
+
+    nnodes = len(graph.get("nodes", [])) if isinstance(graph, dict) else 0
+    nedges = len(graph.get("edges", [])) if isinstance(graph, dict) else 0
+    graph_note = "已生成供应商关系图：<b>%d</b> 个主体、<b>%d</b> 条关系边（详见 relationship_graph.json）。" % (nnodes, nedges)
+
+    dq = "共发现 <b>%d</b> 行数据问题（已隔离，不参与分析）。" % bad_count if bad_count else "无坏行。"
+
+    links = [
+        ("findings.csv", "红旗线索明细（按风险排序，可用 Excel 打开）"),
+        ("summary.md", "完整结论与建议复核顺序"),
+        ("investigation_handoff.json", "调查移交建议（如需）"),
+        ("relationship_graph.json", "供应商关系图数据"),
+    ]
+    links_html = "".join('<a href="%s"><span class="lk-name">%s</span><span class="lk-desc">%s</span></a>' % (h, h, d) for h, d in links)
+
+    html = """<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>采购舞弊红旗全景报告</title><style>%s</style></head><body>
+<div class="wrap">
+  <div class="masthead"><div class="seal %s">%s</div><div>
+    <h1>采购舞弊红旗全景报告<span class="tag %s">%s</span></h1>
+    <div class="sub">procurement-fraud-v2 v%s · %s · 用时 %s</div></div></div>
+  <div class="verdict"><div class="lbl">审计结论</div><p>%s</p></div>
+  %s
+  <h2 class="sec">重点红旗 · 按风险排序</h2>
+  %s
+  <h2 class="sec">红旗类型分布</h2>
+  <div class="note">%s</div>
+  <h2 class="sec">供应商关系图</h2>
+  <div class="note">%s</div>
+  <h2 class="sec">数据质量</h2>
+  <div class="note">%s</div>
+  <h2 class="sec">详细报告</h2>
+  <div class="links">%s</div>
+  <div class="disclaimer"><b>业务定位</b>：本报告为<strong>辅助筛查</strong>，不替代专业审计/合规判断。共享账号、价格离群、流程异常、文本相似均为<strong>复核线索</strong>，不能单独或自动证明串标、利益输送或舞弊。<strong>未发现问题 ≠ 没有问题</strong>；最终结论必须由有资质人员做出。</div>
+  <div class="foot">由 procurement-fraud-v2 v%s 自动生成 · 离线可看 · 无外部依赖</div>
+</div></body></html>
+""" % (
+        DASHBOARD_CSS,
+        status_class, (status_label[:1] if status_class != "pass" else "✓"),
+        status_class, status_label,
+        version, date_str, duration_str,
+        statement, handoff_html, findings_html, bars, graph_note, dq, links_html, version,
+    )
+    (output_dir / "dashboard.html").write_text(html, encoding="utf-8")
 
 
 if __name__ == "__main__":

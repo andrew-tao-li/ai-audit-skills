@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.4 — 2026-09-26（pack release）
+
+- **dashboard 扩展到其余 3 个 skill**（沿用 expense 的"面向管理者"风格：先说发现、全中文、去技术细节）：
+  - **procurement-fraud-v2 0.2.3**：红旗逐条 + 调查移交建议 + 供应商关系图规模 + 红旗类型分布。
+  - **investigation-assistant-v2 0.2.3**：授权范围 + 证据覆盖（文件/时间线/越界）+ 事项×证据矩阵 + 下一步。
+  - **cn-entity-relation-check 0.1.3**：三态结论 + 关系路径（关系类型中文化）+ 数据源与范围；`cli.py` 加 `--dashboard <路径>`。
+
 ## v0.3.3 — 2026-09-26（pack release）
 
 - **expense-audit-v2 0.2.6**：`dashboard.html` 重设计为**面向审计经理**的全景报告——先讲发现（重点发现逐条用"谁、做了什么、建议怎么查"）、全中文（finding 类型与风险等级均中文化）、去掉技术细节（哈希/跳过规则不再占显眼位置）、保留"辅助分析不替代专业判断"声明。

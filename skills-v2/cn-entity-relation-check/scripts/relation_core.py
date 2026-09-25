@@ -11,7 +11,7 @@ from evidence_normalizer import Edge, Node, normalize_edge, STRONG_RELATION_TYPE
 from path_finder import find_paths
 from result_validator import QueryContext, deterministic_decision, validate_result
 
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 SKILL = "cn-entity-relation-check"
 
 STATUS_DISPLAY = {
