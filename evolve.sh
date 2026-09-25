@@ -26,10 +26,12 @@ NOTIFY_SCRIPT="$ROOT/evolution/notify.sh"
 
 SKIP_LLM=0
 SKIP_PUSH=0
+SKIP_ACCEPTANCE=0
 for arg in "$@"; do
     case "$arg" in
         --skip-llm) SKIP_LLM=1 ;;
         --skip-push) SKIP_PUSH=1 ;;
+        --skip-acceptance) SKIP_ACCEPTANCE=1 ;;
     esac
 done
 
@@ -107,6 +109,26 @@ fi
 echo ""
 echo "▶ Step 1: Running blackbox tests..."
 python3 evals/blackbox/score_blackbox.py --version "$VERSION"
+
+# 1b. OpenCode 全自动验收（需要 opencode CLI + 模型；--skip-acceptance 可跳过）
+ACCEPTANCE_LINE=""
+if [ "$SKIP_ACCEPTANCE" = "0" ]; then
+    echo ""
+    echo "▶ Step 1b: OpenCode 全自动验收..."
+    if command -v opencode >/dev/null 2>&1; then
+        ACCEPT_LOG=$(python3 evals/cross-agent/run_acceptance.py --no-notify 2>/dev/null | tail -1)
+        if [ -n "$ACCEPT_LOG" ] && [ -f "$ACCEPT_LOG" ]; then
+            ACCEPTANCE_LINE=$(grep -m1 "结果：" "$ACCEPT_LOG" | sed 's/.*结果：//;s/\*\*//g')
+            echo "  验收：$ACCEPTANCE_LINE"
+        else
+            echo "  ⚠ 验收未产出报告"
+            ACCEPTANCE_LINE="未产出报告"
+        fi
+    else
+        echo "  ⚠ 未安装 opencode CLI，跳过验收"
+        ACCEPTANCE_LINE="跳过（无 opencode）"
+    fi
+fi
 
 # 2. 提取最新分数，更新 state.json
 echo ""
@@ -265,6 +287,15 @@ elif [ "$OPEN_FAILURES_COUNT" = "0" ]; then
     echo "▶ Step 4: SKIP (no failures to analyze)"
 fi
 
+# 4b. 若有失败，生成修复提案（PR），供人工在 GitHub 审批
+echo ""
+echo "▶ Step 4b: 生成修复提案（如有失败）"
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+    python3 evolution/propose_fix.py 2>&1 | tail -3
+else
+    echo "  SKIP: 未设置 GITHUB_TOKEN（无法开 PR）；如需，请在 launchd/环境里配置"
+fi
+
 # 5. 健康信息写入 state.json
 echo ""
 echo "▶ Step 5: 更新 state.json（健康状态）"
@@ -293,6 +324,11 @@ NOTIFY_BODY="**Audit Skill Box 每日报告**
 - 版本: $VERSION
 - 健康: $HEALTH_STATUS ($HEALTH_MSG)
 - 失败: $OPEN_FAILURES_COUNT 个"
+
+if [ -n "$ACCEPTANCE_LINE" ]; then
+    NOTIFY_BODY="$NOTIFY_BODY
+- OpenCode 验收: $ACCEPTANCE_LINE"
+fi
 
 if [ -f "$PROPOSALS_DIR/${TIMESTAMP}-llm-analysis.md" ]; then
     NOTIFY_BODY="$NOTIFY_BODY

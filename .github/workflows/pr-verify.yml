@@ -1,0 +1,41 @@
+name: PR Verify
+
+# 每个 PR 自动跑「结构校验 + 单测 + 黑盒 F1」，任一退步则 PR 检查失败（不能合并）。
+# 这是「审批闭环」的自动化校验层：人工在 GitHub 上看 diff + 看这里的结果，再决定是否合并。
+#
+# 注：OpenCode 全自动验收（evals/cross-agent）依赖 opencode CLI + 模型，无法在 GitHub
+# runner 上跑，故不在本 workflow 内；它跑在 Mac mini 上（见 evolve.sh Step 1b）。
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 结构校验 + 全部单元测试
+        run: python3 evals/validate_pack.py --run-tests
+
+      - name: 黑盒 F1（任何 skill 退步则失败）
+        run: |
+          python3 evals/blackbox/score_blackbox.py --version pr-check > /tmp/bb.txt 2>&1 || true
+          cat /tmp/bb.txt | grep -E "^##|F1:" || true
+          python3 - <<'PY'
+          import glob, json, sys
+          logs = sorted(glob.glob("evolution/log/*-test-pr-check.json"))
+          if not logs:
+              print("找不到评分日志"); sys.exit(1)
+          d = json.load(open(logs[-1], encoding="utf-8"))
+          bad = {k: v.get("f1") for k, v in d.get("summary", {}).items() if v.get("f1", 0) < 1.0}
+          if bad:
+              print("✗ F1 退步：", bad); sys.exit(1)
+          print("✓ F1 全部 100%")
+          PY
