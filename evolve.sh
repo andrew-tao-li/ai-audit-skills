@@ -296,6 +296,33 @@ else
     echo "  SKIP: 未设置 GITHUB_TOKEN（无法开 PR）；如需，请在 launchd/环境里配置"
 fi
 
+# 4c. 定期主动巡检（每 7 天一次；即使无失败也找一条改进）
+echo ""
+echo "▶ Step 4c: 定期主动巡检（如距上次 ≥7 天）"
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+    RUN_PATROL=$(python3 - <<'PYEOF'
+from pathlib import Path
+from datetime import datetime, timezone
+f = Path("evolution/log/.last_patrol")
+if not f.exists():
+    print("1")
+else:
+    try:
+        d = datetime.strptime(f.read_text().strip(), "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+        print("1" if (datetime.now(timezone.utc) - d).days >= 7 else "0")
+    except Exception:
+        print("1")
+PYEOF
+)
+    if [ "$RUN_PATROL" = "1" ]; then
+        python3 evolution/patrol.py 2>&1 | tail -3
+    else
+        echo "  未到 7 天，跳过"
+    fi
+else
+    echo "  SKIP: 未设置 GITHUB_TOKEN"
+fi
+
 # 5. 健康信息写入 state.json
 echo ""
 echo "▶ Step 5: 更新 state.json（健康状态）"

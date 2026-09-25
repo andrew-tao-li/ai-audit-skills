@@ -115,9 +115,9 @@ curl ... | PREFIX=~/.my-custom-path bash
 
 ### 锁定版本
 
-默认装最新。如果想钉死某个版本（把 `v0.3.2` 换成你要的版本号）：
+默认装最新。如果想钉死某个版本（把 `<版本号>` 换成你要的版本号）：
 ```
-VERSION=v0.3.2 curl ... | bash -s -- expense-audit-v2
+VERSION=<版本号> curl ... | bash -s -- expense-audit-v2
 ```
 
 ### 验证（手动跑一次 example）
