@@ -38,9 +38,10 @@
   - `evolve.sh` 的 LLM 分析步骤仍只在「失败数 > 0」时生成；不过巡检已覆盖了"健康时也进化"的需求。
   - 通知里还没带上 PR 链接（目前打 PR URL 到 stdout + 通知标题；可后续把链接拼进通知正文）。
 
-- **expense 输出打磨（低优先级）**（暂缓，2026-09-24）：审计师盲测暴露的两个 UX 项，**非正确性问题，可缓**。① config 驱动规则（split-expense / policy-threshold / large-amount-low-level / missing-expense-type 等）缺配置时静默跳过，虽有 `data_quality` 记录「未提供 limits」等，但首跑用户可能误以为「漏检」；② weekend-signal 占 findings 约 88% 噪声，虽已标 weak/low 且 `summary` 给了复核顺序，但 `findings.csv` 仍是一屏噪声。
-   - 诚实评估：两项都是「打磨」而非「大问题」。①② 已有兜底（data_quality 记录 + weak 标记 + 复核顺序），只是呈现不够醒目。
-   - 若要做的方向：① 在 summary/README 把「因缺配置被跳过的规则」更醒目列出；② 把 weekend-signal 聚合为一条「N 条周末消费，按部门抽样」而非 N 条独立 finding。
+- **expense 输出打磨（低优先级）**（暂缓，2026-09-24；**呈现层已于 2026-09-26 处理**）：审计师盲测暴露的两个 UX 项，**非正确性问题，可缓**。① config 驱动规则（split-expense / policy-threshold / large-amount-low-level / missing-expense-type 等）缺配置时静默跳过，虽有 `data_quality` 记录「未提供 limits」等，但首跑用户可能误以为「漏检」；② weekend-signal 占 findings 约 88% 噪声，虽已标 weak/low 且 `summary` 给了复核顺序，但 `findings.csv` 仍是一屏噪声。
+   - **已做（呈现层，v0.3.5）**：dashboard 改版后，第一屏直接用**风险管理语言**翻译「多」——论点句会写明「其中数量最多的是『周末消费』共 N 条，属提示性信息…通常无需逐条处理」，并配风险分布条（高/中/低）与「按类型汇总」表。经理不会再被 88% 的噪声误导。
+   - **仍未做（数据层）**：把 weekend-signal 在 `findings` 层聚合为一条「N 条周末消费，按部门抽样」而非 N 条独立 finding；以及首跑时把「因缺配置被跳过的规则」更醒目提示。
+   - 若要做的方向：① 在 summary/README 把「因缺配置被跳过的规则」更醒目列出；② 在 findings 层聚合 weekend-signal（注意会改变 F1 黄金集期望，需同步更新）。
 
 ---
 
