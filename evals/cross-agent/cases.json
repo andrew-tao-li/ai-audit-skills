@@ -1,0 +1,41 @@
+[
+  {
+    "id": "expense-trigger-and-run",
+    "skill": "expense-audit-v2",
+    "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 {outdir}，并告诉我发现了几条 finding。",
+    "expect": {
+      "skill_used": "expense-audit-v2",
+      "script_ran_contains": "run_expense_audit.py",
+      "output_files": ["summary.md", "findings.csv", "findings.jsonl", "dashboard.html"],
+      "text_contains_any": ["finding", "发现"]
+    }
+  },
+  {
+    "id": "procurement-trigger-and-run",
+    "skill": "procurement-fraud-v2",
+    "prompt": "用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 {outdir}，并告诉我发现了几条红旗。",
+    "expect": {
+      "skill_used": "procurement-fraud-v2",
+      "script_ran_contains": "run_procurement_audit.py",
+      "output_files": ["findings.csv", "summary.md"],
+      "text_contains_any": ["红旗", "finding", "发现"]
+    }
+  },
+  {
+    "id": "cn-entity-three-state",
+    "skill": "cn-entity-relation-check",
+    "prompt": "用 cn-entity-relation-check skill 判断两个主体「上海甲科技有限公司」和「上海乙科技有限公司」有没有公开工商关联。它包内 examples/input/company_company_related.json 是证据。请给出三态结论（关联/不关联/待核查）并说明依据。",
+    "expect": {
+      "skill_used": "cn-entity-relation-check",
+      "text_contains_any": ["关联", "不关联", "待核查"]
+    }
+  },
+  {
+    "id": "no-trigger-control",
+    "skill": null,
+    "prompt": "请只回答数字：1+1 等于几？",
+    "expect": {
+      "skill_not_used": true
+    }
+  }
+]
