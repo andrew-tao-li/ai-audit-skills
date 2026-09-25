@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>采购舞弊红旗全景报告</title><style>*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f5f3ef;--card:#fff;--ink:#1a1a1a;--muted:#6b6b6b;--faint:#9a9a9a;--line:#e5e1da;--brand:#8b1f2f;--brand-soft:#f7ecec;--red:#b42318;--red-bg:#fdecea;--amber:#b54708;--amber-bg:#fdf3e7;--green:#067647;--green-bg:#eaf7ef}
+@media(prefers-color-scheme:dark){:root{--bg:#171614;--card:#211f1d;--ink:#f2efea;--muted:#b3ada4;--faint:#7d776e;--line:#33302c;--brand:#e8a0a8;--brand-soft:#2a1e20;--red:#f97066;--red-bg:#3a1e1c;--amber:#fdb022;--amber-bg:#33260f;--green:#4ade80;--green-bg:#13291c}}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;padding:40px 20px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto}
+.masthead{display:flex;align-items:center;gap:18px;margin-bottom:28px}
+.seal{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;flex:none}
+.seal.critical{background:var(--red-bg);color:var(--red)}
+.seal.review{background:var(--amber-bg);color:var(--amber)}
+.seal.pass{background:var(--green-bg);color:var(--green)}
+.masthead h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.masthead .sub{font-size:13px;color:var(--muted);margin-top:3px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:middle}
+.tag.critical{background:var(--red-bg);color:var(--red)}
+.tag.review{background:var(--amber-bg);color:var(--amber)}
+.tag.pass{background:var(--green-bg);color:var(--green)}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:12px;padding:22px 26px;margin-bottom:14px}
+.verdict .lbl{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--brand);text-transform:uppercase;margin-bottom:8px}
+.verdict p{font-size:17px;line-height:1.75}
+.verdict b{color:var(--brand);font-weight:800}
+.handoff{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:26px;font-size:14px}
+.handoff .hl{font-weight:800;color:var(--brand);margin-right:8px}
+h2.sec{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:30px 0 14px}
+.finding{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:12px}
+.finding.critical,.finding.high{border-left:5px solid var(--red)}
+.finding.medium{border-left:5px solid var(--amber)}
+.finding.low{border-left:5px solid var(--faint)}
+.finding-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.badge{font-size:12px;font-weight:800;padding:3px 10px;border-radius:6px}
+.badge.critical,.badge.high{background:var(--red-bg);color:var(--red)}
+.badge.medium{background:var(--amber-bg);color:var(--amber)}
+.badge.low{background:var(--line);color:var(--muted)}
+.finding-type{font-size:12px;color:var(--faint)}
+.fa-amount{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.finding-title{font-size:16px;font-weight:700;margin-bottom:10px}
+.finding-who{font-size:14px;color:var(--muted);margin-bottom:6px}
+.finding-body{font-size:14px;margin-bottom:4px}
+.k{display:inline-block;min-width:38px;color:var(--faint);font-size:12px;margin-right:6px}
+.more{font-size:13px;color:var(--muted);margin:4px 0 0}
+.bar-row{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:13px}
+.bar-name{width:210px;flex:none;color:var(--ink)}
+.bar-track{flex:1;height:12px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar-fill{display:block;height:100%;background:var(--brand);border-radius:99px}
+.bar-num{width:28px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:14px}
+.note b{font-weight:700}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 16px;text-decoration:none;color:var(--ink)}
+.links a:hover{border-color:var(--brand)}
+.lk-name{display:block;font-weight:700;font-size:14px}
+.lk-desc{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.disclaimer{margin-top:26px;background:var(--brand-soft);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:13px;color:var(--muted)}
+.disclaimer b{color:var(--brand)}
+.foot{text-align:center;color:var(--faint);font-size:12px;margin-top:22px}
+@media print{body{background:#fff;padding:0}.finding,.note,.links a,.verdict,.disclaimer,.handoff{break-inside:avoid}}
+@media(max-width:640px){body{padding:20px 12px}.masthead h1{font-size:21px}.bar-name{width:120px}.links{grid-template-columns:1fr}.finding-title{font-size:15px}}</style></head><body>
+<div class="wrap">
+  <div class="masthead"><div class="seal critical">C</div><div>
+    <h1>采购舞弊红旗全景报告<span class="tag critical">CRITICAL</span></h1>
+    <div class="sub">procurement-fraud-v2 v0.2.2 · 2026-09-25 17:31 · 用时 0.0 秒</div></div></div>
+  <div class="verdict"><div class="lbl">审计结论</div><p>本次筛查发现 <b>12 条</b>采购红旗线索，其中 <b>1 条为高风险</b>。高风险项已在下方逐条列出，建议优先核对这些供应商与订单。</p></div>
+  <div class="handoff"><span class="hl">调查移交建议：</span>建议移交内部调查（12 条红旗、1 个关联主体）——需人工批准后方可启动。<br><span style="color:var(--muted)">理由：多个独立采购红旗指向同一供应商，建议由有权人员决定是否进入调查辅助流程</span></div>
+  <h2 class="sec">重点红旗 · 按风险排序</h2>
+  <article class="finding high"><div class="finding-head"><span class="badge badge-high">高风险</span><span class="finding-type">供应商共享账户</span></div><h3 class="finding-title">多个供应商共享bank_account</h3><div class="finding-who"><span class="k">涉及</span>供应商 V001、供应商 V002</div><div class="finding-body"><span class="k">发现</span>2 个供应商的归一化 bank_account 相同</div><div class="finding-body"><span class="k">建议</span>核对开户资料、工商资料和供应商准入文件</div></article><article class="finding medium"><div class="finding-head"><span class="badge badge-medium">中风险</span><span class="finding-type">员工供应商共享电话</span></div><h3 class="finding-title">员工与供应商共享phone</h3><div class="finding-who"><span class="k">涉及</span>员工 E001、供应商 V001</div><div class="finding-body"><span class="k">发现</span>员工 E001 与供应商 V001 的归一化 phone 相同</div><div class="finding-body"><span class="k">建议</span>核对利益冲突申报、员工资料和供应商准入材料</div></article><article class="finding medium"><div class="finding-head"><span class="badge badge-medium">中风险</span><span class="finding-type">拆单采购</span></div><h3 class="finding-title">短期多笔采购合计超过审批阈值</h3><div class="finding-who"><span class="k">涉及</span>供应商 V001、B900</div><div class="finding-body"><span class="k">发现</span>2 笔单笔低于 9000.00 的订单合计 9500.00</div><div class="finding-body"><span class="k">建议</span>核对需求申请、审批层级、合同和交付计划</div></article><article class="finding medium"><div class="finding-head"><span class="badge badge-medium">中风险</span><span class="finding-type">收货早于审批</span></div><h3 class="finding-title">收货日期早于采购审批完成日期</h3><div class="finding-who"><span class="k">涉及</span>供应商 V001、B900</div><div class="finding-body"><span class="k">发现</span>收货 2026-05-31 早于审批 2026-06-04</div><div class="finding-body"><span class="k">建议</span>核对审批日志、收货签收单和合同</div></article><article class="finding medium"><div class="finding-head"><span class="badge badge-medium">中风险</span><span class="finding-type">付款早于审批</span></div><h3 class="finding-title">付款日期早于采购审批完成日期</h3><div class="finding-who"><span class="k">涉及</span>供应商 V001、B900</div><div class="finding-body"><span class="k">发现</span>付款日期 2026-06-02 早于关联 PO 审批日期 2026-06-04</div><div class="finding-body"><span class="k">建议</span>核对付款审批、银行流水和合同预付款条款</div></article><article class="finding medium"><div class="finding-head"><span class="badge badge-medium">中风险</span><span class="finding-type">价格异常偏高</span></div><h3 class="finding-title">同类采购单价显著偏高</h3><div class="finding-who"><span class="k">涉及</span>供应商 V001、B001</div><div class="finding-body"><span class="k">发现</span>本单单价 180.00，约为同类采购正常水平（约 100.50）的 1.8 倍</div><div class="finding-body"><span class="k">建议</span>补齐规格与报价依据，重新确认同类对比口径后复核</div></article><article class="finding medium"><div class="finding-head"><span class="badge badge-medium">中风险</span><span class="finding-type">收货早于下单</span></div><h3 class="finding-title">收货日期早于采购订单日期</h3><div class="finding-who"><span class="k">涉及</span>供应商 V001、B900</div><div class="finding-body"><span class="k">发现</span>收货日期 2026-05-31 早于订单日期 2026-06-01</div><div class="finding-body"><span class="k">建议</span>核对收货单、系统日志和合同生效时间</div></article><article class="finding medium"><div class="finding-head"><span class="badge badge-medium">中风险</span><span class="finding-type">投标文本雷同</span></div><h3 class="finding-title">同一标段投标文本高度相似，需回到原文复核</h3><div class="finding-who"><span class="k">涉及</span>供应商 V001、L-001、供应商 V002</div><div class="finding-body"><span class="k">发现</span>字符级 TF-IDF 余弦相似度 1.000000，高于本次配置阈值 0.600000</div><div class="finding-body"><span class="k">建议</span>定位相似片段，并核对文件元数据、报价、联系人和保证金来源</div></article><p class="more">另有 1 条中低风险线索，详见下方 <b>findings.csv</b>。</p>
+  <h2 class="sec">红旗类型分布</h2>
+  <div class="note"><div class="bar-row"><span class="bar-name">供应商共享账户</span><span class="bar-track"><span class="bar-fill" style="width:100.0%"></span></span><span class="bar-num">1</span></div><div class="bar-row"><span class="bar-name">员工供应商共享电话</span><span class="bar-track"><span class="bar-fill" style="width:100.0%"></span></span><span class="bar-num">1</span></div><div class="bar-row"><span class="bar-name">价格异常偏高</span><span class="bar-track"><span class="bar-fill" style="width:100.0%"></span></span><span class="bar-num">1</span></div><div class="bar-row"><span class="bar-name">拆单采购</span><span class="bar-track"><span class="bar-fill" style="width:100.0%"></span></span><span class="bar-num">1</span></div><div class="bar-row"><span class="bar-name">下单早于审批</span><span class="bar-track"><span class="bar-fill" style="width:100.0%"></span></span><span class="bar-num">1</span></div><div class="bar-row"><span class="bar-name">收货早于下单</span><span class="bar-track"><span class="bar-fill" style="width:100.0%"></span></span><span class="bar-num">1</span></div><div class="bar-row"><span class="bar-name">收货早于审批</span><span class="bar-track"><span class="bar-fill" style="width:100.0%"></span></span><span class="bar-num">1</span></div><div class="bar-row"><span class="bar-name">付款早于审批</span><span class="bar-track"><span class="bar-fill" style="width:100.0%"></span></span><span class="bar-num">1</span></div></div>
+  <h2 class="sec">供应商关系图</h2>
+  <div class="note">已生成供应商关系图：<b>13</b> 个主体、<b>12</b> 条关系边（详见 relationship_graph.json）。</div>
+  <h2 class="sec">数据质量</h2>
+  <div class="note">无坏行。</div>
+  <h2 class="sec">详细报告</h2>
+  <div class="links"><a href="findings.csv"><span class="lk-name">findings.csv</span><span class="lk-desc">红旗线索明细（按风险排序，可用 Excel 打开）</span></a><a href="summary.md"><span class="lk-name">summary.md</span><span class="lk-desc">完整结论与建议复核顺序</span></a><a href="investigation_handoff.json"><span class="lk-name">investigation_handoff.json</span><span class="lk-desc">调查移交建议（如需）</span></a><a href="relationship_graph.json"><span class="lk-name">relationship_graph.json</span><span class="lk-desc">供应商关系图数据</span></a></div>
+  <div class="disclaimer"><b>业务定位</b>：本报告为<strong>辅助筛查</strong>，不替代专业审计/合规判断。共享账号、价格离群、流程异常、文本相似均为<strong>复核线索</strong>，不能单独或自动证明串标、利益输送或舞弊。<strong>未发现问题 ≠ 没有问题</strong>；最终结论必须由有资质人员做出。</div>
+  <div class="foot">由 procurement-fraud-v2 v0.2.2 自动生成 · 离线可看 · 无外部依赖</div>
+</div></body></html>
