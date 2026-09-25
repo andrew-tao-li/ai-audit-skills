@@ -3,7 +3,7 @@
   "current_version": "v0.2.0-baseline",
   "last_action": {
     "type": "test",
-    "timestamp": "2026-09-24T01:00:05Z",
+    "timestamp": "2026-09-25T01:00:04Z",
     "run_by": "manual",
     "summary": "precision=100% recall=100%"
   },
@@ -32,7 +32,7 @@
   },
   "latest_scores": {
     "expense": {
-      "tests": 22,
+      "tests": 25,
       "errors": 0,
       "precision": 1.0,
       "recall": 1.0,
@@ -54,9 +54,9 @@
     }
   },
   "open_failures": [],
-  "iteration_count": 19,
+  "iteration_count": 20,
   "created_at": "2026-09-20T23:57:00Z",
-  "last_modified": "2026-09-24T01:00:05Z",
+  "last_modified": "2026-09-25T01:00:04Z",
   "next_action": "run_baseline",
   "proposals": [
     {
@@ -112,7 +112,7 @@
     "status": "ok",
     "message": "MiniMax API 可达",
     "provider": "minimax",
-    "checked_at": "2026-09-24T01:00:05Z"
+    "checked_at": "2026-09-25T01:00:04Z"
   },
   "guardrail_history": [
     {
