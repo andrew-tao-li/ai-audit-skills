@@ -90,7 +90,9 @@ class ProcurementAuditEndToEndTest(unittest.TestCase):
             self.assertEqual(handoff["status"], "recommended")
             self.assertTrue(handoff["human_approval_required"])
             self.assertFalse(manifest["network_access"])
-            self.assertEqual(manifest["skill_version"], "0.2.3")
+            # 版本取自本 skill 的 manifest.json，避免每次发版都要改测试字面量
+            expected_version = json.loads((SKILL_ROOT / "manifest.json").read_text(encoding="utf-8"))["version"]
+            self.assertEqual(manifest["skill_version"], expected_version)
             self.assertEqual(manifest["parameters"]["config_version"], "SYNTHETIC-PROCUREMENT-CONFIG-1.0")
         finally:
             temp.cleanup()

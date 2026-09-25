@@ -1,9 +1,9 @@
 {
-  "pack": "v0.3.4",
+  "pack": "v0.3.5",
   "skills": {
-    "expense-audit-v2": "0.2.6",
-    "procurement-fraud-v2": "0.2.3",
-    "investigation-assistant-v2": "0.2.3",
-    "cn-entity-relation-check": "0.1.3"
+    "expense-audit-v2": "0.2.7",
+    "procurement-fraud-v2": "0.2.4",
+    "investigation-assistant-v2": "0.2.4",
+    "cn-entity-relation-check": "0.1.4"
   }
 }

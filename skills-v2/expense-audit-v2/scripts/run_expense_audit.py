@@ -17,7 +17,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.6"
+VERSION = "0.2.7"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -977,9 +977,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     for finding in builder.findings:
         counts[FINDING_TYPE_ZH.get(finding["finding_type"], finding["finding_type"])] += 1
         priorities[PRIORITY_ZH.get(finding["risk_priority"], finding["risk_priority"])] += 1
-    feedback_high = priorities.get("critical", 0) + priorities.get("high", 0)
-    feedback_stats_line = "本次运行已自动统计：Findings %d（high %d / medium %d / low %d），各类型、风险分布、耗时等统计见上。" % (
-        len(builder.findings), feedback_high, priorities.get("medium", 0), priorities.get("low", 0)
+    # 注意：priorities 是「中文标签」计数；这里按风险优先级统计必须用原始英文 key，否则恒为 0
+    feedback_high = sum(1 for f in builder.findings if f["risk_priority"] in ("critical", "high"))
+    feedback_medium = sum(1 for f in builder.findings if f["risk_priority"] == "medium")
+    feedback_low = sum(1 for f in builder.findings if f["risk_priority"] == "low")
+    feedback_stats_line = "本次运行已自动统计：Findings %d（高风险 %d / 中风险 %d / 低风险 %d），各类型、风险分布、耗时等统计见上。" % (
+        len(builder.findings), feedback_high, feedback_medium, feedback_low
     )
     summary = [
         "# 费用审计确定性摘要", "", "- 分析有效记录：%d；排除坏行：%d。" % (len(clean), len(bad)),
@@ -1002,13 +1005,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "## 输出文件", "",
         "**审计结论（给人看）**：dashboard.html（全景图，给经理/管理层快速看）、summary.md（完整结论）、findings.csv、findings.jsonl", "",
         "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、clean_expenses.csv、bad_rows.csv、evidence.jsonl", "",
-        "## 匿名反馈（可选）", "",
+        "## 这个工具好用吗？（可选反馈）", "",
         feedback_stats_line,
-        "反馈给作者可让他改进本工具。**说「反馈」/「反馈一下」/「feedback」即可触发**（默认 rating 满意；用户主动说明则按其说法）。", "",
-        "可直接复制粘贴这句话给 AI：", "",
-        "> 做匿名反馈，rating 满意",
-        "> （如跑得慢或有意见，可连同一起说，例如：做匿名反馈，rating 满意，速度偏慢）", "",
-        "只上传 findings 数 / 类型计数 / 风险分布 / 耗时 / 你的备注 / skill 版本，**不含员工/供应商/发票号/金额**。",
+        "如果它对你有帮助，可以对 AI 说一句「**做匿名反馈**」，它会把这次运行的匿名统计（发现了几类问题、耗时）发给作者，帮作者改进工具。", "",
+        "**不含员工、供应商、发票号、金额**；核心分析全程在你本地、不联网。你不说，它就不会发。", "",
+        "想反馈时，把这句发给 AI 即可（可附意见，如「速度偏慢」）：", "",
+        "> 做匿名反馈",
     ]
     (output / "summary.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
 
@@ -1031,66 +1033,133 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     build_dashboard_html(manifest, builder.findings, len(clean), len(bad), output)
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
-    print("（可选）匿名反馈帮助作者改进本工具。说「反馈」/「反馈一下」/「feedback」之类即可；如要附理由（如跑得慢），可一起说（如：反馈，rating 满意，速度偏慢）。", file=sys.stderr)
+    print("提示：如果本工具有帮助，可以对我说「做匿名反馈」——只发送匿名统计（不含员工/供应商/发票号/金额），核心分析始终在本地、不联网。", file=sys.stderr)
     return 0
 
 
 def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir):
-    """生成面向「审计经理」的自包含 HTML 全景图（离线可看，0 外部依赖）。
+    """生成面向「审计经理」的自包含 HTML 全景报告（离线可看，0 外部依赖）。
 
-    设计原则（审计优先，不是数据分析优先）：
-      1. 先说发现、后说数字——审计经理关心「哪里有问题」，不关心「多少行」。
-      2. 全中文——finding 类型、风险等级都用中文。
-      3. 每条重点发现用人类语言说清：谁、做了什么、什么症状、建议怎么查。
-      4. 技术细节（哈希、跳过规则）不放在显眼位置。
-      5. 自包含、离线、支持深色模式与打印。
+    结构对齐审计报告最佳实践：
+      第一屏（执行摘要，可独立看懂）：
+        论点结论 → 关键指标 → 风险分布 → 最需要先看的 3 条 → 建议下一步 → 明细入口
+      往下（按需展开）：
+        重点发现逐条（现象/依据/建议/待澄清）→ 按类型汇总 → 数据质量 → 业务定位
     """
     import csv as _csv
     from collections import Counter
     from html import escape
 
-    PRIORITY_ZH_LOCAL = {"critical": "严重", "high": "高风险", "medium": "中风险", "low": "低风险"}
-    PRIORITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    PRIORITY_ZH = {"critical": "严重", "high": "高风险", "medium": "中风险", "low": "低风险"}
+    ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+
+    # 制度依据：仅用于展示「本应如何」，不改动任何判定逻辑
+    CRITERIA = {
+        "exact-duplicate-invoice": "同一发票号不应重复报销。",
+        "exact-duplicate-employee-date-amount": "同一员工同一天出现相同金额，通常对应同一笔业务，不应重复报销。",
+        "near-duplicate": "金额、日期、商户高度近似的记录，需确认是否为同一笔业务重复入账。",
+        "policy-threshold": "单笔费用不应超过费用制度规定的对应上限。",
+        "split-expense": "不得为规避审批或限额而把一笔费用拆成多笔。",
+        "weekend-signal": "周末发生的消费通常需要值班、出差或客户现场等业务说明。",
+        "holiday-signal": "节假日发生的消费通常需要值班、出差或客户现场等业务说明。",
+        "robust-outlier": "同类费用中显著偏高的金额需要业务合理性说明。",
+        "self-approval": "报销人不应对自己的报销进行审批。",
+        "cross-employee-invoice": "同一发票不应在不同员工之间重复报销。",
+        "submit-before-expense": "报销提交时间不应早于费用发生时间。",
+        "future-date": "费用发生日期不应晚于审计基准日。",
+        "missing-expense-type": "报销记录应填写费用类型，以便套用正确的限额。",
+        "sequential-invoice": "短时间内连号的发票需要确认业务真实性。",
+        "invoice-format-anomaly": "发票号应符合常见编码格式。",
+        "large-amount-low-level-approval": "大额费用应由更高层级审批。",
+        "space-time-conflict": "同一人在同一时间不应出现在两地；同日多笔行程需能衔接。",
+        "cross-period": "费用应计入其发生期间，不应跨期入账。",
+        "high-frequency-small-amount": "短期内高频次小额报销需要确认业务真实性。",
+    }
 
     def type_zh(ft):
         return FINDING_TYPE_ZH.get(ft, ft)
 
     # ---------- 状态 ----------
     counts = Counter(f.get("risk_priority", "?") for f in findings)
-    critical = counts.get("critical", 0)
-    high = counts.get("high", 0)
-    medium = counts.get("medium", 0)
-    low = counts.get("low", 0)
+    critical, high = counts.get("critical", 0), counts.get("high", 0)
+    medium, low = counts.get("medium", 0), counts.get("low", 0)
     if critical + high > 0:
-        status_zh, status_class, status_label = "需立即处理", "critical", "CRITICAL"
+        status_class, status_label, status_zh = "critical", "CRITICAL", "需立即处理"
+    elif medium > 0:
+        status_class, status_label, status_zh = "review", "REVIEW", "建议逐条复核"
     elif findings:
-        status_zh, status_class, status_label = "建议逐条复核", "review", "REVIEW"
+        status_class, status_label, status_zh = "notice", "NOTICE", "以提示为主"
     else:
-        status_zh, status_class, status_label = "未见明显异常", "pass", "PASS"
+        status_class, status_label, status_zh = "pass", "PASS", "未见明显异常"
 
     # ---------- 时间 / 版本 ----------
-    duration_str = "—"
-    date_str = "—"
+    duration_str, date_str = "—", "—"
     try:
         from datetime import datetime
-        s = datetime.fromisoformat(manifest["started_at"])
-        e = datetime.fromisoformat(manifest["finished_at"])
-        duration_str = "%.1f 秒" % (e - s).total_seconds()
-        date_str = s.strftime("%Y-%m-%d %H:%M")
+        _s = datetime.fromisoformat(manifest["started_at"])
+        _e = datetime.fromisoformat(manifest["finished_at"])
+        duration_str = "%.1f 秒" % (_e - _s).total_seconds()
+        date_str = _s.strftime("%Y-%m-%d %H:%M")
     except (KeyError, ValueError):
         pass
     version = manifest.get("skill_version", "?")
 
-    # ---------- 审计结论（人类的语言，不堆数字）----------
-    if status_class == "critical":
-        statement = "本次扫描发现 <b>%d 条</b>需人工复核的线索，其中 <b>%d 条为高风险</b>。高风险项已在下方逐条列出，建议优先核对这些报销的真实性。" % (len(findings), critical + high)
-    elif status_class == "review":
-        statement = "本次扫描发现 <b>%d 条</b>需人工复核的线索（%d 条中风险、%d 条低风险），均已在下方列出。建议按员工与商户合并后逐条确认。" % (len(findings), medium, low)
-    else:
-        statement = "本次未发现明显异常。数据完整性通过体检，可作为进一步分析的可靠基线。"
+    # ---------- 聚合 ----------
+    emps = sorted({e["id"] for f in findings for e in f.get("entities", []) if e.get("type") == "employee"})
+    vens = sorted({e["id"] for f in findings for e in f.get("entities", []) if e.get("type") == "vendor"})
+    amount_total = sum(f.get("max_amount") or 0 for f in findings if isinstance(f.get("max_amount"), (int, float)))
+    type_counts = Counter(f.get("finding_type", "?") for f in findings)
+    high_by_type = Counter(f.get("finding_type", "?") for f in findings
+                           if f.get("risk_priority") in ("critical", "high"))
+    top_type, top_cnt = (type_counts.most_common(1)[0] if type_counts else ("", 0))
 
-    # ---------- 重点发现（核心）----------
-    def entities_human(f):
+    # ---------- 论点句（第一屏核心）----------
+    if status_class == "critical":
+        thesis_main = "发现 <b>%d</b> 条线索，其中 <b>%d</b> 条高风险，需优先核对。" % (len(findings), critical + high)
+    elif status_class == "review":
+        thesis_main = "发现 <b>%d</b> 条线索（%d 条中风险），建议按员工与商户归并后逐条确认。" % (len(findings), medium)
+    elif status_class == "notice":
+        thesis_main = "发现 <b>%d</b> 条提示性信号，未见高风险线索。" % len(findings)
+    else:
+        thesis_main = "本次未发现明显异常，可作为进一步分析的可靠基线。"
+
+    thesis_note = ""
+    if top_cnt and len(findings) >= 10 and top_cnt >= max(10, int(len(findings) * 0.3)):
+        if top_type in ("weekend-signal", "holiday-signal"):
+            thesis_note = ("其中数量最多的是「%s」共 %d 条，属提示性信息（值班、出差、客户现场等常有正常解释），"
+                           "通常无需逐条处理。" % (escape(type_zh(top_type)), top_cnt))
+        else:
+            thesis_note = "其中数量最多的是「%s」共 %d 条，建议优先按此类型归并复核。" % (escape(type_zh(top_type)), top_cnt)
+
+    # ---------- 关键指标 ----------
+    kpi_items = [
+        ("需复核线索", "%d" % len(findings), "等待人工确认", ""),
+        ("高风险", "%d" % (critical + high), "建议优先处理" if critical + high else "无", "alert" if critical + high else ""),
+        ("涉及员工", "%d" % len(emps), "去重后人数", ""),
+        ("涉及商户", "%d" % len(vens), "去重后家数", ""),
+        ("线索金额合计", "¥{:,.0f}".format(amount_total), "同一笔可能被多条引用", ""),
+    ]
+    kpis_html = "".join(
+        '<div class="kpi %s"><div class="v">%s</div><div class="l">%s</div><div class="h">%s</div></div>' % (cls, v, lbl, hint)
+        for lbl, v, hint, cls in kpi_items
+    )
+
+    # ---------- 风险分布 ----------
+    n_for_bar = max(1, len(findings))
+    segs = []
+    for cnt, key in ((critical + high, "crit"), (medium, "med"), (low, "low")):
+        if cnt:
+            segs.append('<span class="seg %s" style="width:%.4f%%"></span>' % (key, cnt / n_for_bar * 100))
+    riskbar = '<div class="riskbar">%s</div>' % ("".join(segs) or '<span class="seg low" style="width:100%"></span>')
+    legend = ('<div class="risklegend">'
+              '<span><i class="dot crit"></i>高风险 %d</span>'
+              '<span><i class="dot med"></i>中风险 %d</span>'
+              '<span><i class="dot low"></i>低风险 %d</span></div>') % (critical + high, medium, low)
+
+    # ---------- 最需要先看的 3 条 ----------
+    ordered = sorted(findings, key=lambda f: (ORDER.get(f.get("risk_priority"), 9), -(f.get("risk_score") or 0)))
+
+    def ent_human(f, limit=3):
         out = []
         for ent in f.get("entities", []):
             t, i = ent.get("type"), ent.get("id")
@@ -1100,63 +1169,96 @@ def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir)
                 out.append("商户 %s" % i)
             else:
                 out.append(str(i))
-        return "、".join(out[:4]) if out else "（无明确对象）"
+        return "、".join(out[:limit]) if out else "（无明确对象）"
 
-    key_findings = sorted(
-        [f for f in findings if f.get("risk_priority") in ("critical", "high", "medium")],
-        key=lambda f: (PRIORITY_ORDER.get(f.get("risk_priority"), 9), -f.get("risk_score", 0)),
+    top_rows = []
+    for f in ordered[:3]:
+        pr = f.get("risk_priority", "low")
+        amt = f.get("max_amount")
+        amt_html = '<span class="top-amt">¥%.0f</span>' % amt if isinstance(amt, (int, float)) else ""
+        top_rows.append(
+            '<a class="top-row" href="#%s">'
+            '<span class="badge badge-%s">%s</span>'
+            '<span class="top-title">%s</span>'
+            '<span class="top-who">%s</span>%s<span class="top-go">查看 →</span></a>' % (
+                escape(str(f.get("finding_id", ""))), pr, PRIORITY_ZH.get(pr, pr),
+                escape(f.get("title") or type_zh(f.get("finding_type", ""))),
+                escape(ent_human(f)), amt_html))
+    top_html = "".join(top_rows) if top_rows else '<p class="empty">未发现重点项。</p>'
+
+    # ---------- 建议下一步 ----------
+    if critical + high > 0:
+        next_step = "先核对 <b>%d</b> 条高风险线索的真实性（每条已附证据编号）；再把其余线索按员工与商户归并，避免同一件事被反复问询。" % (critical + high)
+    elif medium > 0:
+        next_step = "按员工与商户归并后逐条确认；优先处理金额较大的中风险线索。"
+    elif findings:
+        next_step = "以抽样确认为主；如需逐一查看，请打开 findings.csv。"
+    else:
+        next_step = "无需处理；可作为后续比对的基线。"
+
+    # ---------- 明细入口（放在第一屏）----------
+    links = [
+        ("findings.csv", "全部线索明细（按风险排序，Excel 可开）"),
+        ("summary.md", "完整审计结论与建议复核顺序"),
+        ("data_quality.md", "数据体检报告"),
+        ("bad_rows.csv", "被隔离的问题行"),
+    ]
+    links_html = "".join(
+        '<a href="%s"><span class="lk-name">%s</span><span class="lk-desc">%s</span></a>' % (h, h, d)
+        for h, d in links
     )
-    shown = key_findings[:8]
-    rest_count = len(key_findings) - len(shown)
 
+    # ---------- 重点发现（细节层）----------
+    key = [f for f in ordered if f.get("risk_priority") in ("critical", "high", "medium")]
+    shown = key[:12]
+    rest_count = len(key) - len(shown)
     cards = []
     for f in shown:
         pr = f.get("risk_priority", "low")
-        badge = PRIORITY_ZH_LOCAL.get(pr, pr)
-        title = escape(f.get("title") or type_zh(f.get("finding_type", "")))
-        who = escape(entities_human(f))
+        fid = escape(str(f.get("finding_id", "")))
+        amt = f.get("max_amount")
+        amt_html = '<span class="fa-amount">涉及金额 ¥%.0f</span>' % amt if isinstance(amt, (int, float)) else ""
         facts = "；".join(f.get("facts", [])[:2]) or "—"
+        crit = CRITERIA.get(f.get("finding_type", ""), "")
         steps = "；".join(f.get("recommended_next_steps", [])[:2]) or "—"
-        amount = f.get("max_amount")
-        amount_html = ""
-        if isinstance(amount, (int, float)):
-            amount_html = '<span class="fa-amount">涉及金额 %.0f</span>' % amount
+        questions = "；".join(f.get("open_questions", [])[:2])
+        crit_html = ('<div class="finding-body"><span class="k">依据</span>%s</div>' % escape(crit)) if crit else ""
+        q_html = ('<div class="finding-body"><span class="k">待澄清</span>%s</div>' % escape(questions)) if questions else ""
         cards.append(
-            '<article class="finding %s">'
+            '<article class="finding %s" id="%s">'
             '<div class="finding-head">'
             '<span class="badge badge-%s">%s</span>'
-            '<span class="finding-type">%s</span>'
-            '%s'
-            '</div>'
+            '<span class="finding-type">%s</span>%s</div>'
             '<h3 class="finding-title">%s</h3>'
             '<div class="finding-who"><span class="k">涉及</span>%s</div>'
-            '<div class="finding-body"><span class="k">发现</span>%s</div>'
+            '<div class="finding-body"><span class="k">现象</span>%s</div>'
+            '%s'
             '<div class="finding-body"><span class="k">建议</span>%s</div>'
+            '%s'
             '</article>' % (
-                pr, pr, badge, escape(type_zh(f.get("finding_type", ""))), amount_html,
-                title, who, escape(facts), escape(steps),
+                pr, fid, pr, PRIORITY_ZH.get(pr, pr), escape(type_zh(f.get("finding_type", ""))), amt_html,
+                escape(f.get("title") or type_zh(f.get("finding_type", ""))),
+                escape(ent_human(f)), escape(facts), crit_html, escape(steps), q_html,
             )
         )
     findings_section = "".join(cards) if cards else '<p class="empty">未发现需复核的重点项。</p>'
     if rest_count > 0:
-        findings_section += '<p class="more">另有 %d 条中低风险线索，详见下方 <b>findings.csv</b>。</p>' % rest_count
+        findings_section += '<p class="more">另有 <b>%d</b> 条中风险线索，见下方「按类型汇总」与 <b>findings.csv</b>。</p>' % rest_count
 
-    # ---------- 发现类型分布（中文）----------
-    type_counts = Counter(type_zh(f.get("finding_type", "?")) for f in findings)
-    type_max = max(type_counts.values(), default=1)
-    type_bars = []
-    for name, cnt in type_counts.most_common(8):
-        w = (cnt / type_max) * 100
-        type_bars.append(
-            '<div class="bar-row"><span class="bar-name">%s</span>'
-            '<span class="bar-track"><span class="bar-fill" style="width:%.1f%%"></span></span>'
-            '<span class="bar-num">%d</span></div>' % (escape(name), w, cnt)
-        )
-    types_section = "".join(type_bars) if type_bars else '<p class="empty">无。</p>'
+    # ---------- 按类型汇总（含全部线索，避免长尾被忽略）----------
+    rows_html = []
+    for ft, cnt in type_counts.most_common():
+        rows_html.append(
+            '<tr><td>%s</td><td class="num">%d</td><td class="num">%d</td><td class="crit">%s</td></tr>' % (
+                escape(type_zh(ft)), cnt, high_by_type.get(ft, 0), escape(CRITERIA.get(ft, ""))))
+    types_table = (
+        '<table class="typetable"><thead><tr><th>线索类型</th><th>条数</th><th>其中高风险</th>'
+        '<th>本应如何（制度依据）</th></tr></thead><tbody>%s</tbody></table>'
+        % ("".join(rows_html) or '<tr><td colspan="4">无。</td></tr>')
+    )
 
-    # ---------- 数据质量（简化成一句话）----------
-    dq_parts = []
-    dq_parts.append("共 <b>%d</b> 行通过体检" % clean_count)
+    # ---------- 数据质量 ----------
+    dq_parts = ["共 <b>%d</b> 行通过体检" % clean_count]
     if bad_count > 0:
         reasons = []
         bf = output_dir / "bad_rows.csv"
@@ -1173,40 +1275,63 @@ def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir)
         dq_parts.append("无坏行")
     dq_section = "；".join(dq_parts) + "。"
 
-    # ---------- 详细报告（只放审计师真正会打开的）----------
-    links = [
-        ("findings.csv", "线索明细（按风险排序，可用 Excel 打开）"),
-        ("summary.md", "完整审计结论与建议复核顺序"),
-        ("data_quality.md", "数据体检报告"),
-        ("bad_rows.csv", "被隔离的问题行"),
-    ]
-    links_html = "".join(
-        '<a href="%s"><span class="lk-name">%s</span><span class="lk-desc">%s</span></a>' % (h, h, d)
-        for h, d in links
-    )
-
-    # ---------- 渲染 ----------
+    # ---------- 样式 ----------
     css = """*{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#f5f3ef;--card:#fff;--ink:#1a1a1a;--muted:#6b6b6b;--faint:#9a9a9a;--line:#e5e1da;--brand:#8b1f2f;--brand-soft:#f7ecec;--red:#b42318;--red-bg:#fdecea;--amber:#b54708;--amber-bg:#fdf3e7;--green:#067647;--green-bg:#eaf7ef}
-@media(prefers-color-scheme:dark){:root{--bg:#171614;--card:#211f1d;--ink:#f2efea;--muted:#b3ada4;--faint:#7d776e;--line:#33302c;--brand:#e8a0a8;--brand-soft:#2a1e20;--red:#f97066;--red-bg:#3a1e1c;--amber:#fdb022;--amber-bg:#33260f;--green:#4ade80;--green-bg:#13291c}}
+:root{--bg:#f5f3ef;--card:#fff;--ink:#1a1a1a;--muted:#6b6b6b;--faint:#9a9a9a;--line:#e5e1da;--brand:#8b1f2f;--brand-soft:#f7ecec;--red:#b42318;--red-bg:#fdecea;--amber:#b54708;--amber-bg:#fdf3e7;--green:#067647;--green-bg:#eaf7ef;--greyseg:#c9c4ba}
+@media(prefers-color-scheme:dark){:root{--bg:#171614;--card:#211f1d;--ink:#f2efea;--muted:#b3ada4;--faint:#7d776e;--line:#33302c;--brand:#e8a0a8;--brand-soft:#2a1e20;--red:#f97066;--red-bg:#3a1e1c;--amber:#fdb022;--amber-bg:#33260f;--green:#4ade80;--green-bg:#13291c;--greyseg:#4a463f}}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;padding:40px 20px;-webkit-font-smoothing:antialiased}
-.wrap{max-width:880px;margin:0 auto}
-.masthead{display:flex;align-items:center;gap:18px;margin-bottom:28px}
-.seal{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;flex:none}
+.wrap{max-width:960px;margin:0 auto}
+.masthead{display:flex;align-items:center;gap:18px;margin-bottom:22px}
+.seal{width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;flex:none}
 .seal.critical{background:var(--red-bg);color:var(--red)}
 .seal.review{background:var(--amber-bg);color:var(--amber)}
+.seal.notice{background:var(--brand-soft);color:var(--brand)}
 .seal.pass{background:var(--green-bg);color:var(--green)}
-.masthead h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.masthead h1{font-size:24px;font-weight:800;letter-spacing:-.01em}
 .masthead .sub{font-size:13px;color:var(--muted);margin-top:3px}
 .tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:middle}
 .tag.critical{background:var(--red-bg);color:var(--red)}
 .tag.review{background:var(--amber-bg);color:var(--amber)}
+.tag.notice{background:var(--brand-soft);color:var(--brand)}
 .tag.pass{background:var(--green-bg);color:var(--green)}
-.verdict{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:12px;padding:22px 26px;margin-bottom:26px}
-.verdict .lbl{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--brand);text-transform:uppercase;margin-bottom:8px}
-.verdict p{font-size:17px;line-height:1.75}
-.verdict b{color:var(--brand);font-weight:800}
-h2.sec{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:30px 0 14px}
+h2.sec{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:30px 0 12px}
+h2.sec .hint{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px;color:var(--faint);margin-left:8px}
+.firstpage{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin-bottom:8px}
+.thesis{border-left:5px solid var(--brand);padding-left:18px;margin-bottom:22px}
+.thesis .main{font-size:20px;font-weight:800;line-height:1.55}
+.thesis .main b{color:var(--brand)}
+.thesis .sub{font-size:14px;color:var(--muted);margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi.alert{border-color:var(--red);background:var(--red-bg)}
+.kpi .v{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi.alert .v{color:var(--red)}
+.kpi .l{font-size:12px;color:var(--muted);margin-top:3px}
+.kpi .h{font-size:11px;color:var(--faint);margin-top:1px}
+.riskbar{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--line);margin-top:20px}
+.seg{display:block;height:100%}
+.seg.crit{background:var(--red)}
+.seg.med{background:var(--amber)}
+.seg.low{background:var(--greyseg)}
+.risklegend{display:flex;gap:20px;font-size:13px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:99px;margin-right:6px}
+.dot.crit{background:var(--red)}
+.dot.med{background:var(--amber)}
+.dot.low{background:var(--greyseg)}
+.nextbox{margin-top:20px;background:var(--brand-soft);border-radius:10px;padding:12px 16px;font-size:14px}
+.nextbox b{color:var(--brand)}
+.mini{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin:22px 0 10px}
+.top-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);text-decoration:none;color:var(--ink);margin-bottom:8px}
+.top-row:hover{border-color:var(--brand)}
+.top-title{font-weight:700;font-size:14px}
+.top-who{color:var(--muted);font-size:13px;margin-left:auto}
+.top-amt{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.top-go{color:var(--brand);font-size:13px;font-weight:700;white-space:nowrap}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.links a{display:block;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px;text-decoration:none;color:var(--ink)}
+.links a:hover{border-color:var(--brand)}
+.lk-name{display:block;font-weight:700;font-size:14px}
+.lk-desc{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .finding{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:12px}
 .finding.critical,.finding.high{border-left:5px solid var(--red)}
 .finding.medium{border-left:5px solid var(--amber)}
@@ -1214,65 +1339,80 @@ h2.sec{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--muted);te
 .badge{font-size:12px;font-weight:800;padding:3px 10px;border-radius:6px}
 .badge.critical,.badge.high{background:var(--red-bg);color:var(--red)}
 .badge.medium{background:var(--amber-bg);color:var(--amber)}
+.badge.low{background:var(--brand-soft);color:var(--brand)}
 .finding-type{font-size:12px;color:var(--faint)}
 .fa-amount{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .finding-title{font-size:16px;font-weight:700;margin-bottom:10px}
 .finding-who{font-size:14px;color:var(--muted);margin-bottom:6px}
 .finding-body{font-size:14px;margin-bottom:4px}
-.k{display:inline-block;min-width:38px;color:var(--faint);font-size:12px;margin-right:6px}
+.k{display:inline-block;min-width:44px;color:var(--faint);font-size:12px;margin-right:6px}
 .more{font-size:13px;color:var(--muted);margin:4px 0 0}
-.bar-row{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:13px}
-.bar-name{width:200px;flex:none;color:var(--ink)}
-.bar-track{flex:1;height:12px;background:var(--line);border-radius:99px;overflow:hidden}
-.bar-fill{display:block;height:100%;background:var(--brand);border-radius:99px}
-.bar-num{width:28px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.empty{font-size:14px;color:var(--muted)}
+.typetable{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13px}
+.typetable th{text-align:left;font-size:12px;color:var(--muted);font-weight:700;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line)}
+.typetable th:nth-child(2),.typetable th:nth-child(3){text-align:right}
+.typetable td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.typetable tr:last-child td{border-bottom:none}
+.typetable td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.typetable td.crit{color:var(--muted)}
 .note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:14px}
 .note b{font-weight:700}
-.links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 16px;text-decoration:none;color:var(--ink)}
-.links a:hover{border-color:var(--brand)}
-.lk-name{display:block;font-weight:700;font-size:14px}
-.lk-desc{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .disclaimer{margin-top:26px;background:var(--brand-soft);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:13px;color:var(--muted)}
 .disclaimer b{color:var(--brand)}
 .foot{text-align:center;color:var(--faint);font-size:12px;margin-top:22px}
-@media print{body{background:#fff;padding:0}.finding,.note,.links a,.verdict,.disclaimer{break-inside:avoid}}
-@media(max-width:640px){body{padding:20px 12px}.masthead h1{font-size:21px}.bar-name{width:120px}.links{grid-template-columns:1fr}.finding-title{font-size:15px}}"""
+@media print{body{background:#fff;padding:0}.firstpage{break-after:page;border:none;padding:0}.finding,.note,.links a,.disclaimer,.typetable{break-inside:avoid}}
+@media(max-width:720px){body{padding:20px 12px}.masthead h1{font-size:20px}.kpis{grid-template-columns:1fr 1fr}.links{grid-template-columns:1fr}.finding-title{font-size:15px}.top-who{display:none}.typetable td.crit,.typetable th:nth-child(4){display:none}}"""
+
+    seal_icon = status_zh[:1] if status_class != "pass" else "✓"
+    thesis_note_html = ('<div class="sub">%s</div>' % thesis_note) if thesis_note else ""
 
     html = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>费用审计全景报告</title>
+<title>费用报销审计 · 全景报告</title>
 <style>%s</style>
 </head>
 <body>
 <div class="wrap">
-  <div class="masthead">
-    <div class="seal %s">%s</div>
-    <div>
-      <h1>费用审计全景报告<span class="tag %s">%s</span></h1>
-      <div class="sub">expense-audit-v2 v%s · %s · 用时 %s</div>
+
+  <div class="firstpage">
+    <div class="masthead">
+      <div class="seal %s">%s</div>
+      <div>
+        <h1>费用报销审计<span class="tag %s">%s</span></h1>
+        <div class="sub">expense-audit-v2 v%s · %s · 用时 %s</div>
+      </div>
     </div>
+
+    <div class="thesis">
+      <div class="main">%s</div>
+      %s
+    </div>
+
+    <div class="kpis">%s</div>
+
+    %s
+    %s
+
+    <div class="mini">最需要先看的 3 条</div>
+    %s
+
+    <div class="nextbox"><b>建议下一步：</b>%s</div>
+
+    <div class="mini">查看明细</div>
+    <div class="links">%s</div>
   </div>
 
-  <div class="verdict">
-    <div class="lbl">审计结论</div>
-    <p>%s</p>
-  </div>
-
-  <h2 class="sec">重点发现 · 按风险排序</h2>
+  <h2 class="sec">重点发现<span class="hint">共 %d 条中高风险，以下列出前 %d 条</span></h2>
   %s
 
-  <h2 class="sec">发现类型分布</h2>
-  <div class="note">%s</div>
+  <h2 class="sec">按类型汇总<span class="hint">含全部 %d 条线索</span></h2>
+  %s
 
   <h2 class="sec">数据质量</h2>
   <div class="note">%s</div>
-
-  <h2 class="sec">详细报告</h2>
-  <div class="links">%s</div>
 
   <div class="disclaimer">
     <b>业务定位</b>：本报告为<strong>辅助分析</strong>，不替代专业审计判断。工具只做「数据之间对得上」的核对，不验证业务是否真实发生（例：一张合规的客情费发票，无法判断当时是否真的在宴请客户）。<strong>未发现问题 ≠ 没有问题</strong>；最终结论必须由有资质的审计师做出。
@@ -1284,14 +1424,19 @@ h2.sec{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--muted);te
 </html>
 """ % (
         css,
-        status_class, (status_zh[:1] if status_class != "pass" else "✓"),
-        status_class, status_label,
+        status_class, seal_icon,
+        status_class, status_zh,
         version, date_str, duration_str,
-        statement,
-        findings_section,
-        types_section,
-        dq_section,
+        thesis_main, thesis_note_html,
+        kpis_html,
+        riskbar, legend,
+        top_html,
+        next_step,
         links_html,
+        len(key), len(shown),
+        findings_section,
+        len(findings), types_table,
+        dq_section,
         version,
     )
 

@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 SKILL = "investigation-assistant-v2"
 
 MESSAGE_FIELDS = {
@@ -620,55 +620,75 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except Exception as _e:
         print("WARNING: dashboard.html generation failed: %s" % _e, file=sys.stderr)
     print(json.dumps({"output": str(output), "raw_files": len(inventory), "timeline_rows": len(timeline), "out_of_scope_rows": len(excluded), "issues": len(matrix), "findings": len(findings), "timezone_available": timezone_warnings["available"]}, ensure_ascii=False))
+    print("提示：如果本工具有帮助，可以对我说「做匿名反馈」——只发送匿名统计（不含案卷内容/当事人姓名），核心分析始终在本地、不联网。", file=sys.stderr)
     return 0
 
 
 DASHBOARD_CSS = """*{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#f5f3ef;--card:#fff;--ink:#1a1a1a;--muted:#6b6b6b;--faint:#9a9a9a;--line:#e5e1da;--brand:#2c4a6e;--brand-soft:#eef2f7;--red:#b42318;--red-bg:#fdecea;--amber:#b54708;--amber-bg:#fdf3e7;--green:#067647;--green-bg:#eaf7ef}
-@media(prefers-color-scheme:dark){:root{--bg:#171614;--card:#211f1d;--ink:#f2efea;--muted:#b3ada4;--faint:#7d776e;--line:#33302c;--brand:#8fb4dc;--brand-soft:#1b2733;--red:#f97066;--red-bg:#3a1e1c;--amber:#fdb022;--amber-bg:#33260f;--green:#4ade80;--green-bg:#13291c}}
+:root{--bg:#f5f3ef;--card:#fff;--ink:#1a1a1a;--muted:#6b6b6b;--faint:#9a9a9a;--line:#e5e1da;--brand:#8b1f2f;--brand-soft:#f7ecec;--red:#b42318;--red-bg:#fdecea;--amber:#b54708;--amber-bg:#fdf3e7;--green:#067647;--green-bg:#eaf7ef}
+@media(prefers-color-scheme:dark){:root{--bg:#171614;--card:#211f1d;--ink:#f2efea;--muted:#b3ada4;--faint:#7d776e;--line:#33302c;--brand:#e8a0a8;--brand-soft:#2a1e20;--red:#f97066;--red-bg:#3a1e1c;--amber:#fdb022;--amber-bg:#33260f;--green:#4ade80;--green-bg:#13291c}}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;padding:40px 20px;-webkit-font-smoothing:antialiased}
-.wrap{max-width:880px;margin:0 auto}
-.masthead{display:flex;align-items:center;gap:18px;margin-bottom:28px}
-.seal{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;flex:none;background:var(--green-bg);color:var(--green)}
-.masthead h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.wrap{max-width:960px;margin:0 auto}
+.masthead{display:flex;align-items:center;gap:18px;margin-bottom:22px}
+.seal{width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;flex:none;background:var(--green-bg);color:var(--green)}
+.masthead h1{font-size:24px;font-weight:800;letter-spacing:-.01em}
 .masthead .sub{font-size:13px;color:var(--muted);margin-top:3px}
 .tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:middle;background:var(--green-bg);color:var(--green)}
-.verdict{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:12px;padding:22px 26px;margin-bottom:14px}
-.verdict .lbl{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--brand);text-transform:uppercase;margin-bottom:8px}
-.verdict p{font-size:17px;line-height:1.75}
-.verdict b{color:var(--brand);font-weight:800}
-.scope{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:26px;font-size:14px}
-.scope .row{display:flex;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
-.scope .row:last-child{border-bottom:0}
-.scope .sk{color:var(--faint);min-width:90px;font-size:13px}
-.scope .sv{flex:1}
-h2.sec{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:30px 0 14px}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:10px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;text-align:center}
-.kpi .v{font-size:26px;font-weight:800;color:var(--brand);letter-spacing:-.02em}
-.kpi .l{font-size:12px;color:var(--muted);margin-top:4px}
-.issue{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:12px;border-left:5px solid var(--brand)}
-.issue h3{font-size:15px;font-weight:700;margin-bottom:8px}
-.issue .meta{font-size:13px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
-.issue .meta b{color:var(--ink)}
-.issue .miss{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:4px}
-.issue .status{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--amber-bg);color:var(--amber)}
-.note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:14px;margin-bottom:10px}
+.firstpage{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin-bottom:8px}
+.thesis{border-left:5px solid var(--brand);padding-left:18px;margin-bottom:22px}
+.thesis .main{font-size:19px;font-weight:800;line-height:1.55}
+.thesis .main b{color:var(--brand)}
+.thesis .sub{font-size:14px;color:var(--muted);margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .v{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .l{font-size:12px;color:var(--muted);margin-top:3px}
+.mini{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin:22px 0 10px}
+.nextbox{margin-top:20px;background:var(--brand-soft);border-radius:10px;padding:12px 16px;font-size:14px}
+.nextbox b{color:var(--brand)}
+.nextbox ol{margin:6px 0 0 18px}
+.nextbox li{margin:2px 0}
+h2.sec{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:30px 0 12px}
+h2.sec .hint{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px;color:var(--faint);margin-left:8px}
+.top-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);text-decoration:none;color:var(--ink);margin-bottom:8px}
+.top-row:hover{border-color:var(--brand)}
+.top-title{font-weight:700;font-size:14px}
+.top-who{color:var(--muted);font-size:13px;margin-left:auto;white-space:nowrap}
+.top-go{color:var(--brand);font-size:13px;font-weight:700;white-space:nowrap}
+.itag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:6px;background:var(--brand-soft);color:var(--brand);white-space:nowrap}
+.scopegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+.row{display:flex;gap:10px;font-size:14px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:none}
+.sk{color:var(--faint);font-size:12px;min-width:72px;flex:none;padding-top:2px}
+.sv{color:var(--ink)}
+.issue{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:10px}
+.issue h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.issue .status{font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-bg);padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle}
+.issue .meta{font-size:13px;color:var(--muted);display:flex;gap:16px}
+.issue .miss{font-size:13px;color:var(--amber);margin-top:4px}
+.note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:14px}
 .note b{font-weight:700}
+.note.warn{border-left:5px solid var(--amber)}
 .links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 16px;text-decoration:none;color:var(--ink)}
+.links a{display:block;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px;text-decoration:none;color:var(--ink)}
 .links a:hover{border-color:var(--brand)}
 .lk-name{display:block;font-weight:700;font-size:14px}
 .lk-desc{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .disclaimer{margin-top:26px;background:var(--brand-soft);border:1px solid var(--line);border-radius:12px;padding:16px 22px;font-size:13px;color:var(--muted)}
 .disclaimer b{color:var(--brand)}
 .foot{text-align:center;color:var(--faint);font-size:12px;margin-top:22px}
-@media print{body{background:#fff;padding:0}.issue,.note,.links a,.verdict,.disclaimer,.scope,.kpi{break-inside:avoid}}
-@media(max-width:640px){body{padding:20px 12px}.masthead h1{font-size:20px}.kpis{grid-template-columns:1fr 1fr}.links{grid-template-columns:1fr}}"""
+@media print{body{background:#fff;padding:0}.firstpage{break-after:page;border:none;padding:0}.issue,.note,.links a,.row,.disclaimer{break-inside:avoid}}
+@media(max-width:720px){body{padding:20px 12px}.masthead h1{font-size:20px}.kpis{grid-template-columns:1fr 1fr}.links{grid-template-columns:1fr}.scopegrid{grid-template-columns:1fr}}"""
 
 
 def build_dashboard_html(manifest, scope, inventory, timeline, excluded, matrix, custody, warnings, output_dir):
-    """调查工作空间全景（面向调查负责人，全中文，强调授权/证据链/待验证事项）。"""
+    """调查工作空间全景（面向调查负责人，全中文，强调授权/证据链/待验证事项）。
+
+    结构对齐审计报告最佳实践：
+      第一屏（执行摘要，可独立看懂）：
+        概况 → 关键指标 → 授权与范围 → 待验证事项（前几条）→ 下一步（谁来做）→ 明细入口
+      往下：全部待验证事项（含缺失证据）→ 时间线 → 数据质量 → 业务定位
+    """
     from html import escape
 
     duration_str, date_str = "—", "—"
@@ -682,14 +702,14 @@ def build_dashboard_html(manifest, scope, inventory, timeline, excluded, matrix,
     version = manifest.get("skill_version", "?")
     case_id = manifest.get("case_id", "—")
 
-    # scope rows
+    # ---------- 授权与范围 ----------
     dr = scope.get("date_range", {})
     date_range = "%s ~ %s" % (dr.get("start", "?"), dr.get("end", "?"))
     persons = "、".join(scope.get("persons_in_scope", [])) or "（无）"
     sources = "、".join(scope.get("allowed_sources", [])) or "（无）"
     auth = scope.get("authorization_reference") or "（未提供文号）"
     tz = scope.get("assumed_timezone", "UTC")
-    scope_html = "".join(
+    scope_rows = "".join(
         '<div class="row"><span class="sk">%s</span><span class="sv">%s</span></div>' % (k, escape(str(v)))
         for k, v in [
             ("调查目的", scope.get("purpose", "—")),
@@ -701,35 +721,59 @@ def build_dashboard_html(manifest, scope, inventory, timeline, excluded, matrix,
         ]
     )
 
-    statement = "已建立可追溯调查工作空间：登记 <b>%d</b> 个原始文件（含 SHA-256），形成 <b>%d</b> 条时间线事件、<b>%d</b> 个待验证事项。所有证据已按授权范围登记，<b>等待人工复核</b>——本工作空间不做责任认定。" % (
-        len(inventory), len(timeline), len(matrix))
+    # ---------- 概况 ----------
+    thesis_main = ("已建立可追溯调查工作空间：登记 <b>%d</b> 个原始文件（含 SHA-256），"
+                   "形成 <b>%d</b> 条时间线事件、<b>%d</b> 个待验证事项。" % (
+                       len(inventory), len(timeline), len(matrix)))
+    thesis_sub = "所有证据已按授权范围登记，<b>等待人工复核</b>——本工作空间只做证据整理，不做责任认定。"
 
-    # issue cards
-    issue_cards = []
-    for it in matrix:
-        issue_id = escape(str(it.get("issue_id", "")))
-        allegation = escape(it.get("allegation_or_issue", "") or "—")
+    # ---------- 关键指标 ----------
+    kpis = [
+        ("登记原始文件", "%d" % len(inventory)),
+        ("时间线事件", "%d" % len(timeline)),
+        ("待验证事项", "%d" % len(matrix)),
+        ("越界行（已隔离）", "%d" % len(excluded)),
+    ]
+    kpis_html = "".join(
+        '<div class="kpi"><div class="v">%s</div><div class="l">%s</div></div>' % (v, l)
+        for l, v in kpis
+    )
+
+    # ---------- 待验证事项 ----------
+    def parse_issue(it):
+        issue_id = str(it.get("issue_id", ""))
+        allegation = it.get("allegation_or_issue", "") or "—"
         sup = it.get("supporting_evidence_refs", "")
         con = it.get("contradictory_evidence_refs", "")
         nsup = len([x for x in sup.split("|") if x]) if sup else 0
         ncon = len([x for x in con.split("|") if x]) if con else 0
         missing = it.get("missing_evidence", "")
         miss_list = [x for x in missing.split("|") if x][:3]
-        miss_html = ('<div class="miss"><span class="k">缺失证据</span>%s</div>' % escape("；".join(miss_list))) if miss_list else ""
+        return issue_id, allegation, nsup, ncon, miss_list
+
+    top_rows = []
+    for it in matrix[:4]:
+        issue_id, allegation, nsup, ncon, _ = parse_issue(it)
+        top_rows.append(
+            '<a class="top-row" href="#issue-%s">'
+            '<span class="itag">%s</span>'
+            '<span class="top-title">%s</span>'
+            '<span class="top-who">支持 %d · 反证 %d</span>'
+            '<span class="top-go">查看 →</span></a>' % (
+                escape(issue_id), escape(issue_id), escape(allegation), nsup, ncon))
+    top_html = "".join(top_rows) if top_rows else '<p class="empty">scope 中未定义待验证事项。</p>'
+
+    issue_cards = []
+    for it in matrix:
+        issue_id, allegation, nsup, ncon, miss_list = parse_issue(it)
+        miss_html = ('<div class="miss">缺失证据：%s</div>' % escape("；".join(miss_list))) if miss_list else ""
         issue_cards.append(
-            '<article class="issue"><h3>%s · %s <span class="status">待验证</span></h3>'
+            '<article class="issue" id="issue-%s"><h3>%s · %s <span class="status">待验证</span></h3>'
             '<div class="meta"><span>支持证据 <b>%d</b> 条</span><span>反证 <b>%d</b> 条</span></div>%s</article>' % (
-                issue_id, allegation, nsup, ncon, miss_html))
+                escape(issue_id), escape(issue_id), escape(allegation), nsup, ncon, miss_html))
     issues_html = "".join(issue_cards) if issue_cards else '<p class="note">scope 中未定义待验证事项。</p>'
 
-    kpis = (
-        '<div class="kpi"><div class="v">%d</div><div class="l">登记原始文件</div></div>'
-        '<div class="kpi"><div class="v">%d</div><div class="l">时间线事件</div></div>'
-        '<div class="kpi"><div class="v">%d</div><div class="l">待验证事项</div></div>'
-        '<div class="kpi"><div class="v">%d</div><div class="l">越界行（已隔离）</div></div>'
-    ) % (len(inventory), len(timeline), len(matrix), len(excluded))
-
-    # timeline summary
+    # ---------- 时间线 ----------
     tl_note = "时间线共 <b>%d</b> 条事件" % len(timeline)
     if timeline:
         first = min((t.get("timestamp", "") for t in timeline if t.get("timestamp")), default="")
@@ -738,12 +782,15 @@ def build_dashboard_html(manifest, scope, inventory, timeline, excluded, matrix,
             tl_note += "，覆盖 %s ~ %s" % (first[:10], last[:10])
     tl_note += "。"
 
-    # next steps
-    next_html = ('<div class="note" style="border-left:4px solid var(--brand)"><b>下一步（必须由有权人员完成）</b><br>'
-                 '1. 回到候选记录上下文，逐条核验支持证据与反证；<br>'
-                 '2. 补齐缺失证据（访谈、门禁、资金流水等），并寻找替代表述；<br>'
-                 '3. 按 <code>interview_plan.csv</code> 安排访谈，<code>case_memo_template.md</code> 由负责人填写。</div>')
+    # ---------- 下一步 ----------
+    next_html = ('<b>下一步（必须由有权人员完成）</b>'
+                 '<ol>'
+                 '<li>回到候选记录上下文，逐条核验支持证据与反证；</li>'
+                 '<li>补齐缺失证据（访谈、门禁、资金流水等），并寻找替代表述；</li>'
+                 '<li>按 <code>interview_plan.csv</code> 安排访谈，<code>case_memo_template.md</code> 由负责人填写。</li>'
+                 '</ol>')
 
+    # ---------- 明细入口 ----------
     links = [
         ("evidence_inventory.jsonl", "登记的全部原始文件（含哈希）"),
         ("timeline.csv", "时间线事件"),
@@ -752,37 +799,83 @@ def build_dashboard_html(manifest, scope, inventory, timeline, excluded, matrix,
         ("interview_plan.csv", "访谈计划"),
         ("run_manifest.json", "运行记录（含授权范围与哈希）"),
     ]
-    links_html = "".join('<a href="%s"><span class="lk-name">%s</span><span class="lk-desc">%s</span></a>' % (h, h, d) for h, d in links)
+    links_html = "".join(
+        '<a href="%s"><span class="lk-name">%s</span><span class="lk-desc">%s</span></a>' % (h, h, d)
+        for h, d in links
+    )
 
     warn_html = ""
     if warnings:
-        warn_html = '<div class="note">数据质量提醒：%s</div>' % escape("；".join(str(w) for w in warnings[:4]))
+        warn_html = '<div class="note warn">数据质量提醒：%s</div>' % escape("；".join(str(w) for w in warnings[:4]))
 
     html = """<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>调查工作空间全景</title><style>%s</style></head><body>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>调查工作空间 · 全景报告</title>
+<style>%s</style>
+</head>
+<body>
 <div class="wrap">
-  <div class="masthead"><div class="seal">✓</div><div>
-    <h1>调查工作空间全景<span class="tag">已授权</span></h1>
-    <div class="sub">investigation-assistant-v2 v%s · 案件 %s · %s · 用时 %s</div></div></div>
-  <div class="verdict"><div class="lbl">工作空间概况</div><p>%s</p></div>
-  <h2 class="sec">授权与范围</h2>
-  <div class="scope">%s</div>
-  <h2 class="sec">证据与覆盖</h2>
-  <div class="kpis">%s</div>
+
+  <div class="firstpage">
+    <div class="masthead">
+      <div class="seal">✓</div>
+      <div>
+        <h1>调查工作空间<span class="tag">已授权</span></h1>
+        <div class="sub">investigation-assistant-v2 v%s · 案件 %s · %s · 用时 %s</div>
+      </div>
+    </div>
+
+    <div class="thesis">
+      <div class="main">%s</div>
+      <div class="sub">%s</div>
+    </div>
+
+    <div class="kpis">%s</div>
+
+    <div class="mini">授权与范围</div>
+    <div class="note"><div class="scopegrid">%s</div></div>
+
+    <div class="mini">待验证事项</div>
+    %s
+
+    <div class="nextbox">%s</div>
+
+    <div class="mini">查看明细</div>
+    <div class="links">%s</div>
+  </div>
+
+  <h2 class="sec">全部待验证事项<span class="hint">事项 × 证据矩阵</span></h2>
+  %s
+
+  <h2 class="sec">时间线</h2>
   <div class="note">%s</div>
+
   %s
-  <h2 class="sec">待验证事项 · 证据矩阵</h2>
-  %s
-  %s
-  <h2 class="sec">详细报告</h2>
-  <div class="links">%s</div>
-  <div class="disclaimer"><b>业务定位</b>：本工作空间为<strong>证据整理</strong>，不替代专业调查/法律判断。用户指控与关键词命中均为<strong>待验证线索</strong>，不是事实认定。<strong>未命中不代表事项未发生</strong>；最终责任判断必须由有资质人员做出。</div>
+
+  <div class="disclaimer">
+    <b>业务定位</b>：本工作空间为<strong>证据整理</strong>，不替代专业调查/法律判断。用户指控与关键词命中均为<strong>待验证线索</strong>，不是事实认定。<strong>未命中不代表事项未发生</strong>；最终责任判断必须由有资质人员做出。
+  </div>
+
   <div class="foot">由 investigation-assistant-v2 v%s 自动生成 · 离线可看 · 无外部依赖</div>
-</div></body></html>
+</div>
+</body>
+</html>
 """ % (
-        DASHBOARD_CSS, version, case_id, date_str, duration_str,
-        statement, scope_html, kpis, tl_note, warn_html, issues_html, next_html, links_html, version,
+        DASHBOARD_CSS,
+        version, escape(str(case_id)), date_str, duration_str,
+        thesis_main, thesis_sub,
+        kpis_html,
+        scope_rows,
+        top_html,
+        next_html,
+        links_html,
+        issues_html,
+        tl_note,
+        warn_html,
+        version,
     )
     (output_dir / "dashboard.html").write_text(html, encoding="utf-8")
 
