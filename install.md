@@ -115,9 +115,9 @@ curl ... | PREFIX=~/.my-custom-path bash
 
 ### 锁定版本
 
-默认装最新。如果想钉死某个版本：
+默认装最新。如果想钉死某个版本（把 `v0.3.2` 换成你要的版本号）：
 ```
-VERSION=v0.3.1 curl ... | bash -s -- expense-audit-v2
+VERSION=v0.3.2 curl ... | bash -s -- expense-audit-v2
 ```
 
 ### 验证（手动跑一次 example）
@@ -153,12 +153,14 @@ rm -rf ~/.config/opencode/skills/expense-audit-v2
 
 ### ZIP 直链（不走 install.sh，手动下载/检查用）
 
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.1/expense-audit-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.1/procurement-fraud-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.1/investigation-assistant-v2.zip>
-- <https://github.com/andrew-tao-li/ai-audit-skills/releases/download/v0.3.1/cn-entity-relation-check.zip>
+> 用 `releases/latest/download/` 别名，**永远指向最新版**，不会过时。
 
-最新版永远在 <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest>。
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/expense-audit-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/procurement-fraud-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/investigation-assistant-v2.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/cn-entity-relation-check.zip>
+
+所有版本列表见 <https://github.com/andrew-tao-li/ai-audit-skills/releases>。
 
 ### 源码 & 自定义
 - 四个 skill 的源码：`skills-v2/<skill-name>/`

@@ -170,7 +170,7 @@ ai-audit-skills/
 
 ---
 
-**最后更新**：v0.3.1 已在 GitHub Release 公开。Pack 版本 `v0.3.0`。
+**最后更新**：最新版见 <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest>（当前 pack `v0.3.2`，各 skill 版本见 `VERSIONS.json`）。
 **作者**：andrew-tao-li（@andrew-tao-li）
 **项目主页**：https://github.com/andrew-tao-li/ai-audit-skills
 **公众号**：（名称待作者填写，二维码见各发布页）

@@ -10,3 +10,6 @@
 - 新规则必须有合成数据正例、合理异常反例和可解释参数。
 - 路径使用 `pathlib.Path`，文本使用 UTF-8，兼容 Windows、macOS 和 Linux。
 - 修改后运行对应 skill 的单元测试及 `python3 evals/validate_pack.py`。
+- **改了 `skills-v2/` 下任何文件后，必须立刻重打包并重传 release**：跑 `./scripts/build-dist.sh` → 上传 4 个 zip 到新 release（或用 `gh release`）→ **下载 release zip 核对内容与 sha256 一致**。用户/测试者是从 **release** 安装的，不是从 `main` 分支——只改 main 不重打包 = 用户永远看不到更新。（已有两次事故：一次传错 release ID，一次漏重打包。）
+- 文档/README/`install.md` 中**不要写死 release 版本号**（会随每次 release 过时）；需要指向最新版时用 `releases/latest/download/<asset>` 别名或 `releases/latest` 链接。
+- 面向用户的文案（README、公众号、marketplace description）**只写事实**：不虚构作者人数、从业年限、测试者数量、机构背书。
