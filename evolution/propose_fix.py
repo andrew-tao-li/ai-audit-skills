@@ -113,6 +113,7 @@ def finish_proposal(stashed):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-notify", action="store_true", help="不发通知（测试用，避免打扰）")
     ap.add_argument("--timeout", type=int, default=600)
     args = ap.parse_args()
 
@@ -200,9 +201,13 @@ def main() -> int:
         print(pr_url)
         # 6. 通知
         notify_sh = ROOT / "evolution" / "notify.sh"
-        if notify_sh.exists():
-            subprocess.run(["bash", str(notify_sh), "[Audit Box] 有新的改进提案",
-                            "自动生成了 1 条修复提案（%d 条失败），请在 GitHub 审阅并决定是否合并：\n%s" % (n, pr_url)],
+        if (not args.no_notify) and notify_sh.exists():
+            body = ("自动生成了 1 个修复 PR（针对 {n} 条失败）。\n\n"
+                    "在 GitHub 的 **Pull requests** 里审阅：**合并 = 采纳，关闭 = 拒绝**。\n"
+                    "{url}\n\n"
+                    "全部待审批 PR：https://github.com/andrew-tao-li/ai-audit-skills/pulls?q=is%3Apr+is%3Aopen").format(
+                        n=n, url=pr_url)
+            subprocess.run(["bash", str(notify_sh), "[Audit Box] 有 1 个待审批的 Pull Request", body],
                            cwd=str(ROOT), capture_output=True, text=True)
         # 回到 main + 恢复工作区
         finish_proposal(stashed)

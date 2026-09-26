@@ -47,6 +47,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lens", type=int, default=None, help="指定审视角度编号（0-3）")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-notify", action="store_true", help="不发通知（测试用，避免打扰）")
     ap.add_argument("--force", action="store_true", help="忽略「距上次不足 7 天」的限制")
     ap.add_argument("--timeout", type=int, default=600)
     args = ap.parse_args()
@@ -119,9 +120,13 @@ def main() -> int:
                 pass
         print(pr_url)
         notify_sh = HERE / "notify.sh"
-        if notify_sh.exists():
-            subprocess.run(["bash", str(notify_sh), "[Audit Box] 定期巡检有新提案",
-                            "定期巡检（%s）生成了 1 条改进提案，请在 GitHub 审阅并决定是否合并：\n%s" % (lens_name, pr_url)],
+        if (not args.no_notify) and notify_sh.exists():
+            body = ("定期巡检（{lens}）提出了 1 个改进 PR（#{num}）。\n\n"
+                    "在 GitHub 的 **Pull requests** 里审阅：**合并 = 采纳，关闭 = 拒绝**。\n"
+                    "{url}\n\n"
+                    "全部待审批 PR：https://github.com/andrew-tao-li/ai-audit-skills/pulls?q=is%3Apr+is%3Aopen").format(
+                        lens=lens_name, num=pr.get("number", "?"), url=pr_url)
+            subprocess.run(["bash", str(notify_sh), "[Audit Box] 有 1 个待审批的 Pull Request", body],
                            cwd=str(ROOT), capture_output=True, text=True)
         finish_proposal(stashed)
         LAST_PATROL.parent.mkdir(parents=True, exist_ok=True)

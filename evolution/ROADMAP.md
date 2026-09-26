@@ -34,9 +34,14 @@
   - `evolve.sh`：Step 4b（有失败→propose_fix）、Step 4c（每 7 天→patrol）。
   - 用户已给 PAT 补 `Pull requests: read and write` 权限；**全流程已实测通过**（PR #1 冒烟、PR #2、PR #3 真实巡检 + 合并生效）。
   - **隔离修复**：propose_fix/patrol 先把无关改动 `git stash` 隔离，避免 `git add -A` 把未提交的手工改动/例行副作用扫进 PR。
+  **⚠ 关键前提：必须给定时任务配 GITHUB_TOKEN，否则闭环是「哑」的（2026-09-26 发现）**：
+  - `propose_fix` / `patrol` 都需要 `GITHUB_TOKEN`；**launchd 默认没有**，所以每天 9:00 的例行只发「每日报告」，**永远不会开 PR**。
+  - 配置方式：仓库外私有文件 `~/.config/ai-audit-skills/env`（内容 `export GITHUB_TOKEN=...`，chmod 600）；`evolve.sh` 启动时会自动 source 它。**密钥绝不写进仓库，也不写进 plist。**
+  - 只有手动在带 token 的 shell 里跑 `patrol.py` / `propose_fix.py` 才会开 PR 并通知——**如果收到「去 GitHub 审阅」的通知却找不到东西，多半是手动测试发的**。
+  **通知措辞已澄清**：标题改为「有 N 个待审批的 Pull Request」；正文明确「在 GitHub 的 **Pull requests** 里审阅，合并 = 采纳，关闭 = 拒绝」并给「全部待审批 PR」链接；每日报告新增「待审批 PR: N 个」一行。**本仓库只用 PR，不用 Issue。**
+  **测试防打扰**：`patrol.py` / `propose_fix.py` 新增 `--no-notify`，测试时用它，不再往企业微信刷通知。
   **仍未做**：
   - `evolve.sh` 的 LLM 分析步骤仍只在「失败数 > 0」时生成；不过巡检已覆盖了"健康时也进化"的需求。
-  - 通知里还没带上 PR 链接（目前打 PR URL 到 stdout + 通知标题；可后续把链接拼进通知正文）。
 
 - **expense 输出打磨（低优先级）**（暂缓，2026-09-24；**呈现层已于 2026-09-26 处理**）：审计师盲测暴露的两个 UX 项，**非正确性问题，可缓**。① config 驱动规则（split-expense / policy-threshold / large-amount-low-level / missing-expense-type 等）缺配置时静默跳过，虽有 `data_quality` 记录「未提供 limits」等，但首跑用户可能误以为「漏检」；② weekend-signal 占 findings 约 88% 噪声，虽已标 weak/low 且 `summary` 给了复核顺序，但 `findings.csv` 仍是一屏噪声。
    - **已做（呈现层，v0.3.5）**：dashboard 改版后，第一屏直接用**风险管理语言**翻译「多」——论点句会写明「其中数量最多的是『周末消费』共 N 条，属提示性信息…通常无需逐条处理」，并配风险分布条（高/中/低）与「按类型汇总」表。经理不会再被 88% 的噪声误导。

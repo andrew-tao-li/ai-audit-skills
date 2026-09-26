@@ -17,7 +17,15 @@ export PYTHONUTF8=1
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
-VERSION="${VERSION:-v0.2.0-baseline}"
+# 可选：从仓库外的私有文件读取 GITHUB_TOKEN（密钥绝不写进仓库，也不写进 plist）。
+# 用户只需：mkdir -p ~/.config/ai-audit-skills && echo 'export GITHUB_TOKEN=xxx' > ~/.config/ai-audit-skills/env
+if [ -f "$HOME/.config/ai-audit-skills/env" ]; then
+    # shellcheck disable=SC1090
+    . "$HOME/.config/ai-audit-skills/env"
+fi
+
+# 版本取自仓库（不再写死 v0.2.0-baseline）
+VERSION="${VERSION:-$(cat "$ROOT/VERSION" 2>/dev/null || echo unknown)}"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 LOG_DIR="evolution/log"
 STATE_FILE="evolution/state.json"
@@ -356,6 +364,35 @@ if [ -n "$ACCEPTANCE_LINE" ]; then
     NOTIFY_BODY="$NOTIFY_BODY
 - OpenCode 验收: $ACCEPTANCE_LINE"
 fi
+
+# 待审批 PR（让通知里提到的 GitHub 状态可核对；"issue" 一律指 PR，本仓库不用 Issue）
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+    OPEN_PRS_LINE=$(python3 - <<'PYEOF'
+import json, os, urllib.request
+try:
+    req = urllib.request.Request("https://api.github.com/repos/andrew-tao-li/ai-audit-skills/pulls?state=open&per_page=100")
+    req.add_header("Authorization", "Bearer " + os.environ["GITHUB_TOKEN"])
+    req.add_header("Accept", "application/vnd.github+json")
+    req.add_header("User-Agent", "audit-skill-box")
+    with urllib.request.urlopen(req, timeout=15) as r:
+        prs = json.loads(r.read().decode("utf-8"))
+    if not prs:
+        print("0 个（当前无需审批）")
+    else:
+        lines = ["%d 个 —— 合并 = 采纳，关闭 = 拒绝" % len(prs)]
+        for p in prs[:5]:
+            lines.append("  PR #%s %s" % (p["number"], p["title"][:50]))
+        lines.append("  https://github.com/andrew-tao-li/ai-audit-skills/pulls?q=is%3Apr+is%3Aopen")
+        print("\n".join(lines))
+except Exception as e:
+    print("查询失败: %s" % e)
+PYEOF
+)
+else
+    OPEN_PRS_LINE="未配置 GITHUB_TOKEN —— 本机不会自动开 PR"
+fi
+NOTIFY_BODY="$NOTIFY_BODY
+- 待审批 PR: $OPEN_PRS_LINE"
 
 if [ -f "$PROPOSALS_DIR/${TIMESTAMP}-llm-analysis.md" ]; then
     NOTIFY_BODY="$NOTIFY_BODY
