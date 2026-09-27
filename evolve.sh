@@ -24,6 +24,10 @@ if [ -f "$HOME/.config/ai-audit-skills/env" ]; then
     . "$HOME/.config/ai-audit-skills/env"
 fi
 
+# 保证能找到 Homebrew 安装的 CLI（Apple Silicon 在 /opt/homebrew/bin，Intel 在 /usr/local/bin）。
+# launchd 的 PATH 通常不含这些目录，会导致 opencode 找不到 → 验收被跳过（2026-09-27 发现）。
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 # 版本取自仓库（不再写死 v0.2.0-baseline）
 VERSION="${VERSION:-$(cat "$ROOT/VERSION" 2>/dev/null || echo unknown)}"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")

@@ -41,8 +41,9 @@
     <!-- StandardErrorPath: 运行环境 -->
     <key>EnvironmentVariables</key>
     <dict>
+        <!-- 必须包含 /opt/homebrew/bin（Apple Silicon 的 Homebrew），否则找不到 opencode -->
         <key>PATH</key>
-        <string>/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <string>/opt/homebrew/bin:/usr/local/bin:/opt/anaconda3/bin:/usr/bin:/bin</string>
         <key>PYTHONIOENCODING</key>
         <string>utf-8</string>
     </dict>
