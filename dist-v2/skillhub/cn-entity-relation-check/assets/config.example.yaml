@@ -1,0 +1,44 @@
+# 关联排查配置示例（请复制为 config.yaml 后按需修改）
+# 注意：本文件绝不包含真实 API Key。Key 通过环境变量 BYOK 提供。
+relation_check:
+
+  max_depth: 3          # 最大关系路径深度
+  max_nodes: 200        # 图爆炸上限
+  max_edges: 500
+  max_external_calls: 20
+
+  include_historical: true
+
+  # V0.1 允许独立产生「关联」的强关系
+  strong_relation_types:
+    - LEGAL_REP
+    - SHAREHOLDER
+    - INVESTMENT
+    - DIRECTOR
+    - SUPERVISOR
+    - EXECUTIVE
+    - PARTNER
+    - BRANCH
+    - ACTUAL_CONTROLLER
+    - UBO
+
+  # 弱线索：只能「待核查」，不能独立「关联」
+  weak_relation_types:
+    - SAME_PHONE
+    - SAME_EMAIL
+    - SAME_ADDRESS
+    - LITIGATION
+    - SUPPLIER
+    - CUSTOMER
+    - NEWS_CO_OCCURRENCE
+
+  # 数据源优先级（已连接 > QCC > 天眼查 > 启信宝 > 官方 > Web）
+  provider_priority:
+    - already_connected
+    - qcc
+    - tianyancha
+    - qixinbao
+    - public_web
+
+# BYOK：真实 Key 从环境变量读取，绝不写进本文件或仓库
+# QCC_API_KEY / TIANYANCHA_TOKEN / QIXINBAO_API_KEY

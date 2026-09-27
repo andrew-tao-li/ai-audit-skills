@@ -1,0 +1,6 @@
+interface:
+  display_name: "关联排查"
+  short_description: "核查两个主体的中国公开工商关联，输出关联/不关联/待核查三态"
+  default_prompt: "Use $cn-entity-relation-check to check whether two companies or people have a verifiable public corporate-registration relationship in China."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,5 @@
+# Standard library only; no required third-party packages.
+# Optional (recommended for Windows compatibility):
+#   tzdata - IANA timezone database (Python 3.9+ on Windows)
+#   install with: pip install tzdata
+# The script will auto-detect and fall back gracefully if tzdata is missing.

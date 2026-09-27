@@ -1,0 +1,3 @@
+# CSV mode uses Python standard library only.
+# XLSX support (optional):
+#   pip install openpyxl

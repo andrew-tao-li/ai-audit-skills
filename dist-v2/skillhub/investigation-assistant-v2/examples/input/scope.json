@@ -1,0 +1,27 @@
+{
+  "case_id": "CASE-SYNTHETIC-001",
+  "purpose": "教学模拟：核验一项可能的非授权文件外发线索",
+  "authorization_confirmed": true,
+  "authorization_reference": "SYNTHETIC-AUTH-001",
+  "date_range": {"start": "2026-06-01", "end": "2026-06-30"},
+  "persons_in_scope": ["E001", "E002"],
+  "allowed_sources": ["complaint.txt", "messages.csv", "logs.csv"],
+  "source_types": {"complaint.txt": "text", "messages.csv": "messages", "logs.csv": "logs"},
+  "assumed_timezone": "Asia/Shanghai",
+  "network_access": false,
+  "issues": [
+    {
+      "issue_id": "ISSUE-001",
+      "allegation_or_issue": "E001 是否在未获授权的情况下下载并向外部位置发送机密计划文件",
+      "priority": "high",
+      "keywords": ["下载", "外发", "upload", "机密", "confidential"],
+      "contradictory_keywords": ["批准", "授权"],
+      "missing_evidence": ["主管 A100 的正式批准记录", "外部位置的所有者和访问日志", "文件内容及密级确认"],
+      "alternative_explanations": ["经批准的客户演示", "系统自动同步", "测试环境操作"]
+    }
+  ],
+  "interviewees": [
+    {"id": "E001", "objective": "核对下载、外发目的和授权依据"},
+    {"id": "E002", "objective": "核对消息背景和所知审批情况"}
+  ]
+}

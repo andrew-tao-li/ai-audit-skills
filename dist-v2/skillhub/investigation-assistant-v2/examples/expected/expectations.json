@@ -1,0 +1,10 @@
+{
+  "synthetic_data": true,
+  "raw_files": 3,
+  "timeline_rows": 4,
+  "out_of_scope_rows": 2,
+  "issue_id": "ISSUE-001",
+  "requires_supporting_and_contradictory_candidates": true,
+  "final_judgment_must_be_absent": true,
+  "human_review_required": true
+}

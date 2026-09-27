@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "关联排查结果",
+  "type": "object",
+  "required": [
+    "status",
+    "display_status",
+    "entity_a",
+    "entity_b",
+    "relationship_temporality",
+    "paths",
+    "scope",
+    "sources",
+    "warnings",
+    "queried_at"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["RELATED", "NOT_RELATED_IN_SCOPE", "NEEDS_VERIFICATION"],
+      "description": "内部三态状态，不允许其它取值"
+    },
+    "display_status": {
+      "type": "string",
+      "enum": ["关联", "不关联", "待核查"]
+    },
+    "relationship_temporality": {
+      "type": "string",
+      "enum": ["current", "historical"]
+    },
+    "entity_a": {
+      "type": "object",
+      "properties": {
+        "type": {"type": "string", "enum": ["company", "person", "unknown"]},
+        "name": {"type": "string"},
+        "canonical_id": {"type": ["string", "null"]}
+      }
+    },
+    "entity_b": {
+      "type": "object",
+      "properties": {
+        "type": {"type": "string", "enum": ["company", "person", "unknown"]},
+        "name": {"type": "string"},
+        "canonical_id": {"type": ["string", "null"]}
+      }
+    },
+    "paths": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "length": {"type": "integer"},
+          "nodes": {"type": "array", "items": {"type": "string"}},
+          "edges": {"type": "array", "items": {"type": "string"}},
+          "historical": {"type": "boolean"}
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "relation_types": {"type": "array", "items": {"type": "string"}},
+        "max_depth": {"type": "integer"}
+      }
+    },
+    "sources": {"type": "array", "items": {"type": "object"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "queried_at": {"type": ["string", "null"]}
+  }
+}

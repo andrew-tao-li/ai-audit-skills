@@ -1,0 +1,11 @@
+{
+  "capabilities": {"structured_company_data": true, "company_entity_resolution": true, "company_key_people": true, "person_resolution": true, "web_search": false},
+  "negative_semantics_supported": true,
+  "nodes": [
+    {"node_id": "A", "type": "company", "name": "上海甲科技有限公司", "canonical_id": "91310000MA1K3A000X"},
+    {"node_id": "P1", "type": "person", "name": "张三", "canonical_id": "person-zhangsan-001"}
+  ],
+  "edges": [
+    {"from": "P1", "to": "A", "relation_type": "DIRECTOR", "current": true, "source": "mock"}
+  ]
+}
