@@ -21,7 +21,6 @@ import argparse
 import json
 import sys
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 from provider_adapter import MockProvider
@@ -289,7 +288,7 @@ def build_dashboard_html(result, out_path):
         warn_html,
         result.get("skill_version", "?"),
     )
-    out_path = Path(out_path)
+    out_path = __import__("pathlib").Path(out_path)
     out_path.write_text(html, encoding="utf-8")
 
 

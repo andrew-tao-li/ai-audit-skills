@@ -70,10 +70,32 @@ FEEDBACK_SECTION = """## 反馈与更新
 - 本技能的离线脚本**不做任何网络请求**，也**不会上传任何数据**。
 """
 
-# 扫描器敏感的写法 → 规范化
+# 扫描器敏感的写法 → 规范化（净化版专用；canonical 保持原样）
 CODE_RULES = [
     (re.compile(r'__import__\("pathlib"\)\.Path\(([^)]*)\)'), r"Path(\1)"),
 ]
+
+
+def ensure_pathlib_import(text: str) -> str:
+    """规范化后若用到 Path 但没导入，补一行 import（插在第一段 import 块末尾，保持分组顺序）。"""
+    if re.search(r"(?m)^from pathlib import Path\s*$", text):
+        return text
+    lines = text.split("\n")
+    start = next((i for i, l in enumerate(lines) if re.match(r"^(import |from )\S", l)), None)
+    if start is None:
+        return "from pathlib import Path\n" + text
+    last, i = start, start
+    while i < len(lines):
+        line = lines[i]
+        if re.match(r"^(import |from )\S", line):
+            last = i
+        elif line.strip() == "" and i > start:
+            break
+        elif line.strip():
+            break
+        i += 1
+    lines.insert(last + 1, "from pathlib import Path")
+    return "\n".join(lines)
 
 FORBIDDEN = [
     ("qyapi.weixin.qq.com", "硬编码 webhook 地址"),
@@ -132,12 +154,15 @@ def build_one(skill: str, cfg: dict) -> Path:
     p = dst / "SKILL.md"
     p.write_text(transform_skill_md(p.read_text(encoding="utf-8"), cfg), encoding="utf-8")
 
-    # 代码规范化
+    # 代码规范化（动态导入 → 常规 import，并补上 import 行）
     for py in dst.rglob("*.py"):
         t = py.read_text(encoding="utf-8")
+        orig = t
         for pat, rep in CODE_RULES:
             t = pat.sub(rep, t)
-        py.write_text(t, encoding="utf-8")
+        if t != orig:
+            t = ensure_pathlib_import(t)
+            py.write_text(t, encoding="utf-8")
     return dst
 
 
