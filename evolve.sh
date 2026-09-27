@@ -39,11 +39,13 @@ NOTIFY_SCRIPT="$ROOT/evolution/notify.sh"
 SKIP_LLM=0
 SKIP_PUSH=0
 SKIP_ACCEPTANCE=0
+SKIP_SMOKE=0
 for arg in "$@"; do
     case "$arg" in
         --skip-llm) SKIP_LLM=1 ;;
         --skip-push) SKIP_PUSH=1 ;;
         --skip-acceptance) SKIP_ACCEPTANCE=1 ;;
+        --skip-smoke) SKIP_SMOKE=1 ;;
     esac
 done
 
@@ -124,22 +126,59 @@ python3 evals/blackbox/score_blackbox.py --version "$VERSION"
 
 # 1b. OpenCode 全自动验收（需要 opencode CLI + 模型；--skip-acceptance 可跳过）
 ACCEPTANCE_LINE=""
+NOT_RUN=""
 if [ "$SKIP_ACCEPTANCE" = "0" ]; then
     echo ""
     echo "▶ Step 1b: OpenCode 全自动验收..."
     if command -v opencode >/dev/null 2>&1; then
         ACCEPT_LOG=$(python3 evals/cross-agent/run_acceptance.py --no-notify 2>/dev/null | tail -1)
         if [ -n "$ACCEPT_LOG" ] && [ -f "$ACCEPT_LOG" ]; then
-            ACCEPTANCE_LINE=$(grep -m1 "结果：" "$ACCEPT_LOG" | sed 's/.*结果：//;s/\*\*//g')
+            ACCEPT_MARK=$(grep -m1 "结果：" "$ACCEPT_LOG" | sed 's/.*结果：//;s/\*\*//g')
+            ACCEPT_FAILED=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('failed','?'))" "${ACCEPT_LOG%.md}.json" 2>/dev/null || echo "?")
+            if [ "$ACCEPT_FAILED" = "0" ]; then
+                ACCEPTANCE_LINE="✅ $ACCEPT_MARK"
+            else
+                ACCEPTANCE_LINE="⚠️ $ACCEPT_MARK"
+                NOT_RUN="$NOT_RUN OpenCode验收"
+            fi
             echo "  验收：$ACCEPTANCE_LINE"
         else
             echo "  ⚠ 验收未产出报告"
-            ACCEPTANCE_LINE="未产出报告"
+            ACCEPTANCE_LINE="⚠️ 未产出报告"
+            NOT_RUN="$NOT_RUN OpenCode验收"
         fi
     else
-        echo "  ⚠ 未安装 opencode CLI，跳过验收"
-        ACCEPTANCE_LINE="跳过（无 opencode）"
+        echo "  ⚠ 未找到 opencode CLI，跳过验收"
+        ACCEPTANCE_LINE="⚠️ 跳过（未找到 opencode）"
+        NOT_RUN="$NOT_RUN OpenCode验收"
     fi
+else
+    ACCEPTANCE_LINE="⚠️ 跳过（--skip-acceptance）"
+    NOT_RUN="$NOT_RUN OpenCode验收"
+fi
+
+# 1c. 安装冒烟测试（用户真正的安装路径：release → install.sh → 跑）
+SMOKE_DISPLAY=""
+if [ "$SKIP_SMOKE" = "0" ]; then
+    echo ""
+    echo "▶ Step 1c: 安装冒烟测试（release → 安装 → 运行）"
+    SMOKE_OUT=$(python3 evals/install_smoke.py --no-notify 2>&1)
+    SMOKE_LINE=$(printf '%s' "$SMOKE_OUT" | grep -m1 "安装冒烟测试：" | sed 's/^安装冒烟测试：//')
+    SMOKE_OK=$(printf '%s' "$SMOKE_LINE" | python3 -c "
+import sys, re
+m = re.match(r'(\d+)/(\d+)\s*通过', sys.stdin.read().strip())
+print('1' if (m and m.group(1) == m.group(2)) else '0')
+" 2>/dev/null || echo 0)
+    if [ "$SMOKE_OK" = "1" ]; then
+        SMOKE_DISPLAY="✅ $SMOKE_LINE"
+    else
+        SMOKE_DISPLAY="⚠️ ${SMOKE_LINE:-未产出结果}"
+        NOT_RUN="$NOT_RUN 安装冒烟"
+    fi
+    echo "  冒烟：$SMOKE_DISPLAY"
+else
+    SMOKE_DISPLAY="⚠️ 跳过（--skip-smoke）"
+    NOT_RUN="$NOT_RUN 安装冒烟"
 fi
 
 # 2. 提取最新分数，更新 state.json
@@ -306,6 +345,7 @@ if [ -n "${GITHUB_TOKEN:-}" ]; then
     python3 evolution/propose_fix.py 2>&1 | tail -3
 else
     echo "  SKIP: 未设置 GITHUB_TOKEN（无法开 PR）；如需，请在 launchd/环境里配置"
+    NOT_RUN="$NOT_RUN 修复提案(无token)"
 fi
 
 # 4c. 定期主动巡检（每 7 天一次；即使无失败也找一条改进）
@@ -333,6 +373,7 @@ PYEOF
     fi
 else
     echo "  SKIP: 未设置 GITHUB_TOKEN"
+    NOT_RUN="$NOT_RUN 定期巡检(无token)"
 fi
 
 # 5. 健康信息写入 state.json
@@ -364,9 +405,20 @@ NOTIFY_BODY="**Audit Skill Box 每日报告**
 - 健康: $HEALTH_STATUS ($HEALTH_MSG)
 - 失败: $OPEN_FAILURES_COUNT 个"
 
+# 「未执行」要显眼：否则「失败: 0」会掩盖「这一项根本没跑」
+if [ -n "$NOT_RUN" ]; then
+    NOTIFY_BODY="$NOTIFY_BODY
+- ⚠️ 未执行:$NOT_RUN"
+fi
+
 if [ -n "$ACCEPTANCE_LINE" ]; then
     NOTIFY_BODY="$NOTIFY_BODY
 - OpenCode 验收: $ACCEPTANCE_LINE"
+fi
+
+if [ -n "$SMOKE_DISPLAY" ]; then
+    NOTIFY_BODY="$NOTIFY_BODY
+- 安装冒烟: $SMOKE_DISPLAY"
 fi
 
 # 待审批 PR（让通知里提到的 GitHub 状态可核对；"issue" 一律指 PR，本仓库不用 Issue）

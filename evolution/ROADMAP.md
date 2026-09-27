@@ -34,6 +34,9 @@
   - `evolve.sh`：Step 4b（有失败→propose_fix）、Step 4c（每 7 天→patrol）。
   - 用户已给 PAT 补 `Pull requests: read and write` 权限；**全流程已实测通过**（PR #1 冒烟、PR #2、PR #3 真实巡检 + 合并生效）。
   - **隔离修复**：propose_fix/patrol 先把无关改动 `git stash` 隔离，避免 `git add -A` 把未提交的手工改动/例行副作用扫进 PR。
+  - **安装冒烟测试**（`evals/install_smoke.py`，2026-09-27）：端到端验证**用户真正的安装路径**——从 `releases/latest/download/` 下载 → `install.sh` 装到临时目录 → 真跑一遍，核对「release 版本 == main」「sha256 == 本机 dist」「装完产出 dashboard」。这是以前**零覆盖**的一段（已因此踩坑两次），现接 `evolve.sh` Step 1c 每日跑。
+  - **「未执行」显性化**（2026-09-27）：日报单独列「⚠️ 未执行: …」，避免「失败: 0」掩盖「这一项根本没跑」；验收/冒烟行带 ✅/⚠️ 前缀。
+  - **launchd PATH 修复**（2026-09-27）：`opencode` 装在 `/opt/homebrew/bin`（Apple Silicon），而 launchd 的 PATH 不含该目录 → **每日 OpenCode 验收一直「跳过」**。修法：`evolve.sh` 自行前置 Homebrew 路径（不依赖 plist）+ 修正 plist 模板与已安装 plist。
   **⚠ 关键前提：必须给定时任务配 GITHUB_TOKEN，否则闭环是「哑」的（2026-09-26 发现）**：
   - `propose_fix` / `patrol` 都需要 `GITHUB_TOKEN`；**launchd 默认没有**，所以每天 9:00 的例行只发「每日报告」，**永远不会开 PR**。
   - 配置方式：仓库外私有文件 `~/.config/ai-audit-skills/env`（内容 `export GITHUB_TOKEN=...`，chmod 600）；`evolve.sh` 启动时会自动 source 它。**密钥绝不写进仓库，也不写进 plist。**
