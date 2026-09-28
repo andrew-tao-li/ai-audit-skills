@@ -36,6 +36,22 @@ STATE_FILE="evolution/state.json"
 PROPOSALS_DIR="evolution/proposals"
 NOTIFY_SCRIPT="$ROOT/evolution/notify.sh"
 
+# 兜底：任何一步意外失败，也要发出通知。
+# 2026-09-28 教训：Step 1c 冒烟瞬时失败 + set -e → 脚本静默中止，连常规日报都没发出去，
+# 结果用户"什么也没收到"，而这本身反而是最难排查的故障模式。
+on_error() {
+    local code=$?
+    local tail_log
+    tail_log=$(tail -6 "$LOG_DIR/launchd-stdout.log" 2>/dev/null | tr '\n' ' ' | cut -c1-280)
+    bash "$NOTIFY_SCRIPT" "[Audit Box] ⚠️ 例行任务异常退出（exit $code）" \
+"evolve.sh 意外中止，**本次没有发出常规日报**。
+
+最后几步日志：${tail_log:-（读不到日志）}
+
+详情见 evolution/log/launchd-stdout.log" 2>/dev/null || true
+}
+trap on_error ERR
+
 SKIP_LLM=0
 SKIP_PUSH=0
 SKIP_ACCEPTANCE=0
@@ -82,8 +98,8 @@ ping_deepseek() {
 
 MINIMAX_CODE=""
 DEEPSEEK_CODE=""
-[ -n "${MINIMAX_API_KEY:-}" ] && MINIMAX_CODE=$(ping_minimax)
-[ -n "${DEEPSEEK_API_KEY:-}" ] && DEEPSEEK_CODE=$(ping_deepseek)
+[ -n "${MINIMAX_API_KEY:-}" ] && MINIMAX_CODE=$(ping_minimax || echo "000")
+[ -n "${DEEPSEEK_API_KEY:-}" ] && DEEPSEEK_CODE=$(ping_deepseek || echo "000")
 
 if [ "$MINIMAX_CODE" = "200" ]; then
     LLM_PROVIDER="minimax"
@@ -162,7 +178,7 @@ SMOKE_DISPLAY=""
 if [ "$SKIP_SMOKE" = "0" ]; then
     echo ""
     echo "▶ Step 1c: 安装冒烟测试（release → 安装 → 运行）"
-    SMOKE_OUT=$(python3 evals/install_smoke.py --no-notify 2>&1)
+    SMOKE_OUT=$(python3 evals/install_smoke.py --no-notify 2>&1 || true)
     SMOKE_LINE=$(printf '%s' "$SMOKE_OUT" | grep -m1 "安装冒烟测试：" | sed 's/^安装冒烟测试：//')
     SMOKE_OK=$(printf '%s' "$SMOKE_LINE" | python3 -c "
 import sys, re
@@ -174,6 +190,8 @@ print('1' if (m and m.group(1) == m.group(2)) else '0')
     else
         SMOKE_DISPLAY="⚠️ ${SMOKE_LINE:-未产出结果}"
         NOT_RUN="$NOT_RUN 安装冒烟"
+        # 把失败项写进日志：否则只看到"没通过"，不知道坏在哪
+        printf '%s\n' "$SMOKE_OUT" | grep "❌" | head -6 || true
     fi
     echo "  冒烟：$SMOKE_DISPLAY"
 else
