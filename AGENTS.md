@@ -15,4 +15,5 @@
 - **原版与 SkillHub 净化版并存，需求不许倒灌**（详见 `docs/two-editions.md`）：`skills-v2/` 是**唯一真相源与唯一安装路径**；`dist-v2/skillhub/` 只是给 SkillHub 的派生物（`python3 scripts/build-skillhub.py` 生成）。**SkillHub 的审核要求只能改净化版，绝不为了过审去改原版；反之亦然。** 改完用 `git diff v0.3.5 --stat -- skills-v2/` 自检原版是否被动过。
 - **改了 `skills-v2/` 下任何文件后，必须立刻重打包并重传 release**：跑 `./scripts/build-dist.sh` → 上传 4 个 zip 到新 release（或用 `gh release`）→ **下载 release zip 核对内容与 sha256 一致**。用户/测试者是从 **release** 安装的，不是从 `main` 分支——只改 main 不重打包 = 用户永远看不到更新。（已有两次事故：一次传错 release ID，一次漏重打包。）
 - 文档/README/`install.md` 中**不要写死 release 版本号**（会随每次 release 过时）；需要指向最新版时用 `releases/latest/download/<asset>` 别名或 `releases/latest` 链接。
+- **例行脚本（`evolve.sh`）的两条铁律**：① **任一检查失败都不能中止整个例行**——`set -e` 下写 `X=$(某命令)` 会让一次网络抖动直接杀掉脚本（2026-09-28 事故：冒烟瞬时失败 → 日报彻底消失）；必须写 `X=$(某命令 || true)` 并自己判断成败。② **必须有兜底通知**（`trap on_error ERR`）——否则「用户什么也没收到」本身就是最难排查的故障模式。
 - 面向用户的文案（README、公众号、marketplace description）**只写事实**：不虚构作者人数、从业年限、测试者数量、机构背书。
