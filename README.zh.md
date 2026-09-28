@@ -166,8 +166,13 @@ ai-audit-skills/
 
 ## 许可证
 
-- 每个 skill 单独发布为 **MIT-0**（manifest 注明）。
-- 仓库根 LICENSE：**Apache 2.0**（待统一 — 详见 ROADMAP ClawHub 决策项）。
+本仓库的许可范围**明确划分为两部分**，不存在歧义：
+
+- **各 skill（`skills-v2/<skill>/`）**：独立以 **MIT-0**（MIT No Attribution）发布——见每个 skill 的 `manifest.json`，以及它在 SkillHub 等平台的 `license` 声明。**使用 skill 不需要保留署名、没有任何附加义务。**
+- **其余内容**（本 README、`evals/`、`evolution/`、`scripts/`、`docs/` 等仓库脚手架）：**Apache License 2.0**——见仓库根 [`LICENSE`](LICENSE)。
+
+> 一句话：**你从 marketplace 或 release 装走的 skill 是 MIT-0；仓库自身的代码框架是 Apache-2.0。**
+> 两者实质差异对本项目很小（无专利、无 NOTICE 文件）；这样划分只是让"哪部分归哪个许可"一目了然。
 
 ---
 

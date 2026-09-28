@@ -8,7 +8,7 @@
 
 ## ⏸ 暂缓事项（下次回顾框架时提醒）
 
-- **ClawHub 上架**（已调研完毕，暂缓，2026-09-22）：`clawhub` CLI 已装（v0.23.3）、license 已改 MIT-0、SKILL.md frontmatter（version/author）已就绪。剩两件事待用户：① 跑 `clawhub login`（设备流）或给 API token；② 决定仓库根 `LICENSE` 是否也改 MIT-0。发布命令已备好（见 install.md 或 `clawhub skill publish ./skills-v2/<skill> --slug ... --version 0.2.0`）。
+- **ClawHub 上架**（已调研完毕，暂缓，2026-09-22）：`clawhub` CLI 已装（v0.23.3）、license 已改 MIT-0、SKILL.md frontmatter（version/author）已就绪。剩两件事待用户：① 跑 `clawhub login`（设备流）或给 API token；② ~~决定仓库根 `LICENSE` 是否也改 MIT-0~~ → **已决（2026-09-28）：仓库根保持 Apache-2.0，与 skill 的 MIT-0 通过 README 明确划分范围，不再统一**。发布命令已备好（见 install.md 或 `clawhub skill publish ./skills-v2/<skill> --slug ... --version 0.2.0`）。
 
 - **SkillHub.cn 上架**（净化版已就绪，2026-09-27）：**等用户实名认证**（手机验证码 + 腾讯云人脸核身）。
   - 平台要求 SKILL.md frontmatter 含 `slug/displayName/version/summary/license`（与我们的 `name/description/metadata` 不同）。
@@ -18,7 +18,7 @@
     ② SKILL.md 的 `curl … | bash` 一键更新 → 判「远程执行」。
   - **已解决**：`scripts/build-skillhub.py` 生成净化版到 `dist-v2/skillhub/<skill>/` —— 删反馈外发、删 curl|bash、补 frontmatter、规范化 `__import__` 写法；**canonical 与 GitHub release 不受影响**。已自检（无 key / 无外发 / 无 curl|bash / 无动态导入）。
   - 上架命令（认证完成后）：`skillhub login --key skh_xxx --host https://api.skillhub.cn` → `skillhub publish dist-v2/skillhub/<skill> --dry-run` → 去 `--dry-run` 正式发。
-  - 待决策：**LICENSE 不一致** —— 各 skill `manifest.json` 写 MIT-0，仓库根 `LICENSE` 是 Apache-2.0；SkillHub frontmatter 需填 `license`（净化版暂填 MIT-0）。
+  - **LICENSE 不一致已了结**（2026-09-28）：许可范围**明确划分**——各 skill = **MIT-0**（manifest + SkillHub frontmatter），仓库脚手架 = **Apache-2.0**（根 `LICENSE`）；中英文 README 均已写明，不再标"待统一"。理由：两者实质差异对本项目≈0（无专利/NOTICE），明确划分即可消除法务 review 的歧义。
 
 - **L2 反馈/评分机制**（已出设计，暂缓，2026-09-23）：让作者收到技能在别人 Agent 上的使用反馈。暂缓原因：① 现在用户太少、反馈稀疏；② 平台适配不确定，现在做可能牺牲稳健性。
   设计要点（已定，下次可直接开工）：

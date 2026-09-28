@@ -101,3 +101,12 @@ ai-audit-skills/
 ```
 
 当前版本：见 [VERSIONS.json](VERSIONS.json)（各 skill 独立版本号）。
+
+## License
+
+Scope is explicit, no ambiguity:
+
+- **Each skill** (`skills-v2/<skill>/`) is licensed **MIT-0** (MIT No Attribution) — see each skill's `manifest.json` and its `license` field on SkillHub. **No attribution required** when you use a skill.
+- **Everything else** (this README, `evals/`, `evolution/`, `scripts/`, `docs/`, …) is under the **Apache License 2.0** — see the root [`LICENSE`](LICENSE).
+
+In short: **skills you install from a marketplace or release are MIT-0; the repository's own scaffolding is Apache-2.0.**
