@@ -52,11 +52,27 @@ python3 scripts/build-skillhub.py
 # 只校验已生成的产物
 python3 scripts/build-skillhub.py --verify-only
 
-# 上架（实名认证 + 创建 API key 后；先 dry-run）
+# 官方 CLI 本地预检（不发布、不需要登录）
+~/.local/bin/skillhub publish dist-v2/skillhub/expense-audit-v2 --dry-run
+
+# 上架（实名认证 + 创建 API key 后；先 dry-run 再正式发）
 skillhub login --key skh_xxx --host https://api.skillhub.cn
-skillhub publish dist-v2/skillhub/expense-audit-v2 --dry-run
 skillhub publish dist-v2/skillhub/expense-audit-v2 --changelog "首次发布"
 ```
+
+**已验证（2026-09-28）**：官方 CLI `skillhub 2026.8.5`（`--cli-only --no-self-upgrade`，装到
+`~/.skillhub` + `~/.local/bin/skillhub`，未改 `.zshrc`），4 个 skill 的 `--dry-run` **全部通过**：
+
+```
+✓ Dry-run passed: andrew-tao-li-expense-audit@0.2.7
+✓ Dry-run passed: andrew-tao-li-procurement-fraud@0.2.4
+✓ Dry-run passed: andrew-tao-li-investigation-assistant@0.2.4
+✓ Dry-run passed: andrew-tao-li-cn-entity-relation@0.1.4
+```
+
+> 注：`--cli-only` **不会**安装该 CLI 自带的 `find-skills` 技能（那是个 "MUST trigger" 的技能，
+> 会与我们的审计技能抢触发）；只有默认模式 / `--skill-only` 才会装。装之前已审过安装脚本：
+> 无 sudo、只写 `~/.skillhub` 与 `~/.local/bin`。
 
 ---
 
