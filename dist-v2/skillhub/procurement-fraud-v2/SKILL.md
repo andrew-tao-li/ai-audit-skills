@@ -6,6 +6,8 @@ slug: andrew-tao-li-procurement-fraud
 displayName: 采购舞弊红旗筛查
 summary: 对供应商主数据、采购订单、付款、员工与投标文本做舞弊红旗筛查：共享账户、价格离群、拆单、流程倒置、投标文本雷同等。仅输出复核线索，不做舞弊认定。
 license: MIT-0
+homepage: https://github.com/andrew-tao-li/ai-audit-skills
+tags: [审计, 采购, 反舞弊, 供应商, 招投标, 价格异常, 风险风控]
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"

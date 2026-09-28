@@ -6,6 +6,8 @@ slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
 license: MIT-0
+homepage: https://github.com/andrew-tao-li/ai-audit-skills
+tags: [审计, 费用审计, 报销, 发票, 差旅, 反舞弊, 财税处理, 风险风控]
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"

@@ -6,6 +6,8 @@ slug: andrew-tao-li-investigation-assistant
 displayName: 授权内调查材料整理
 summary: 在已获授权、范围明确的前提下，把举报、邮件、消息与日志整理为可追溯调查工作空间：证据清单与哈希、时间线、证据矩阵、反证、访谈计划。不做责任认定。
 license: MIT-0
+homepage: https://github.com/andrew-tao-li/ai-audit-skills
+tags: [审计, 内部调查, 证据链, 内控, 合规, 举报处理, 法律合规, 风险风控]
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; tzdata required for IANA timezones (auto-install hint on Windows); openpyxl for XLSX"

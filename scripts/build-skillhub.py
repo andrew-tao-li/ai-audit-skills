@@ -37,28 +37,33 @@ SKILLS = {
         "display_name": "费用报销审计",
         "summary": ("扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、"
                     "发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。"),
+        "tags": ["审计", "费用审计", "报销", "发票", "差旅", "反舞弊", "财税处理", "风险风控"],
     },
     "procurement-fraud-v2": {
         "slug": "andrew-tao-li-procurement-fraud",
         "display_name": "采购舞弊红旗筛查",
         "summary": ("对供应商主数据、采购订单、付款、员工与投标文本做舞弊红旗筛查：共享账户、价格离群、"
                     "拆单、流程倒置、投标文本雷同等。仅输出复核线索，不做舞弊认定。"),
+        "tags": ["审计", "采购", "反舞弊", "供应商", "招投标", "价格异常", "风险风控"],
     },
     "investigation-assistant-v2": {
         "slug": "andrew-tao-li-investigation-assistant",
         "display_name": "授权内调查材料整理",
         "summary": ("在已获授权、范围明确的前提下，把举报、邮件、消息与日志整理为可追溯调查工作空间："
                     "证据清单与哈希、时间线、证据矩阵、反证、访谈计划。不做责任认定。"),
+        "tags": ["审计", "内部调查", "证据链", "内控", "合规", "举报处理", "法律合规", "风险风控"],
     },
     "cn-entity-relation-check": {
         "slug": "andrew-tao-li-cn-entity-relation",
         "display_name": "中国工商关联排查",
         "summary": ("核查两个主体（公司/自然人）在中国公开工商信息中是否存在可验证关联，"
                     "输出「关联 / 不关联 / 待核查」三态结论。公开关系 ≠ 真实利益关联。"),
+        "tags": ["审计", "关联方", "工商信息", "尽职调查", "实际控制人", "利益冲突", "风险风控"],
     },
 }
 
 LICENSE = "MIT-0"
+HOMEPAGE = "https://github.com/andrew-tao-li/ai-audit-skills"
 
 # 要删掉的小节（按标题前缀匹配，删到下一个 ## 之前）
 DROP_SECTIONS = ["版本检查与一键更新", "匿名反馈"]
@@ -123,8 +128,8 @@ def transform_skill_md(text: str, cfg: dict) -> str:
     # 去掉超长 changelog（内部细节多，且含已删除功能的描述）
     fm = re.sub(r"\n[ \t]+changelog:.*", "", fm)
 
-    extra = ("\nslug: %s\ndisplayName: %s\nsummary: %s\nlicense: %s"
-             % (cfg["slug"], cfg["display_name"], cfg["summary"], LICENSE))
+    extra = ("\nslug: %s\ndisplayName: %s\nsummary: %s\nlicense: %s\nhomepage: %s\ntags: [%s]"
+             % (cfg["slug"], cfg["display_name"], cfg["summary"], LICENSE, HOMEPAGE, ", ".join(cfg["tags"])))
     fm = re.sub(r"(?m)^(version:.*)$", lambda mm: mm.group(1) + extra, fm, count=1)
 
     # 删两节 → 插入新的「反馈与更新」
@@ -193,7 +198,7 @@ def verify() -> list:
         # 3. frontmatter 字段齐全
         fm = re.match(r"^---\n(.*?)\n---\n", (d / "SKILL.md").read_text(encoding="utf-8"), re.S)
         fmtext = fm.group(1) if fm else ""
-        for field in ("slug:", "displayName:", "version:", "summary:", "license:"):
+        for field in ("slug:", "displayName:", "version:", "summary:", "license:", "homepage:", "tags:"):
             if field not in fmtext:
                 problems.append("%s: frontmatter 缺 %s" % (skill, field))
         if cfg["slug"] not in fmtext:
@@ -226,7 +231,7 @@ def main() -> int:
         print("\n结果：%d 个问题" % len(problems))
         return 1
     print("  ✅ 无硬编码 key / 无数据外发 / 无 curl|bash / 无动态导入")
-    print("  ✅ frontmatter 含 slug/displayName/version/summary/license")
+    print("  ✅ frontmatter 含 slug/displayName/version/summary/license/homepage/tags")
     print("  ✅ 核心脚本与文档完整")
     print("\n结果：全部通过（%d 个 skill）" % len(SKILLS))
     return 0

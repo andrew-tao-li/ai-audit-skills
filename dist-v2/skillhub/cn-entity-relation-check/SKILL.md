@@ -6,6 +6,8 @@ slug: andrew-tao-li-cn-entity-relation
 displayName: 中国工商关联排查
 summary: 核查两个主体（公司/自然人）在中国公开工商信息中是否存在可验证关联，输出「关联 / 不关联 / 待核查」三态结论。公开关系 ≠ 真实利益关联。
 license: MIT-0
+homepage: https://github.com/andrew-tao-li/ai-audit-skills
+tags: [审计, 关联方, 工商信息, 尽职调查, 实际控制人, 利益冲突, 风险风控]
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline decision core; Python 3.10+ for scripts; structured corporate data (MCP/API) preferred, web search as fallback"
