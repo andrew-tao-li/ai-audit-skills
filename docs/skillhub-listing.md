@@ -32,6 +32,24 @@
 | **支持平台** | Claude Code / Cursor / OpenCode / Windsurf / Cline / Roo / Codex / Gemini CLI / GitHub Copilot 等支持 **Agent Skills（`SKILL.md`）** 的宿主；WorkBuddy、LobsterAI 亦可用 |
 | **运行环境** | 纯本地离线；Python 3.10+；XLSX 需 `openpyxl`（可选）；**不联网、不上传数据、无需任何 API Key** |
 | **建议分类** | 见每个 skill 下方（平台标签形如 `行业专业` `财税处理` `法律合规` `风险风控` `办公效率`） |
+| **⚠️ 分类要在网页设** | CLI **只能读、不能写**分类。上架后在「个人中心 → 我的 Skill → 编辑」里选。**未分类 = 不会出现在任何分类浏览里**（平台按一级分类 + 子类筛选） |
+
+**平台的确切分类 key**（从平台同类 skill 的实际数据读出，非猜测）：
+
+| 一级分类 key | 中文 | 子类 key | 中文 |
+|---|---|---|---|
+| `professional` | 行业专业 | `pro-tax-accounting` | 财税处理 |
+| `office-efficiency` | 办公效率 | `pro-legal` | 法律合规 |
+| `data-analysis` | 数据分析 | `pro-risk-control` | 风险风控 |
+
+**我们四个 skill 的建议填法**（全部归入 `professional`）：
+
+| skill | 一级 | 子类 |
+|---|---|---|
+| 费用报销审计 | `professional` | `pro-tax-accounting` + `pro-risk-control` |
+| 采购舞弊红旗筛查 | `professional` | `pro-risk-control` + `pro-tax-accounting` |
+| 授权内调查材料整理 | `professional` | `pro-legal` + `pro-risk-control` |
+| 中国工商关联排查 | `professional` | `pro-risk-control` + `pro-legal` |
 
 ---
 
