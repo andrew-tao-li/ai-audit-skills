@@ -468,6 +468,19 @@ fi
 NOTIFY_BODY="$NOTIFY_BODY
 - 待审批 PR: $OPEN_PRS_LINE"
 
+# 平台数据（SkillHub + GitHub）——只读；失败绝不中断例行
+echo ""
+echo "▶ Step 6b: 平台数据（SkillHub / GitHub）"
+PLATFORM_BLOCK=$(python3 evolution/skillhub_stats.py 2>/dev/null || true)
+if [ -n "$PLATFORM_BLOCK" ]; then
+    echo "$PLATFORM_BLOCK" | sed 's/^/  /'
+    NOTIFY_BODY="$NOTIFY_BODY
+
+$PLATFORM_BLOCK"
+else
+    echo "  ⚠ 未能取得平台数据（不影响其余步骤）"
+fi
+
 if [ -f "$PROPOSALS_DIR/${TIMESTAMP}-llm-analysis.md" ]; then
     NOTIFY_BODY="$NOTIFY_BODY
 

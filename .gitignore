@@ -32,3 +32,4 @@ evals/blackbox/scenarios/run-*/
 # 编辑器
 .vscode/
 .idea/
+evolution/log/.platform_stats.json
