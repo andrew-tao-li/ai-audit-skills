@@ -1,6 +1,6 @@
 # AI 审计技能包（中文版）
 
-> 四个可独立安装、完全离线运行的 AI 审计 skill。面向 WorkBuddy / OpenCode / Claude Code / Cursor / OpenClaw 等智能体平台。
+> 四个可独立安装、完全离线运行的 AI 审计 skill。面向 WorkBuddy / 豆包（豆包工作）/ OpenCode / Claude Code / Cursor / OpenClaw 等智能体平台。
 
 [English README](README.md) | 国内市场优先发布到 **SkillHub（skillhub.cn）** + **ClawHub（OpenClaw 生态）**。
 
@@ -12,10 +12,13 @@
 
 | Skill | 用途 |
 |---|---|
-| **expense-audit-v2** | 费用/差旅台账异常扫描：重复、超限、拆单、自审自批、跨人复用、日期倒挂等 |
-| **procurement-fraud-v2** | 采购舞弊红旗筛查：共享账号、员工-供应商关联、价格离群、流程倒置、投标相似度等 |
+| **expense-audit-v2** | 费用/差旅台账异常扫描（23 类）：重复、超限、拆单、自审自批、跨人复用、日期倒挂、**撤回后重提金额增加**等；**可选增强**：提供出差申请 / 打卡记录后，自动做**出差交叉核验** |
+| **procurement-fraud-v2** | 采购舞弊红旗筛查（23 类）：共享账号、员工-供应商关联、价格离群、流程倒置、投标相似度等 |
 | **investigation-assistant-v2** | 调查材料整理：证据哈希、时间线、关系图、证据矩阵、反证、假设登记、访谈计划 |
 | **cn-entity-relation-check** | 公开工商关联排查：公司-公司、公司-人、人-人三态判定（关联/不关联/待核查） |
+
+> **所有增强都是"可选、自动唤醒"的**：不提供额外数据时，行为与之前**完全一致**；提供了才多做一层。
+> 例：费用审计只给台账 → 查"数据之间对不对"；再给出差申请/打卡 → 才查"这个人当时到底在不在外地"。
 
 四个 skill 都已通过 F1 100% 的黑盒测试（expense 25 个、procurement 14 个、investigation 3 个黄金测试集，cn-entity 16 场景行级盲测 16/16 通过）。
 
@@ -35,7 +38,7 @@
 ## 适用对象
 
 - **国内审计师 / 合规 / 财务 / 采购 / HR** 专业人员
-- 智能体平台用户（WorkBuddy、有道龙虾、OpenCode、Claude Code、Cursor、OpenClaw 等）
+- 智能体平台用户（WorkBuddy、豆包（豆包工作）、有道龙虾、OpenCode、Claude Code、Cursor、OpenClaw 等）
 - 想要一个**纯离线、零外传、零订阅**的本地 AI 审计工具的人
 - 接受"**先在公众号 / 知乎 / 微信群** 看到用例，再来下载安装"的中国用户
 
@@ -56,7 +59,7 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 ```
 
 > **WorkBuddy 用户推荐路径**：智能体管理 → 通过 URL 导入 → `https://github.com/andrew-tao-li/ai-audit-skills`
-> **OpenClaw / Lobster / 有道龙虾用户**：`clawhub install expense-audit-v2`（已经发布到 ClawHub）
+> **OpenClaw / Lobster / 有道龙虾用户**：`clawhub install expense-audit-v2`（**已准备就绪、尚未上架**——上架通道在作者侧，见 [install.md](install.md)）
 > **国内 SkillHub**：发布到 `https://skillhub.cn`（"专为中国用户优化的 AI Skills 社区"）
 
 ## 快速上手
@@ -143,7 +146,7 @@ ai-audit-skills/
 
 ## 国内发布 / 触达渠道
 
-- **SkillHub（skillhub.cn）**：中国版 "Top 50 精选"，腾讯云 CDN + 百度 SEO 优化。**已上架准备中**（需先完成实名认证）。
+- **SkillHub（skillhub.cn）**：中国版 "Top 50 精选"，腾讯云 CDN + 百度 SEO 优化。**上架包已备好、自检通过，等作者完成实名认证后发布**（见 [docs/skillhub-listing.md](docs/skillhub-listing.md)）。
 - **ClawHub（OpenClaw 生态）**：WorkBuddy / 有道龙虾用户一键装。**发布脚本就绪**。
 - **微信公众号**：「美会侠」（美丽的美、会计的会、侠客的侠）——国内审计师日常工作案例 + 工具应用。
 - **知识星球**：「涛哥也叫安德鲁」——深度交流与真实案例。

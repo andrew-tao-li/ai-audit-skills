@@ -21,8 +21,12 @@
 > **绝不因为「SkillHub 审核会挑刺」而去改原版。**
 
 这条规则是有来历的：2026-09-27 我为了"让 SkillHub 的扫描器不误报"，把原版 `cli.py` 里的
-`__import__("pathlib")` 改成了常规 `import`——**这正是一次倒灌**，已全部回退。
-（`v0.3.6` 这个多余 release 也已删除，`releases/latest` 回到 `v0.3.5`。）
+`__import__("pathlib")` 改成了常规 `import`——**这正是一次倒灌**，已全部回退，
+并删掉了当时多发的那个 release。
+
+> 注意：那次之后，**原版自己也有正常的功能迭代**（0.2.8 状态过滤、0.2.9 出差交叉核验），
+> 所以**不要**再用"`git diff <某个旧 tag>` 为空"来判断有没有倒灌。正确的判断方式是下面这条：
+> **跑完净化版构建后，`skills-v2/` 必须没有任何改动**（构建脚本只读 canonical、只写 `dist-v2/skillhub/`）。
 
 ---
 
@@ -60,15 +64,9 @@ skillhub login --key skh_xxx --host https://api.skillhub.cn
 skillhub publish dist-v2/skillhub/expense-audit-v2 --changelog "首次发布"
 ```
 
-**已验证（2026-09-28）**：官方 CLI `skillhub 2026.8.5`（`--cli-only --no-self-upgrade`，装到
-`~/.skillhub` + `~/.local/bin/skillhub`，未改 `.zshrc`），4 个 skill 的 `--dry-run` **全部通过**：
-
-```
-✓ Dry-run passed: andrew-tao-li-expense-audit@0.2.7
-✓ Dry-run passed: andrew-tao-li-procurement-fraud@0.2.4
-✓ Dry-run passed: andrew-tao-li-investigation-assistant@0.2.4
-✓ Dry-run passed: andrew-tao-li-cn-entity-relation@0.1.4
-```
+**已验证（2026-09-28 首次，之后每次改 skill 都会重跑）**：官方 CLI `skillhub 2026.8.5`
+（`--cli-only --no-self-upgrade`，装到 `~/.skillhub` + `~/.local/bin/skillhub`，未改 `.zshrc`），
+4 个 skill 的 `--dry-run` **全部通过**（随版本迭代会变，以最近一次运行为准）。
 
 > 注：`--cli-only` **不会**安装该 CLI 自带的 `find-skills` 技能（那是个 "MUST trigger" 的技能，
 > 会与我们的审计技能抢触发）；只有默认模式 / `--skill-only` 才会装。装之前已审过安装脚本：
@@ -76,12 +74,17 @@ skillhub publish dist-v2/skillhub/expense-audit-v2 --changelog "首次发布"
 
 ---
 
-## 校验「原版没被动过」
+## 校验「两版没有互相污染」
 
 ```bash
-# 与原版基线逐字节比对（应无输出）
-git diff v0.3.5 --stat -- skills-v2/
+# ① 跑完净化版构建后，原版必须没有任何改动（构建只读 canonical、只写 dist-v2/skillhub/）
+python3 scripts/build-skillhub.py && git status --porcelain skills-v2/
+# → 应无输出
 
-# 确认安装路径完全不引用净化版（应为 0）
+# ② 安装路径完全不引用净化版（应为 0）
 grep -c skillhub install.sh
+
+# ③ 装出来的必须是【原版】：含反馈机制、含一键更新、不含 SkillHub 字段
+python3 evals/install_smoke.py --no-notify
+# → 报告里应有「原版特征：保留 references/feedback.md」等 4 项 ✅（install_smoke 每日自动跑）
 ```

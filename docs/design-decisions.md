@@ -26,4 +26,4 @@
 
 ## 为什么只维护 canonical skill
 
-三个 skill 的核心 `SKILL.md` 使用开放字段和相对路径，脚本不调用任何模型 API。Codex、Pi 和 OpenClaw 可直接发现 canonical 目录；WorkBuddy 等平台的展示字段或导入差异放在 `adapters/` 说明，不复制另一套方法正文，避免不同平台版本长期漂移。
+四个 skill 的核心 `SKILL.md` 使用开放字段和相对路径，脚本不调用任何模型 API。Codex、Pi 和 OpenClaw 可直接发现 canonical 目录；WorkBuddy 等平台的展示字段或导入差异放在 `adapters/` 说明，不复制另一套方法正文，避免不同平台版本长期漂移。

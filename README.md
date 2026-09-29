@@ -40,7 +40,7 @@ python3 -m unittest discover -s skills-v2/procurement-fraud-v2/tests -v
 python3 -m unittest discover -s skills-v2/investigation-assistant-v2/tests -v
 python3 -m unittest discover -s evals/tests -v
 python3 evals/validate_pack.py --run-tests
-python3 evals/blackbox/score_blackbox.py --version v0.2.0-baseline
+python3 evals/blackbox/score_blackbox.py --version local-check
 ```
 
 `evals/fixtures/` 另提供 6 个文件级正反向场景，专门验证正常数据零误报、坏行隔离、缺失可选表、中文字段映射、范围过滤、原件哈希/只读副本和未授权先拒绝。对 Agent 宿主生成的结果可运行：
@@ -79,7 +79,8 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 **② 平台原生导入（WorkBuddy / 有道龙虾推荐，不弹沙箱）**
 
 - **WorkBuddy**：技能管理 → 「通过 URL 导入」→ 填 `https://github.com/andrew-tao-li/ai-audit-skills`（或某个 skill 子目录，如 `…/tree/main/skills-v2/expense-audit-v2`）。
-- **有道龙虾（LobsterAI）**：Skill Store 直接装，或 `clawhub install expense-audit-v2`。
+- **有道龙虾（LobsterAI）**：Skill Store 直接装，或 `clawhub install expense-audit-v2`（**通道已就绪、尚未上架**）。
+- **豆包（豆包工作）**：把 skill 目录复制到豆包工作区的 `.user_skills/` 下（Windows `%LOCALAPPDATA%\Doubao\User Data\Default\.doubao\agent_mode\workspace\.user_skills`；macOS 在 `~/Library/Application Support/Doubao/…` 同一路径）。用安装脚本亦可：`HOST=doubao`。
 
 每个 skill 根目录带 `manifest.json`（id/name/version/description/author/type/triggers/tags/license），WorkBuddy / ClawHub 直接认。
 
@@ -87,7 +88,13 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 
 每个 `skills-v2/<name>/` 文件夹可单独复制（各宿主放置位置见 `adapters/`）；`dist-v2/` 提供按 skill 分开的 ZIP 快照（另见 GitHub Releases）。正式使用前仍应阅读 `SKILL.md`、检查脚本，并先运行包内合成样例。路由验收必须在独立的新会话中执行，不能在已透露预期 skill 的同一上下文里自测。
 
-已完成的实机验证：Codex 项目级发现与安装路径执行通过；WorkBuddy 5.5.6 与 LobsterAI 2026.5.22 均已实际执行三个 skill 的综合样例，并分别完成 6/6 文件级回归。两端产物都通过统一校验器复核。LobsterAI 清理旧版后的 6 条隐式路由为 6/6，但调查助手有 1 条输入来源行为失败；本地 `investigation-assistant 0.1.2` 已修订，尚待宿主替换复测。正式 120 条/宿主的隐式路由验收、Pi 和 OpenClaw 实测仍未完成，详见 [测试摘要](evals/test-report-2026-09-15.md) 与 [跨 Agent 验收矩阵](evals/cross-agent-matrix.md)。
+**已完成、且每日自动复跑的验证**：
+
+- **黑盒 F1**：expense 25 / procurement 14 / investigation 3 个黄金测试集，全部 **100%**。
+- **OpenCode 全自动验收**（`evals/cross-agent/`）：**4/4** —— 在真实 Agent 上验证「该触发时是否加载正确 skill、是否执行脚本、是否产出预期文件」，含一条负面对照。
+- **安装冒烟**（`evals/install_smoke.py`）：从 `releases/latest` 下载 → `install.sh` 安装 → 真跑一遍，**24 项全过**；并断言装出来的是**原版**（而非 SkillHub 净化版）。
+- **宿主实机**：Codex 项目级发现与安装路径执行通过；WorkBuddy 5.5.6 与 LobsterAI 2026.5.22 均已执行综合样例并完成文件级回归。
+- **仍未完成**：各宿主的**完整隐式路由验收**（每 skill 20 正 + 20 反，共 120 条/宿主）。详见 [测试摘要](evals/test-report-2026-09-15.md) 与 [跨 Agent 验收矩阵](evals/cross-agent-matrix.md)。
 
 ## 目录
 

@@ -35,7 +35,7 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 
 脚本会自动：
 - 去 GitHub 查「最新 tag」下载最新版（**不写死版本号，永远最新版**）
-- 自动检测 Agent 类型（OpenCode / WorkBuddy / LobsterAI / Claude Code / Cursor / Codex 等），装到对应 `skills/` 目录
+- 自动检测 Agent 类型（OpenCode / WorkBuddy / LobsterAI / 豆包 / Claude Code / Cursor / Codex 等），装到对应 `skills/` 目录
 - 装完报告装到哪、装了哪些
 - 打错字会立刻报错，不会静默失败
 
@@ -99,17 +99,22 @@ PREFIX=~/.my-custom-path bash  # 显式指定安装目录
 
 ## 人类补充说明（agent 可忽略）
 
-### 三个 Agent 的默认安装位置
+### 四个 Agent 的默认安装位置
 
 | Agent | 默认安装目录（脚本自动检测） |
 |---|---|
 | OpenCode | `~/.config/opencode/skills` |
 | WorkBuddy | `~/.workbuddy/skills` |
-| LobsterAI | `~/.lobsterai/skills` |
+| LobsterAI | `~/Library/Application Support/LobsterAI/SKILLs`（macOS；另有 `~/.lobsterai/skills` 兜底） |
+| **豆包（豆包工作）** | `<豆包数据目录>/Doubao/User Data/Default/.doubao/agent_mode/workspace/.user_skills`（Windows `%LOCALAPPDATA%` / macOS `Application Support`） |
+
+> 探测顺序为 OpenCode → WorkBuddy → LobsterAI → **豆包**。**豆包放在最后，因此不会改变任何既有平台的安装结果**；
+> 机器上同时存在多个 Agent 目录时，脚本会打印提示，并告诉你如何用 `HOST=` 指定另一个。
 
 如果自动检测不对，可以显式指定（环境变量）：
 ```
 curl ... | HOST=workbuddy bash
+curl ... | HOST=doubao bash
 curl ... | PREFIX=~/.my-custom-path bash
 ```
 
@@ -165,5 +170,5 @@ rm -rf ~/.config/opencode/skills/expense-audit-v2
 ### 源码 & 自定义
 - 四个 skill 的源码：`skills-v2/<skill-name>/`
 - 重新打包 release zip：跑 `./scripts/build-dist.sh`
-- 黑盒黄金测试：`python3 evals/blackbox/score_blackbox.py --version v0.2.0-baseline`
+- 黑盒黄金测试：`python3 evals/blackbox/score_blackbox.py --version local-check`
 - 端到端校验：`python3 evals/validate_pack.py --run-tests`
