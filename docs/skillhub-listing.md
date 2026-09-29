@@ -1,72 +1,55 @@
-# SkillHub 上架文案（照抄即可）
+# SkillHub 上架文案
 
-> 用于 skillhub.cn 上架。**frontmatter 里的字段已写死在净化版里**（`dist-v2/skillhub/<skill>/SKILL.md`），
-> 用 CLI 发布时会自动带上；下面的「建议分类 / 支持平台 / 详细介绍」是**网页端要填的**，直接复制。
-
----
-
-## 快速发布（CLI）
-
-```bash
-# 1) 实名认证后，个人中心 → API keys → 创建 skh_...
-~/.local/bin/skillhub login --key skh_你的token --host https://api.skillhub.cn
-
-# 2) 本地预检（已验证 4/4 通过，无需登录）
-~/.local/bin/skillhub publish dist-v2/skillhub/expense-audit-v2 --dry-run
-
-# 3) 正式发布（4 个各发一次）
-~/.local/bin/skillhub publish dist-v2/skillhub/expense-audit-v2        --changelog "首次发布"
-~/.local/bin/skillhub publish dist-v2/skillhub/procurement-fraud-v2    --changelog "首次发布"
-~/.local/bin/skillhub publish dist-v2/skillhub/investigation-assistant-v2 --changelog "首次发布"
-~/.local/bin/skillhub publish dist-v2/skillhub/cn-entity-relation-check --changelog "首次发布"
-```
+> ⚠️ **本文件是自动生成的**——由 `scripts/skillhub_config.py` + `python3 scripts/gen-skillhub-listing.py` 产出。
+> **不要手改这里**；要改文案或分类，改 `scripts/skillhub_config.py` 再重新生成。
 
 ---
 
-## 通用信息（4 个都对）
+## 通用信息
 
-| 字段 | 值 |
-|---|---|
-| **作者 / homepage** | `https://github.com/andrew-tao-li/ai-audit-skills` |
-| **license** | `MIT-0`（使用不需署名） |
-| **支持平台** | Claude Code / Cursor / OpenCode / Windsurf / Cline / Roo / Codex / Gemini CLI / GitHub Copilot 等支持 **Agent Skills（`SKILL.md`）** 的宿主；WorkBuddy、LobsterAI 亦可用 |
-| **运行环境** | 纯本地离线；Python 3.10+；XLSX 需 `openpyxl`（可选）；**不联网、不上传数据、无需任何 API Key** |
-| **建议分类** | 见每个 skill 下方（平台标签形如 `行业专业` `财税处理` `法律合规` `风险风控` `办公效率`） |
-| **⚠️ 分类要在网页设** | CLI **只能读、不能写**分类。上架后在「个人中心 → 我的 Skill → 编辑」里选。**未分类 = 不会出现在任何分类浏览里**（平台按一级分类 + 子类筛选） |
+- **homepage**：`https://github.com/andrew-tao-li/ai-audit-skills`
+- **license**：`MIT-0`（使用不需署名）
+- **运行环境**：纯本地离线；Python 3.10+；XLSX 需 `openpyxl`（可选）；**不联网、不上传数据、无需任何 API Key**
+- **分类**：全部归入 **行业专业（`professional`）** + 对应子类
 
-**平台的确切分类 key**（从平台同类 skill 的实际数据读出，非猜测）：
+**平台分类 key 对照**（从平台现网数据读取，非猜测）：
 
-| 一级分类 key | 中文 | 子类 key | 中文 |
+| 一级 key | 中文 | 子类 key | 中文 |
 |---|---|---|---|
 | `professional` | 行业专业 | `pro-tax-accounting` | 财税处理 |
 | `office-efficiency` | 办公效率 | `pro-legal` | 法律合规 |
 | `data-analysis` | 数据分析 | `pro-risk-control` | 风险风控 |
 
-**我们四个 skill 的建议填法**（全部归入 `professional`）：
+> **分类只能在发布时带**：官方 CLI 的 payload 没有 `category` 字段（发出来永远「未分类」），
+> 所以用本仓库的 `scripts/publish-skillhub.py` 发布——它照官方契约自己发并带上分类。
+> （网页端也能改：个人中心 → 我的 Skill → 编辑；但那会触发内容重审。）
 
-| skill | 一级 | 子类 |
-|---|---|---|
-| 费用报销审计 | `professional` | `pro-tax-accounting` + `pro-risk-control` |
-| 采购舞弊红旗筛查 | `professional` | `pro-risk-control` + `pro-tax-accounting` |
-| 授权内调查材料整理 | `professional` | `pro-legal` + `pro-risk-control` |
-| 中国工商关联排查 | `professional` | `pro-risk-control` + `pro-legal` |
+---
+
+## 发布
+
+```bash
+python3 scripts/build-skillhub.py         # 生成净化版 + 自检
+python3 scripts/publish-skillhub.py --dry-run   # 看 payload（含分类）
+python3 scripts/publish-skillhub.py             # 发布全部（自动限频 70s）
+```
 
 ---
 
 ## 1. 费用报销审计
 
-| | |
-|---|---|
-| slug | `andrew-tao-li-expense-audit` |
-| displayName | 费用报销审计 |
-| version | 0.2.9 |
-| 建议分类 | `行业专业` `财税处理` `风险风控` |
-| tags | 审计、费用审计、报销、发票、差旅、反舞弊、财税处理、风险风控 |
+- **slug**：`andrew-tao-li-expense-audit`
+- **一级分类**：行业专业（`professional`）
+- **子类**：财税处理、风险风控（`pro-tax-accounting`、`pro-risk-control`）
+- **tags**：审计、费用审计、报销、发票、差旅、反舞弊、财税处理、风险风控
+- **本地目录**：`skills-v2/expense-audit-v2/`
 
 **summary（一句话）**
+
 > 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
 
 **详细介绍**
+
 > 给审计/财务人员用的**费用报销异常扫描**工具。喂进一张费用台账（CSV/XLSX），它做两件事：
 > ① **数据体检**——分离坏行、标准化字段、给出数据质量报告；
 > ② **确定性规则扫描**——重复发票号、同员工同日同金额、超制度上限、拆分报销、统计离群、自审自批、发票跨人复用、提交早于消费、未来日期、缺费用类型、发票连号/格式异常、大额低层级审批、时空冲突、跨期入账、高频小额等。
@@ -81,18 +64,18 @@
 
 ## 2. 采购舞弊红旗筛查
 
-| | |
-|---|---|
-| slug | `andrew-tao-li-procurement-fraud` |
-| displayName | 采购舞弊红旗筛查 |
-| version | 0.2.4 |
-| 建议分类 | `行业专业` `风险风控` `财税处理` |
-| tags | 审计、采购、反舞弊、供应商、招投标、价格异常、风险风控 |
+- **slug**：`andrew-tao-li-procurement-fraud`
+- **一级分类**：行业专业（`professional`）
+- **子类**：风险风控、财税处理（`pro-risk-control`、`pro-tax-accounting`）
+- **tags**：审计、采购、反舞弊、供应商、招投标、价格异常、风险风控
+- **本地目录**：`skills-v2/procurement-fraud-v2/`
 
 **summary（一句话）**
+
 > 对供应商主数据、采购订单、付款、员工与投标文本做舞弊红旗筛查：共享账户、价格离群、拆单、流程倒置、投标文本雷同等。仅输出复核线索，不做舞弊认定。
 
 **详细介绍**
+
 > 给审计/采购/合规人员用的**采购红旗筛查**工具。输入供应商主数据、采购订单、付款、员工与投标文本（CSV/XLSX），输出可追溯的红旗清单。
 >
 > 覆盖：供应商间共享银行账号/电话/邮箱/地址/法人、**员工—供应商**共享属性（利益冲突红线）、peer-group 价格离群、拆单采购、付款早于下单、收货早于审批、下单早于审批、超额付款、新成立供应商接大单、采购员—供应商集中度、投标文本字符级 TF-IDF 相似度、报价子簇异常等。
@@ -107,18 +90,18 @@
 
 ## 3. 授权内调查材料整理
 
-| | |
-|---|---|
-| slug | `andrew-tao-li-investigation-assistant` |
-| displayName | 授权内调查材料整理 |
-| version | 0.2.4 |
-| 建议分类 | `行业专业` `法律合规` `风险风控` |
-| tags | 审计、内部调查、证据链、内控、合规、举报处理、法律合规、风险风控 |
+- **slug**：`andrew-tao-li-investigation-assistant`
+- **一级分类**：行业专业（`professional`）
+- **子类**：法律合规、风险风控（`pro-legal`、`pro-risk-control`）
+- **tags**：审计、内部调查、证据链、内控、合规、举报处理、法律合规、风险风控
+- **本地目录**：`skills-v2/investigation-assistant-v2/`
 
 **summary（一句话）**
+
 > 在已获授权、范围明确的前提下，把举报、邮件、消息与日志整理为可追溯调查工作空间：证据清单与哈希、时间线、证据矩阵、反证、访谈计划。不做责任认定。
 
 **详细介绍**
+
 > 给内部调查/内审/合规人员用的**调查材料整理**工具。**必须先取得显式授权**（授权文号、涉及人员、时间范围、允许来源），否则拒绝读取内容——这是硬门槛。
 >
 > 在授权范围内：登记原始文件并计算 SHA-256、生成只读副本与保管链、抽取时间线（时区感知）、建立实体索引与关系、生成「事项 × 证据」矩阵（同时保留**支持证据、反证、替代解释、缺失证据**）、假设登记、访谈计划与案卷模板。越界数据单独隔离。
@@ -133,18 +116,18 @@
 
 ## 4. 中国工商关联排查
 
-| | |
-|---|---|
-| slug | `andrew-tao-li-cn-entity-relation` |
-| displayName | 中国工商关联排查 |
-| version | 0.1.4 |
-| 建议分类 | `行业专业` `风险风控` `法律合规` |
-| tags | 审计、关联方、工商信息、尽职调查、实际控制人、利益冲突、风险风控 |
+- **slug**：`andrew-tao-li-cn-entity-relation`
+- **一级分类**：行业专业（`professional`）
+- **子类**：法律合规、风险风控（`pro-legal`、`pro-risk-control`）
+- **tags**：审计、关联方、工商信息、尽职调查、实际控制人、利益冲突、风险风控
+- **本地目录**：`skills-v2/cn-entity-relation-check/`
 
 **summary（一句话）**
+
 > 核查两个主体（公司/自然人）在中国公开工商信息中是否存在可验证关联，输出「关联 / 不关联 / 待核查」三态结论。公开关系 ≠ 真实利益关联。
 
 **详细介绍**
+
 > 给审计/尽调/合规人员用的**关联方排查**工具，回答一个问题：**这两个主体有没有可验证的公开工商关联？**
 >
 > 支持公司—公司、公司—自然人、自然人—自然人三类组合。基于公开工商**强关系**（法人、股东、对外投资、董监高、合伙人、分支机构、实际控制人、最终受益人，含历史），做最大深度 3 的路径查找，并输出三态结论：
@@ -159,9 +142,3 @@
 > **隐私**：决策核心离线；如接入结构化工商数据源，需你自备 API Key（BYOK），**本项目不内置任何 Key**。
 
 ---
-
-## 备注
-
-- **`description` 字段**（CLI 会一并提交）是给 Agent 判断"该不该触发"用的中英双语说明，含 `Do not use for …` 边界声明。
-  如果平台详情页把它当"介绍"展示、显得冗长，可后续把详情页介绍改用上面的「详细介绍」——**不影响功能**。
-- 4 个 skill 都**不含任何硬编码密钥、不做任何网络请求、不上传数据**（净化版已删掉反馈外发机制）。

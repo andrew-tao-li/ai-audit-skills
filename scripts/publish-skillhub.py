@@ -35,8 +35,8 @@ INTERVAL_S = 70  # 平台限频，实测连发 4 个会 429
 
 
 def load_config() -> dict:
-    """复用 build-skillhub.py 里的 SKILLS（分类的单一来源）。"""
-    spec = importlib.util.spec_from_file_location("build_skillhub", ROOT / "scripts" / "build-skillhub.py")
+    """分类/文案的单一来源：scripts/skillhub_config.py。"""
+    spec = importlib.util.spec_from_file_location("skillhub_config", ROOT / "scripts" / "skillhub_config.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod.SKILLS
