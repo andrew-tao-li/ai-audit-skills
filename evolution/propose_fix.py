@@ -86,6 +86,23 @@ def has_open_proposal(token, label="proposal"):
         return False
 
 
+def push_branch(branch):
+    """推分支：先走默认 remote（SSH），失败则回退到 token 认证的 HTTPS。
+
+    2026-09-29 教训：本机代理会偶发劫持 SSH（解析到 198.18.x.x），
+    无人值守的自动化如果只依赖 SSH，就会静默推不上去。
+    """
+    import os as _os
+    r = run(["git", "push", "-u", "origin", branch])
+    if r.returncode == 0:
+        return r
+    token = _os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        return r
+    url = "https://x-access-token:%s@github.com/%s.git" % (token, REPO)
+    return run(["git", "push", "-u", url, branch])
+
+
 def start_proposal_branch(branch):
     """隔离工作区：先把无关改动 stash 起来，再建提案分支。
 
@@ -167,7 +184,7 @@ def main() -> int:
     # 4. commit + push
     run(["git", "add", "-A"])
     run(["git", "commit", "-m", "proposal: 自动修复建议 %s（待人工审批）" % ts])
-    push = run(["git", "push", "-u", "origin", branch])
+    push = push_branch(branch)
     if push.returncode != 0:
         print("push 失败：%s" % push.stderr[:300], file=sys.stderr)
         return 1

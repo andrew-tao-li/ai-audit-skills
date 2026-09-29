@@ -23,7 +23,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from propose_fix import ROOT, gh_api, has_open_proposal, run, start_proposal_branch, finish_proposal  # noqa: E402
+from propose_fix import ROOT, gh_api, has_open_proposal, run, push_branch, start_proposal_branch, finish_proposal  # noqa: E402
 
 LAST_PATROL = HERE / "log" / ".last_patrol"
 
@@ -94,7 +94,7 @@ def main() -> int:
 
     run(["git", "add", "-A"])
     run(["git", "commit", "-m", "patrol: 定期巡检改进建议（%s，待人工审批）" % lens_name])
-    push = run(["git", "push", "-u", "origin", branch])
+    push = push_branch(branch)
     if push.returncode != 0:
         print("push 失败：%s" % push.stderr[:300], file=sys.stderr)
         return 1

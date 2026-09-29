@@ -490,11 +490,19 @@ if [ "$SKIP_PUSH" = "0" ]; then
     if ! git diff --cached --quiet 2>/dev/null; then
         git commit -m "auto: iteration $TIMESTAMP (failures=$OPEN_FAILURES_COUNT, health=$HEALTH_STATUS)" 2>&1 | tail -2
 
-        # 尝试 push（SSH key 或 token 均可用）
+        # 尝试 push：先走默认 remote（SSH），失败再回退到 token 认证的 HTTPS
+        # （2026-09-29 教训：本机代理会偶发劫持 SSH，导致无人值守的例行推送静默失败）
         if git remote get-url origin >/dev/null 2>&1; then
             echo "  → push 到 GitHub..."
             if git push origin main 2>&1 | tail -3; then
                 echo "  ✓ push 成功"
+            elif [ -n "${GITHUB_TOKEN:-}" ]; then
+                echo "  ⚠ SSH push 失败，回退到 HTTPS + token..."
+                if git push "https://x-access-token:${GITHUB_TOKEN}@github.com/andrew-tao-li/ai-audit-skills.git" main 2>&1 | tail -3; then
+                    echo "  ✓ push 成功（HTTPS 回退）"
+                else
+                    echo "  ⚠ push 失败（SSH 与 HTTPS 都不通）"
+                fi
             else
                 echo "  ⚠ push 失败（SSH key / token 未配置或权限不足）"
             fi
