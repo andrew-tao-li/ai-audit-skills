@@ -145,5 +145,50 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             self.assertNotIn("resubmit-after-rejection-amount-increase", types)
 
 
+    def test_travel_cross_check_is_opt_in(self):
+        """v0.2.9：不给辅助数据 → 行为不变；给了出差申请/打卡 → 自动唤醒交叉核验。"""
+        base = ("单据号,工号,费用类型,发生日期,提交日期,金额,商户,目的城市\n"
+                "E1,EMP1,差旅,2025-04-01,2025-04-02,800,酒店,北京\n"
+                "E2,EMP2,差旅,2025-04-03,2025-04-03,900,酒店,北京\n"
+                "E3,EMP3,差旅,2025-04-05,2025-04-05,700,酒店,北京\n"
+                "E4,EMP4,差旅,2025-04-07,2025-04-07,600,酒店,北京\n")
+        travel = ("工号,姓名,出差开始日期,出差结束日期,目的城市\n"
+                  "EMP2,张三,2025-04-03,2025-04-03,北京\n"
+                  "EMP3,李四,2025-04-05,2025-04-05,北京\n"
+                  "EMP4,王五,2025-04-07,2025-04-07,北京\n"
+                  "EMP5,赵六,2025-04-01,2025-04-01,广州\n")
+        attendance = ("工号,日期,打卡地点,是否在公司\n"
+                      "EMP2,2025-04-03,上海总部,是\n"
+                      "EMP3,2025-04-05,广州市天河区,否\n"
+                      "EMP4,2025-04-07,北京市朝阳区,否\n")
+        policy = {"policy_version": "T", "default_currency": "CNY",
+                  "travel_cross_check": {"company_cities": ["上海"], "company_location_keywords": ["上海", "总部"],
+                                         "travel_types": ["差旅", "住宿", "机票"]}}
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td) / "e.csv"; data.write_text(base, encoding="utf-8")
+            trv = Path(td) / "t.csv"; trv.write_text(travel, encoding="utf-8")
+            att = Path(td) / "a.csv"; att.write_text(attendance, encoding="utf-8")
+            pol = Path(td) / "p.json"; pol.write_text(json.dumps(policy), encoding="utf-8")
+
+            def types(extra, out):
+                cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--policy", str(pol), "--output", str(out)] + extra
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(r.returncode, 0, r.stderr)
+                return [json.loads(l)["finding_type"]
+                        for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+
+            # ① 不给辅助数据 → 一条都不触发（等价于旧行为）
+            t0 = types([], Path(td) / "o0")
+            for ft in ("expense-without-travel-request", "office-swipe-on-offsite-claim", "attendance-city-mismatch"):
+                self.assertNotIn(ft, t0)
+
+            # ② 给了辅助数据 → 自动唤醒；且合理情形不误报（E4 有申请+当地打卡，应为 0）
+            t1 = types(["--travel-requests", str(trv), "--attendance", str(att)], Path(td) / "o1")
+            self.assertIn("expense-without-travel-request", t1)   # E1：无出差申请
+            self.assertIn("office-swipe-on-offsite-claim", t1)    # E2：当天公司打卡
+            self.assertIn("attendance-city-mismatch", t1)         # E3：打卡地与出差地不同城
+            self.assertEqual(len(t1), 3)                          # E4 不应误报
+
+
 if __name__ == "__main__":
     unittest.main()

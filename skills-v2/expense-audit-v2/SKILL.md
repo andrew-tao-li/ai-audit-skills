@@ -1,12 +1,12 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.8
+version: 0.2.9
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
   predecessor: "expense-audit 0.1.1"
-  changelog: "v0.2.8: 新增可选的「审批状态过滤」(status_filter)——被排除的行写入 excluded_by_status.csv，绝不静默丢弃；新增规则「撤回/拒绝后重提且金额增加」(仅配置 status_filter 后触发)；新增 amount_columns 多列金额求和；新增 references/field-mapping-guide.md(真实台账接入指南)。以上**全部为可选项**，不配置时与旧版逐字节一致。v0.2.7: 报告改版——第一屏改为「执行摘要」（论点结论+关键指标+风险分布+最需先看的3条+下一步+明细入口），每条发现补「现象/依据/建议/待澄清」并加「按类型汇总」表；反馈说明改为人话（对外解释+红线，webhook 移入 references/feedback.md）；修复 summary 里风险计数恒为 0 的 bug。v0.2.5: 新增 dashboard.html 全景图（自包含、离线、0 外部资源）；description 加边界声明。v0.2.4: 反馈邀请改为确定性产物。v0.2.3: 反馈邀请改为确定性产物（summary.md 段 + stderr 提示 + 交付必呈现）。v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
+  changelog: "v0.2.9: 新增可选的「出差交叉核验」——提供 --travel-requests / --attendance 后自动唤醒：差旅报销无对应出差申请、报销称外地但当天有公司打卡、打卡地点与出差城市不一致；「是否在公司」三层判定(显式布尔/经纬度+半径/地点关键词)，判定不了即跳过；默认口径「出差申请可替代打卡」，可配置为出差期间也需打卡。不提供辅助数据时与旧版逐字节一致。v0.2.8: 新增可选的「审批状态过滤」(status_filter)——被排除的行写入 excluded_by_status.csv，绝不静默丢弃；新增规则「撤回/拒绝后重提且金额增加」(仅配置 status_filter 后触发)；新增 amount_columns 多列金额求和；新增 references/field-mapping-guide.md(真实台账接入指南)。以上**全部为可选项**，不配置时与旧版逐字节一致。v0.2.7: 报告改版——第一屏改为「执行摘要」（论点结论+关键指标+风险分布+最需先看的3条+下一步+明细入口），每条发现补「现象/依据/建议/待澄清」并加「按类型汇总」表；反馈说明改为人话（对外解释+红线，webhook 移入 references/feedback.md）；修复 summary 里风险计数恒为 0 的 bug。v0.2.5: 新增 dashboard.html 全景图（自包含、离线、0 外部资源）；description 加边界声明。v0.2.4: 反馈邀请改为确定性产物。v0.2.3: 反馈邀请改为确定性产物（summary.md 段 + stderr 提示 + 交付必呈现）。v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
 ---
 
 # Expense Audit
@@ -113,6 +113,50 @@ python3 scripts/run_expense_audit.py \
 > （实测某真实台账 47 条发现中 39 条属此类）。配置后噪声消失，真正值得看的信号（例如**撤回后重提且金额增加**）才会浮出来。
 >
 > **多列金额 / 表头不在第一行 / 发票号为空** 等接入问题，见 [真实台账接入指南](references/field-mapping-guide.md)。
+
+## v0.2.9 出差交叉核验（可选，有料自醒）
+
+报销的真实性，常常要靠**出差申请**和**打卡记录**来印证。提供任一份，本技能就**自动追加**交叉核验：
+
+```bash
+python3 scripts/run_expense_audit.py \
+  --input 报销台账.xlsx \
+  --travel-requests 出差申请.xlsx \   # 可选
+  --attendance 打卡记录.xlsx \         # 可选
+  --policy policy.json --output ./out
+```
+
+| 提供了什么 | 自动启用 |
+|---|---|
+| 只有 `--input` | **与上一版完全一致**（一条新规则也不跑） |
+| `+ --travel-requests` | 「差旅报销无对应出差申请」 |
+| `+ --attendance` | 「报销称外地，但当天有公司打卡」、「打卡地点与出差城市不一致」 |
+| 两者都提供 | 以上全部 |
+
+**「是否在公司」的三层判定**（按可得性从高到低，拿到一层就停）：
+1. **显式布尔**（`是否在公司` / `打卡类型`）——最可靠；
+2. **经纬度 + 半径**（与 `company_locations` 算距离，半径可配，默认 1000 米；支持多办公地）；
+3. **地点文本**（与 `company_location_keywords` 匹配）。
+> 三层都拿不到 → 标「未知」并**跳过**，不猜、不报。
+
+### ⚠️ 口径确认：出差申请能不能替代打卡？
+
+**默认口径：能**（多数公司制度如此——"因出差无法打卡的，以出差申请为准"）。
+**但有的公司要求出差期间也要打卡。** 所以：
+
+> **当用户提供了打卡数据时，请主动确认一句**：
+> 「默认我按『出差申请可以替代打卡』来理解，也就是出差期间没有公司打卡属正常；
+> 如果贵司政策是**出差期间也要求打卡**，请告诉我，我会额外核对出差期间的缺卡。」
+>
+> 用户确认后，把 `travel_cross_check.require_swipe_during_travel` 设为 `true` 即可。
+
+### 措辞红线（务必遵守）
+
+- **「当天有公司打卡」≠「人没出差」**——可能是**代报销**、同事代交、或出差前后到岗。只能说"请核实**实际出差人**"。
+- **「无出差申请」≠「没出差」**——可能没走 OA，或走了线下审批。
+- **「打卡地与出差地不一致」** 只是提示——可能中转、改道或地点解析偏差，由用户判断是否需要介意。
+
+配置字段见 [rule-catalog](references/rule-catalog.md) 与 [真实台账接入指南](references/field-mapping-guide.md)。
 
 ## Output contract
 

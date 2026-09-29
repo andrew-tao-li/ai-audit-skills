@@ -98,5 +98,97 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
                 temp.cleanup()
 
 
+    def test_status_filter_and_resubmit_rule_are_opt_in(self):
+        """v0.2.8：状态过滤与新规则必须「默认不影响旧行为，配置后才生效」。"""
+        csv_text = (
+            "单据号,工号,费用类型,发生日期,提交日期,金额,商户,审批状态\n"
+            "E1,EMP1,差旅,2025-03-01,2025-03-02,500,酒店A,已撤回\n"
+            "E2,EMP1,差旅,2025-03-01,2025-03-05,800,酒店A,已同意\n"
+            "E3,EMP2,餐饮,2025-03-03,2025-03-03,200,餐厅B,已同意\n"
+            "E4,EMP2,餐饮,2025-03-03,2025-03-03,200,餐厅B,已撤回\n"
+        )
+
+        def run(data, policy=None, out=None):
+            cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)]
+            if policy:
+                cmd += ["--policy", str(policy)]
+            completed = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            return [json.loads(l)["finding_type"]
+                    for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td) / "expenses.csv"
+            data.write_text(csv_text, encoding="utf-8")
+
+            # ① 不配置 status_filter（= 旧行为）：撤回行照样参与 → 出现假重复，且没有新规则
+            naive = Path(td) / "naive"
+            types = run(data, None, naive)
+            self.assertIn("exact-duplicate-employee-date-amount", types)
+            self.assertNotIn("resubmit-after-rejection-amount-increase", types)
+            self.assertFalse((naive / "excluded_by_status.csv").exists())
+
+            # ② 配置 status_filter：假重复消失，新规则出现，被排除行单独落盘（不静默丢弃）
+            policy = Path(td) / "policy.json"
+            policy.write_text(json.dumps({"policy_version": "T", "default_currency": "CNY",
+                                          "status_filter": {"include": ["已同意"]}}), encoding="utf-8")
+            filtered = Path(td) / "filtered"
+            types = run(data, policy, filtered)
+            self.assertNotIn("exact-duplicate-employee-date-amount", types)
+            self.assertIn("resubmit-after-rejection-amount-increase", types)
+            self.assertIn("已撤回", (filtered / "excluded_by_status.csv").read_text(encoding="utf-8"))
+
+            # ③ 反例：撤回后重提但金额未增加 → 不应触发新规则
+            data2 = Path(td) / "no_increase.csv"
+            data2.write_text(csv_text.replace(",2025-03-05,800,", ",2025-03-05,500,"), encoding="utf-8")
+            types = run(data2, policy, Path(td) / "out2")
+            self.assertNotIn("resubmit-after-rejection-amount-increase", types)
+
+
+    def test_travel_cross_check_is_opt_in(self):
+        """v0.2.9：不给辅助数据 → 行为不变；给了出差申请/打卡 → 自动唤醒交叉核验。"""
+        base = ("单据号,工号,费用类型,发生日期,提交日期,金额,商户,目的城市\n"
+                "E1,EMP1,差旅,2025-04-01,2025-04-02,800,酒店,北京\n"
+                "E2,EMP2,差旅,2025-04-03,2025-04-03,900,酒店,北京\n"
+                "E3,EMP3,差旅,2025-04-05,2025-04-05,700,酒店,北京\n"
+                "E4,EMP4,差旅,2025-04-07,2025-04-07,600,酒店,北京\n")
+        travel = ("工号,姓名,出差开始日期,出差结束日期,目的城市\n"
+                  "EMP2,张三,2025-04-03,2025-04-03,北京\n"
+                  "EMP3,李四,2025-04-05,2025-04-05,北京\n"
+                  "EMP4,王五,2025-04-07,2025-04-07,北京\n"
+                  "EMP5,赵六,2025-04-01,2025-04-01,广州\n")
+        attendance = ("工号,日期,打卡地点,是否在公司\n"
+                      "EMP2,2025-04-03,上海总部,是\n"
+                      "EMP3,2025-04-05,广州市天河区,否\n"
+                      "EMP4,2025-04-07,北京市朝阳区,否\n")
+        policy = {"policy_version": "T", "default_currency": "CNY",
+                  "travel_cross_check": {"company_cities": ["上海"], "company_location_keywords": ["上海", "总部"],
+                                         "travel_types": ["差旅", "住宿", "机票"]}}
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td) / "e.csv"; data.write_text(base, encoding="utf-8")
+            trv = Path(td) / "t.csv"; trv.write_text(travel, encoding="utf-8")
+            att = Path(td) / "a.csv"; att.write_text(attendance, encoding="utf-8")
+            pol = Path(td) / "p.json"; pol.write_text(json.dumps(policy), encoding="utf-8")
+
+            def types(extra, out):
+                cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--policy", str(pol), "--output", str(out)] + extra
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(r.returncode, 0, r.stderr)
+                return [json.loads(l)["finding_type"]
+                        for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+
+            # ① 不给辅助数据 → 一条都不触发（等价于旧行为）
+            t0 = types([], Path(td) / "o0")
+            for ft in ("expense-without-travel-request", "office-swipe-on-offsite-claim", "attendance-city-mismatch"):
+                self.assertNotIn(ft, t0)
+
+            # ② 给了辅助数据 → 自动唤醒；且合理情形不误报（E4 有申请+当地打卡，应为 0）
+            t1 = types(["--travel-requests", str(trv), "--attendance", str(att)], Path(td) / "o1")
+            self.assertIn("expense-without-travel-request", t1)   # E1：无出差申请
+            self.assertIn("office-swipe-on-offsite-claim", t1)    # E2：当天公司打卡
+            self.assertIn("attendance-city-mismatch", t1)         # E3：打卡地与出差地不同城
+            self.assertEqual(len(t1), 3)                          # E4 不应误报
+
+
 if __name__ == "__main__":
     unittest.main()

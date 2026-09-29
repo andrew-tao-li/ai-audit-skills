@@ -13,11 +13,11 @@ import statistics
 import sys
 import unicodedata
 from collections import defaultdict
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.8"
+VERSION = "0.2.9"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -30,6 +30,10 @@ FINDING_TYPE_ZH = {
     "invoice-format-anomaly": "发票格式异常", "large-amount-low-level-approval": "大额低层级审批",
     "space-time-conflict": "时空冲突", "cross-period": "跨期入账", "high-frequency-small-amount": "高频小额",
     "resubmit-after-rejection-amount-increase": "撤回/拒绝后重提且金额增加",  # v0.2.8
+    # v0.2.9：出差交叉核验（需提供 --travel-requests / --attendance）
+    "expense-without-travel-request": "差旅报销无对应出差申请",
+    "office-swipe-on-offsite-claim": "报销称外地但当天有公司打卡",
+    "attendance-city-mismatch": "打卡地点与出差城市不一致",
 }
 PRIORITY_ZH = {"critical": "严重", "high": "高", "medium": "中", "low": "低"}
 STRENGTH_ZH = {"strong": "强", "moderate": "中", "weak": "弱"}
@@ -166,7 +170,28 @@ POLICY_KEYS = frozenset({
     "status_filter",          # 只分析/排除指定审批状态：{"include": [...], "exclude": [...]}
     "resubmit_window_days",   # 「撤回/拒绝后重提且金额增加」的关联窗口（天），默认 90
     "amount_columns",         # 多列金额求和（台账没有单一金额列、金额分散在多列时使用）
+    "travel_cross_check",     # v0.2.9：出差交叉核验（报销 × 出差申请 × 打卡；不配置=完全不启用）
 })
+
+# v0.2.9：出差申请单字段别名（辅助表，可选）
+TRAVEL_REQUEST_ALIASES = {
+    "employee_id": ["employee_id", "emp_id", "employee", "staff_id", "工号", "员工编号", "员工", "姓名", "name"],
+    "travel_start": ["travel_start", "start_date", "begin_date", "出差开始日期", "开始日期", "出发日期", "出差日期"],
+    "travel_end": ["travel_end", "end_date", "finish_date", "出差结束日期", "结束日期", "返回日期"],
+    "travel_dest_city": ["travel_dest_city", "dest_city", "destination", "city", "目的城市", "目的地", "出差城市", "到达城市"],
+    "transport": ["transport", "vehicle", "交通方式", "交通工具"],
+    "estimated_amount": ["estimated_amount", "budget", "预计费用", "预算金额"],
+}
+
+# v0.2.9：打卡记录字段别名（辅助表，可选）
+ATTENDANCE_ALIASES = {
+    "employee_id": ["employee_id", "emp_id", "employee", "staff_id", "工号", "员工编号", "员工", "姓名", "name"],
+    "attendance_date": ["attendance_date", "date", "check_date", "打卡日期", "日期", "考勤日期"],
+    "attendance_location": ["attendance_location", "location", "address", "place", "打卡地点", "打卡地址", "地点", "地址", "定位地址"],
+    "is_office": ["is_office", "in_office", "office_flag", "是否在公司", "在公司", "打卡类型", "考勤类型", "外勤"],
+    "lat": ["lat", "latitude", "纬度", "纬度(lat)"],
+    "lon": ["lon", "lng", "longitude", "经度", "经度(lon)"],
+}
 
 
 def validate_policy(policy: Dict[str, Any]) -> None:
@@ -485,6 +510,205 @@ def _rule_resubmit_after_rejection(rows, excluded, policy, builder) -> None:
                 ["调取该申请单的完整审批历史与附件"],
                 [{"factor": "resubmit_after_rejection_amount_increase", "points": 3}],
             )
+
+
+TRAVEL_KEYWORDS_DEFAULT = ["差旅", "出差", "住宿", "机票", "火车", "高铁", "市内交通", "交通费", "打车", "补贴"]
+
+
+def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def _to_float(value: Any) -> Optional[float]:
+    try:
+        f = float(str(value).strip())
+        return f if math.isfinite(f) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _as_day(value: Any):
+    from datetime import date as _date
+    try:
+        return _date.fromisoformat(str(value)[:10])
+    except (TypeError, ValueError):
+        return None
+
+
+def office_verdict(row: Dict[str, Any], cfg: Dict[str, Any]) -> Optional[bool]:
+    """三层判定「是否在公司」：① 显式布尔 ② 经纬度+半径 ③ 地点文本。三层都不成立 → None（不猜）。"""
+    raw = norm_text(row.get("is_office")).lower()
+    if raw:
+        if raw in ("是", "y", "yes", "true", "1", "在公司", "公司", "内勤", "office"):
+            return True
+        if raw in ("否", "n", "no", "false", "0", "不在公司", "外勤", "外出", "field"):
+            return False
+    lat, lon = _to_float(row.get("lat")), _to_float(row.get("lon"))
+    if lat is not None and lon is not None and (cfg.get("company_locations") or []):
+        nearest = None
+        for loc in cfg.get("company_locations") or []:
+            llat, llon = _to_float(loc.get("lat")), _to_float(loc.get("lon"))
+            if llat is None or llon is None:
+                continue
+            dist = _haversine_m(lat, lon, llat, llon)
+            if dist <= (_to_float(loc.get("radius_m")) or 1000.0):
+                return True
+            nearest = dist if nearest is None else min(nearest, dist)
+        if nearest is not None:
+            return False
+    text = norm_text(row.get("attendance_location"))
+    keywords = [norm_text(k) for k in (cfg.get("company_location_keywords") or []) if norm_text(k)]
+    if text and keywords:
+        return any(k in text for k in keywords)
+    return None
+
+
+def read_aux_table(path: Path, aliases: Dict[str, List[str]], sheet: Optional[str] = None):
+    """读辅助表（出差申请 / 打卡记录），按别名解析列。返回 (rows, mapping)。"""
+    headers, source_rows, _ = read_table(path, sheet)
+    by_norm: Dict[str, List[str]] = defaultdict(list)
+    for header in headers:
+        by_norm[norm_header(header)].append(header)
+    mapping: Dict[str, str] = {}
+    for canonical, alias_list in aliases.items():
+        for alias in alias_list:
+            matches = by_norm.get(norm_header(alias), [])
+            if matches:
+                mapping[canonical] = matches[0]
+                break
+    rows = []
+    for source in source_rows:
+        rows.append({canonical: norm_text(source.get(col, "")) for canonical, col in mapping.items()})
+    return rows, mapping
+
+
+def run_travel_cross_check(analyzable, travel_rows, attendance_rows, policy, builder,
+                           travel_mapping, attendance_mapping) -> List[str]:
+    """v0.2.9：报销 × 出差申请 × 打卡 的交叉核验。
+
+    只在提供了对应辅助数据时才启用；不提供则一行也不产生（零回归）。
+    所有结论都是**线索**，不是认定——尤其「当天有公司打卡」不等于「人没出差」（可能代报销）。
+    """
+    cfg = policy.get("travel_cross_check") or {}
+    notes: List[str] = []
+    if not travel_rows and not attendance_rows:
+        return notes
+
+    travel_types = [norm_text(t) for t in (cfg.get("travel_types") or TRAVEL_KEYWORDS_DEFAULT) if norm_text(t)]
+    company_cities = [norm_text(c) for c in (cfg.get("company_cities") or []) if norm_text(c)]
+    tolerance = int(cfg.get("date_tolerance_days", 1) or 0)
+
+    def travel_like(expense) -> bool:
+        et = norm_text(expense.get("expense_type"))
+        if et and any(t in et for t in travel_types):
+            return True
+        dest = norm_text(expense.get("dest_city"))
+        return bool(dest and dest not in company_cities)
+
+    # 出差申请索引：员工 → [(start, end, dest, raw)]
+    trips: Dict[str, List[Any]] = defaultdict(list)
+    for t in travel_rows:
+        emp = norm_text(t.get("employee_id"))
+        start, end = _as_day(t.get("travel_start")), _as_day(t.get("travel_end"))
+        if not emp or not start:
+            continue
+        trips[emp].append((start, end or start, norm_text(t.get("travel_dest_city"))))
+
+    def covered(emp: str, day) -> Optional[Any]:
+        for start, end, dest in trips.get(emp, []):
+            lo = start - timedelta(days=tolerance)
+            hi = end + timedelta(days=tolerance)
+            if lo <= day <= hi:
+                return (start, end, dest)
+        return None
+
+    # 打卡索引：(员工, 日期) → [rows]
+    swipes: Dict[Any, List[Dict[str, Any]]] = defaultdict(list)
+    for a in attendance_rows:
+        emp = norm_text(a.get("employee_id"))
+        day = _as_day(a.get("attendance_date"))
+        if emp and day:
+            swipes[(emp, day)].append(a)
+
+    # 城市词表（用于「打卡地与出差地不一致」）：公司城市 + 所有出差目的城市
+    vocab = list(dict.fromkeys(company_cities + [t[2] for ts in trips.values() for t in ts if t[2]]))
+
+    def city_in(text: str) -> Optional[str]:
+        for city in vocab:
+            if city and city in text:
+                return city
+        return None
+
+    # A. 差旅报销未找到对应出差申请
+    if travel_rows:
+        for e in analyzable:
+            if not travel_like(e):
+                continue
+            emp, day = norm_text(e.get("employee_id")), _as_day(e.get("expense_date"))
+            if not emp or day is None:
+                continue
+            if covered(emp, day) is None:
+                builder.add("expense-without-travel-request", "差旅报销未找到对应出差申请", 3, "moderate", [e],
+                            ("expense_id", "employee_id", "expense_date", "expense_type", "amount"),
+                            ["该笔差旅报销的日期不在该员工的任何出差申请区间内（已按 ±%d 天容差比对）" % tolerance],
+                            ["可能是未走 OA 的出差、代他人报销，或出差申请未录入"],
+                            ["是否为代报销？实际出差人是谁？是否走了线下审批？"],
+                            ["调取出差申请、审批邮件/聊天记录与行程凭证"],
+                            [{"factor": "expense_without_travel_request", "points": 3}])
+
+    # B / D. 报销称外地，但当天有公司打卡 / 打卡地与出差地不一致
+    if attendance_rows:
+        for e in analyzable:
+            if not travel_like(e):
+                continue
+            emp, day = norm_text(e.get("employee_id")), _as_day(e.get("expense_date"))
+            dest = norm_text(e.get("dest_city"))
+            if not emp or day is None:
+                continue
+            day_rows = swipes.get((emp, day), [])
+            if not day_rows:
+                continue
+            # B：当天在公司打卡（仅在报销是"外地"时才有意义）
+            if dest and dest not in company_cities:
+                if any(office_verdict(r, cfg) is True for r in day_rows):
+                    builder.add("office-swipe-on-offsite-claim", "报销称外地，但当天有公司打卡", 3, "moderate", [e],
+                                ("expense_id", "employee_id", "expense_date", "dest_city"),
+                                ["该笔报销目的城市为「%s」，但当天（%s）该员工有**公司打卡**记录" % (dest, day.isoformat())],
+                                ["当天有公司打卡 ≠ 本人没出差：可能是同事代交、代报销，或出差前后到岗"],
+                                ["请核实**实际出差人**，以及是否为代他人报销"],
+                                ["比对出差申请的实际出差人、行程单与同行人员"],
+                                [{"factor": "office_swipe_on_offsite_claim", "points": 3}])
+            # D：打卡地点与出差目的城市不一致（地点能识别出城市时才判，否则跳过）
+            if bool(cfg.get("flag_city_mismatch", True)) and dest:
+                for r in day_rows:
+                    seen = city_in(norm_text(r.get("attendance_location")))
+                    if seen and seen != dest and seen not in company_cities:
+                        builder.add("attendance-city-mismatch", "打卡地点与出差目的城市不一致", 2, "weak", [e],
+                                    ("expense_id", "employee_id", "expense_date", "dest_city"),
+                                    ["报销目的城市为「%s」，但当天打卡地点显示在「%s」" % (dest, seen)],
+                                    ["可能行程有变、中转停留，或地点解析偏差"],
+                                    ["是否有中转、改道或多地行程？以行程单为准"],
+                                    ["核对该日行程单与改签/中转记录"],
+                                    [{"factor": "attendance_city_mismatch", "points": 2}])
+                        break
+
+    # C. 出差期间应有打卡却无记录（默认关闭；仅当公司政策如此时打开）
+    if attendance_rows and travel_rows and bool(cfg.get("require_swipe_during_travel", False)):
+        min_swipes = int(cfg.get("min_swipes_per_travel_day", 2) or 2)
+        for emp, ts in trips.items():
+            for start, end, dest in ts:
+                cursor = start
+                while cursor <= end:
+                    if not swipes.get((emp, cursor)):
+                        notes.append("出差期间无打卡：%s %s（政策要求每日≥%d 次）" % (emp, cursor.isoformat(), min_swipes))
+                        break
+                    cursor += timedelta(days=1)
+
+    return notes
 
 
 def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: ResultBuilder,
@@ -1010,6 +1234,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--policy", type=Path)
     parser.add_argument("--field-map", type=Path)
     parser.add_argument("--sheet")
+    # v0.2.9：可选辅助数据，用于出差交叉核验（不提供则完全不启用）
+    parser.add_argument("--travel-requests", type=Path, help="可选：出差申请单（CSV/XLSX）")
+    parser.add_argument("--attendance", type=Path, help="可选：打卡/考勤记录（CSV/XLSX）")
     parser.add_argument("--check-env", action="store_true")
     args = parser.parse_args(argv)
     if args.check_env:
@@ -1046,6 +1273,22 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         warnings.append("已按 status_filter 排除 %d 行（见 excluded_by_status.csv），这些行不参与分析" % len(status_excluded))
     builder = ResultBuilder(input_path.name, source_hash, policy)
     skipped, parameters = run_rules(analyzable, policy, builder, status_excluded=status_excluded)
+
+    # v0.2.9：出差交叉核验（可选）。不提供辅助数据时**一行也不产生**，输出与旧版完全一致。
+    travel_rows: List[Dict[str, Any]] = []
+    attendance_rows: List[Dict[str, Any]] = []
+    if args.travel_requests:
+        travel_rows, _tm = read_aux_table(args.travel_requests.resolve(), TRAVEL_REQUEST_ALIASES, args.sheet)
+        warnings.append("已载入出差申请 %d 条（%s）" % (len(travel_rows), args.travel_requests.name))
+    if args.attendance:
+        attendance_rows, _am = read_aux_table(args.attendance.resolve(), ATTENDANCE_ALIASES, args.sheet)
+        warnings.append("已载入打卡记录 %d 条（%s）" % (len(attendance_rows), args.attendance.name))
+    if travel_rows or attendance_rows:
+        skipped.extend(run_travel_cross_check(analyzable, travel_rows, attendance_rows, policy, builder, {}, {}))
+        if not args.travel_requests:
+            skipped.append("travel_cross_check：未提供 --travel-requests（无法核对「有无出差申请」）")
+        if not args.attendance:
+            skipped.append("travel_cross_check：未提供 --attendance（无法核对打卡）")
     validate(builder.findings, builder.evidence)
 
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
@@ -1143,6 +1386,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         input_files.append({"path": args.policy.name, "sha256": sha256_file(args.policy.resolve())})
     if args.field_map:
         input_files.append({"path": args.field_map.name, "sha256": sha256_file(args.field_map.resolve())})
+    # v0.2.9：可选辅助数据也登记哈希，保证可追溯
+    if args.travel_requests and args.travel_requests.exists():
+        input_files.append({"path": args.travel_requests.name, "sha256": sha256_file(args.travel_requests.resolve()), "role": "travel_requests"})
+    if args.attendance and args.attendance.exists():
+        input_files.append({"path": args.attendance.name, "sha256": sha256_file(args.attendance.resolve()), "role": "attendance"})
     manifest = {
         "run_id": "EXP-%s-%s" % (started.strftime("%Y%m%dT%H%M%SZ"), source_hash[:8]),
         "skill": SKILL, "skill_version": VERSION, "started_at": started.isoformat(), "finished_at": finished.isoformat(),
@@ -1199,6 +1447,9 @@ def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir)
         "cross-period": "费用应计入其发生期间，不应跨期入账。",
         "high-frequency-small-amount": "短期内高频次小额报销需要确认业务真实性。",
         "resubmit-after-rejection-amount-increase": "被撤回/拒绝的申请不应在重提时无理由地提高金额。",
+        "expense-without-travel-request": "差旅报销原则上应有对应的出差申请作为依据。",
+        "office-swipe-on-offsite-claim": "报销称在外地，但本人当天在公司打卡（需确认是否代报销）。",
+        "attendance-city-mismatch": "报销的出差城市应与当天打卡地点所在城市一致。",
     }
 
     def type_zh(ft):

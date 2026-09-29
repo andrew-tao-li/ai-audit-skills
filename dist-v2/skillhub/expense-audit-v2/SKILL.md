@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.8
+version: 0.2.9
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -118,6 +118,50 @@ python3 scripts/run_expense_audit.py \
 > （实测某真实台账 47 条发现中 39 条属此类）。配置后噪声消失，真正值得看的信号（例如**撤回后重提且金额增加**）才会浮出来。
 >
 > **多列金额 / 表头不在第一行 / 发票号为空** 等接入问题，见 [真实台账接入指南](references/field-mapping-guide.md)。
+
+## v0.2.9 出差交叉核验（可选，有料自醒）
+
+报销的真实性，常常要靠**出差申请**和**打卡记录**来印证。提供任一份，本技能就**自动追加**交叉核验：
+
+```bash
+python3 scripts/run_expense_audit.py \
+  --input 报销台账.xlsx \
+  --travel-requests 出差申请.xlsx \   # 可选
+  --attendance 打卡记录.xlsx \         # 可选
+  --policy policy.json --output ./out
+```
+
+| 提供了什么 | 自动启用 |
+|---|---|
+| 只有 `--input` | **与上一版完全一致**（一条新规则也不跑） |
+| `+ --travel-requests` | 「差旅报销无对应出差申请」 |
+| `+ --attendance` | 「报销称外地，但当天有公司打卡」、「打卡地点与出差城市不一致」 |
+| 两者都提供 | 以上全部 |
+
+**「是否在公司」的三层判定**（按可得性从高到低，拿到一层就停）：
+1. **显式布尔**（`是否在公司` / `打卡类型`）——最可靠；
+2. **经纬度 + 半径**（与 `company_locations` 算距离，半径可配，默认 1000 米；支持多办公地）；
+3. **地点文本**（与 `company_location_keywords` 匹配）。
+> 三层都拿不到 → 标「未知」并**跳过**，不猜、不报。
+
+### ⚠️ 口径确认：出差申请能不能替代打卡？
+
+**默认口径：能**（多数公司制度如此——"因出差无法打卡的，以出差申请为准"）。
+**但有的公司要求出差期间也要打卡。** 所以：
+
+> **当用户提供了打卡数据时，请主动确认一句**：
+> 「默认我按『出差申请可以替代打卡』来理解，也就是出差期间没有公司打卡属正常；
+> 如果贵司政策是**出差期间也要求打卡**，请告诉我，我会额外核对出差期间的缺卡。」
+>
+> 用户确认后，把 `travel_cross_check.require_swipe_during_travel` 设为 `true` 即可。
+
+### 措辞红线（务必遵守）
+
+- **「当天有公司打卡」≠「人没出差」**——可能是**代报销**、同事代交、或出差前后到岗。只能说"请核实**实际出差人**"。
+- **「无出差申请」≠「没出差」**——可能没走 OA，或走了线下审批。
+- **「打卡地与出差地不一致」** 只是提示——可能中转、改道或地点解析偏差，由用户判断是否需要介意。
+
+配置字段见 [rule-catalog](references/rule-catalog.md) 与 [真实台账接入指南](references/field-mapping-guide.md)。
 
 ## Output contract
 

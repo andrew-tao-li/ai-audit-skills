@@ -55,3 +55,38 @@
 判定：同一员工 + 同一费用类型 + 同一商户，先有一条被撤回/拒绝的记录，其后 `resubmit_window_days`（默认 90）天内
 又有一条被采纳的记录，且**金额增加**。输出两次提交的金额、间隔天数与状态，供人工核对是「正常修正」还是「先试小额、通过后加码」。
 
+## 出差交叉核验（v0.2.9，可选）
+
+需要 `--travel-requests` / `--attendance` 提供辅助数据（任一份即可），提供后自动启用：
+
+| 规则 | 需要的输入 | 说明 |
+|---|---|---|
+| `expense-without-travel-request` | 出差申请 | 差旅类报销的日期不在该员工任何出差申请区间内（`date_tolerance_days` 容差） |
+| `office-swipe-on-offsite-claim` | 打卡 | 报销称外地，但当天有**公司打卡**（可能是代报销，需核实实际出差人） |
+| `attendance-city-mismatch` | 打卡（+出差申请） | 打卡地点所在城市与报销的出差城市不一致（地点识别不出城市则跳过） |
+| （出差期间缺卡） | 出差申请+打卡+开关 | 仅当 `require_swipe_during_travel: true` 时核对 |
+
+**「是否在公司」三层判定**：① 显式布尔 → ② 经纬度+半径（`company_locations`，默认 1000m）→ ③ 地点文本（`company_location_keywords`）；三层都不成立则标「未知」并跳过。
+
+**「差旅类报销」的认定**：`expense_type` 命中 `travel_types`（默认 差旅/住宿/机票/火车/市内交通/补贴…）**或** `dest_city` 存在且不在 `company_cities` 内。
+
+配置示例：
+
+```json
+{
+  "travel_cross_check": {
+    "company_cities": ["上海"],
+    "company_locations": [{"name": "上海总部", "lat": 31.23, "lon": 121.47, "radius_m": 1000}],
+    "company_location_keywords": ["上海", "总部"],
+    "travel_types": ["差旅", "住宿", "机票", "火车", "市内交通"],
+    "date_tolerance_days": 1,
+    "flag_city_mismatch": true,
+    "require_swipe_during_travel": false,
+    "min_swipes_per_travel_day": 2
+  }
+}
+```
+
+> **默认口径**：出差申请可替代打卡。若公司要求出差期间也打卡，设 `require_swipe_during_travel: true`。
+
+
