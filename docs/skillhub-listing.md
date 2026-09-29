@@ -41,7 +41,7 @@
 |---|---|
 | slug | `andrew-tao-li-expense-audit` |
 | displayName | 费用报销审计 |
-| version | 0.2.7 |
+| version | 0.2.8 |
 | 建议分类 | `行业专业` `财税处理` `风险风控` |
 | tags | 审计、费用审计、报销、发票、差旅、反舞弊、财税处理、风险风控 |
 

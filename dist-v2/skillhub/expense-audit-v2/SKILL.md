@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.7
+version: 0.2.8
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -98,6 +98,27 @@ python3 scripts/run_expense_audit.py \
 | `low_level_approver_keywords` | 审批人字段包含任一关键词 + 大额 → 触发 `large-amount-low-level-approval` | `[]`（不启用） |
 | `as_of_date` | `future-date` 规则的基准日 | 系统当前日期 |
 
+## v0.2.8 新增 policy.json 字段（可选，默认行为不变）
+
+```json
+{
+  "status_filter": { "include": ["已同意"], "exclude": ["已撤回", "已拒绝"] },
+  "resubmit_window_days": 90,
+  "amount_columns": ["机票", "火车", "住宿", "市内交通", "其他"]
+}
+```
+
+| 字段 | 用途 | 默认值 |
+|---|---|---|
+| `status_filter` | 按审批状态过滤：`include` 只分析所列状态；`exclude` 排除。被排除的行**不参与分析**，但会完整写入 `excluded_by_status.csv`（绝不静默丢弃）；状态为空的行一律保留 | 不配置 = **完全不启用**（与旧版行为一致） |
+| `resubmit_window_days` | 「撤回/拒绝后重提且金额增加」的关联窗口（天）；`0` 表示关闭该规则 | `90` |
+| `amount_columns` | 台账金额分散在多列、且没有「小计」列时，把这些列**求和**当作单条金额（仅在该行没有单一金额列时生效） | 不配置 = 不启用 |
+
+> **为什么要有 `status_filter`**：真实台账里「已撤回 / 已拒绝」的记录默认也会参与分析，会让「同员工同日同金额」等规则产生大量假阳性
+> （实测某真实台账 47 条发现中 39 条属此类）。配置后噪声消失，真正值得看的信号（例如**撤回后重提且金额增加**）才会浮出来。
+>
+> **多列金额 / 表头不在第一行 / 发票号为空** 等接入问题，见 [真实台账接入指南](references/field-mapping-guide.md)。
+
 ## Output contract
 
 完整执行应生成：`clean_expenses.csv`、`bad_rows.csv`、`findings.csv`、`findings.jsonl`、`evidence.jsonl`、`summary.md`、`data_quality.md`、`run_manifest.json`。字段和语言边界见 [输出协议](references/output-contract.md)。
@@ -148,6 +169,7 @@ python3 scripts/run_expense_audit.py \
 ## References
 
 - 字段映射与质量门槛：[references/data-contract.md](references/data-contract.md)
+- **真实台账接入（多列金额 / 表头偏移 / 状态列）**：[references/field-mapping-guide.md](references/field-mapping-guide.md)
 - 规则、参数与合理解释：[references/rule-catalog.md](references/rule-catalog.md)
 - 输出 Schema 与 Agent 解读顺序：[references/output-contract.md](references/output-contract.md)
 - 业务实质性声明与深入核查佐证清单：[references/business-substance.md](references/business-substance.md)

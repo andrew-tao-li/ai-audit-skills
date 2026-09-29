@@ -1,12 +1,12 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.7
+version: 0.2.8
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
   predecessor: "expense-audit 0.1.1"
-  changelog: "v0.2.7: 报告改版——第一屏改为「执行摘要」（论点结论+关键指标+风险分布+最需先看的3条+下一步+明细入口），每条发现补「现象/依据/建议/待澄清」并加「按类型汇总」表；反馈说明改为人话（对外解释+红线，webhook 移入 references/feedback.md）；修复 summary 里风险计数恒为 0 的 bug。v0.2.5: 新增 dashboard.html 全景图（自包含、离线、0 外部资源）；description 加边界声明。v0.2.4: 反馈邀请改为确定性产物。v0.2.3: 反馈邀请改为确定性产物（summary.md 段 + stderr 提示 + 交付必呈现）。v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
+  changelog: "v0.2.8: 新增可选的「审批状态过滤」(status_filter)——被排除的行写入 excluded_by_status.csv，绝不静默丢弃；新增规则「撤回/拒绝后重提且金额增加」(仅配置 status_filter 后触发)；新增 amount_columns 多列金额求和；新增 references/field-mapping-guide.md(真实台账接入指南)。以上**全部为可选项**，不配置时与旧版逐字节一致。v0.2.7: 报告改版——第一屏改为「执行摘要」（论点结论+关键指标+风险分布+最需先看的3条+下一步+明细入口），每条发现补「现象/依据/建议/待澄清」并加「按类型汇总」表；反馈说明改为人话（对外解释+红线，webhook 移入 references/feedback.md）；修复 summary 里风险计数恒为 0 的 bug。v0.2.5: 新增 dashboard.html 全景图（自包含、离线、0 外部资源）；description 加边界声明。v0.2.4: 反馈邀请改为确定性产物。v0.2.3: 反馈邀请改为确定性产物（summary.md 段 + stderr 提示 + 交付必呈现）。v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
 ---
 
 # Expense Audit
@@ -92,6 +92,27 @@ python3 scripts/run_expense_audit.py \
 | `large_amount_threshold` | 超过此值的金额 + 强证据时，risk_score 提升至 ≥4 | `5000` |
 | `low_level_approver_keywords` | 审批人字段包含任一关键词 + 大额 → 触发 `large-amount-low-level-approval` | `[]`（不启用） |
 | `as_of_date` | `future-date` 规则的基准日 | 系统当前日期 |
+
+## v0.2.8 新增 policy.json 字段（可选，默认行为不变）
+
+```json
+{
+  "status_filter": { "include": ["已同意"], "exclude": ["已撤回", "已拒绝"] },
+  "resubmit_window_days": 90,
+  "amount_columns": ["机票", "火车", "住宿", "市内交通", "其他"]
+}
+```
+
+| 字段 | 用途 | 默认值 |
+|---|---|---|
+| `status_filter` | 按审批状态过滤：`include` 只分析所列状态；`exclude` 排除。被排除的行**不参与分析**，但会完整写入 `excluded_by_status.csv`（绝不静默丢弃）；状态为空的行一律保留 | 不配置 = **完全不启用**（与旧版行为一致） |
+| `resubmit_window_days` | 「撤回/拒绝后重提且金额增加」的关联窗口（天）；`0` 表示关闭该规则 | `90` |
+| `amount_columns` | 台账金额分散在多列、且没有「小计」列时，把这些列**求和**当作单条金额（仅在该行没有单一金额列时生效） | 不配置 = 不启用 |
+
+> **为什么要有 `status_filter`**：真实台账里「已撤回 / 已拒绝」的记录默认也会参与分析，会让「同员工同日同金额」等规则产生大量假阳性
+> （实测某真实台账 47 条发现中 39 条属此类）。配置后噪声消失，真正值得看的信号（例如**撤回后重提且金额增加**）才会浮出来。
+>
+> **多列金额 / 表头不在第一行 / 发票号为空** 等接入问题，见 [真实台账接入指南](references/field-mapping-guide.md)。
 
 ## Output contract
 
@@ -184,6 +205,7 @@ python3 scripts/run_expense_audit.py \
 ## References
 
 - 字段映射与质量门槛：[references/data-contract.md](references/data-contract.md)
+- **真实台账接入（多列金额 / 表头偏移 / 状态列）**：[references/field-mapping-guide.md](references/field-mapping-guide.md)
 - 规则、参数与合理解释：[references/rule-catalog.md](references/rule-catalog.md)
 - 输出 Schema 与 Agent 解读顺序：[references/output-contract.md](references/output-contract.md)
 - 业务实质性声明与深入核查佐证清单：[references/business-substance.md](references/business-substance.md)

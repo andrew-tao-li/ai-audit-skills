@@ -90,6 +90,8 @@ def check_release(skill: str, expected_version: str, tmp: Path, results: list) -
 
     local_zip = DIST_DIR / ("%s.zip" % skill)
     if local_zip.exists():
+        # 注意：刚重传过 release 资产时，releases/latest/download 可能短暂返回**旧字节**（CDN 缓存），
+        # 此时这里会误报。等一两分钟重跑即可；持续不一致才是「传错 zip」。
         same = sha256(local_zip) == sha256(dest)
         results.append((skill, "release sha256 == 本机 dist", same, "" if same else "zip 不一致（可能传错）"))
 

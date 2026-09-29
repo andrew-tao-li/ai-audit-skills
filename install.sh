@@ -25,27 +25,63 @@ ALL_SKILLS=(expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2 cn-
 PREFIX_EXPLICIT=0
 [ -n "${PREFIX:-}" ] && PREFIX_EXPLICIT=1
 
-# Auto-detect Agent host（OpenCode → WorkBuddy → LobsterAI，找第一个已存在的 skills 目录）
-# 不传 HOST 或传 HOST=auto 走探测；显式传 opencode/workbuddy/lobsterai/<path> 走指定。
+# Doubao（豆包工作）的 workspace 目录（Electron 应用；Windows 用 LOCALAPPDATA，macOS 用 Application Support）。
+# 路径来源：豆包官方帮助中心 + 社区同步仓库实测。
+DOUBAO_WORKSPACE=""
+for d in "${LOCALAPPDATA:-$HOME/AppData/Local}/Doubao/User Data/Default/.doubao/agent_mode/workspace" \
+         "$HOME/Library/Application Support/Doubao/User Data/Default/.doubao/agent_mode/workspace"; do
+    if [ -d "$d" ]; then DOUBAO_WORKSPACE="$d"; break; fi
+done
+# 需要 export：host_dirs 在命令替换的子 shell 中执行，未导出的变量读不到
+export DOUBAO_WORKSPACE
+
+# 各 host 的候选 skills 目录（供探测与「多 host 提示」共用）
+host_dirs() {
+    case "$1" in
+        opencode)  printf '%s\n' "$HOME/.config/opencode/skills" ;;
+        workbuddy) printf '%s\n' "$HOME/.workbuddy/skills" ;;
+        lobsterai) printf '%s\n' "$HOME/Library/Application Support/LobsterAI/SKILLs" "$HOME/.lobsterai/skills" ;;
+        # 豆包：用 workspace 目录是否存在来判断「装了豆包」——.user_skills 可能尚未创建
+        doubao)    [ -n "$DOUBAO_WORKSPACE" ] && printf '%s\n' "$DOUBAO_WORKSPACE" ;;
+    esac
+}
+
+# Auto-detect Agent host（OpenCode → WorkBuddy → LobsterAI → Doubao，找第一个已存在的 skills 目录）
+# 注意：Doubao 追加在**最后**，因此不会改变任何既有平台的探测结果。
+# 不传 HOST 或传 HOST=auto 走探测；显式传 opencode/workbuddy/lobsterai/doubao/<path> 走指定。
 if [ -z "$HOST" ] || [ "$HOST" = "auto" ]; then
     detected=""
-    for h in opencode workbuddy lobsterai; do
-        case "$h" in
-            opencode)   dirs=("$HOME/.config/opencode/skills") ;;
-            workbuddy)  dirs=("$HOME/.workbuddy/skills") ;;
-            # LobsterAI 的 macOS 真实路径在 Library/Application Support 下（SKILLs 大写）；保留 ~/.lobsterai/skills 作兜底
-            lobsterai)  dirs=("$HOME/Library/Application Support/LobsterAI/SKILLs" "$HOME/.lobsterai/skills") ;;
-        esac
-        for d in "${dirs[@]}"; do
-            if [ -d "$d" ]; then detected="$h"; break 2; fi
-        done
+    found_list=""
+    for h in opencode workbuddy lobsterai doubao; do
+        while IFS= read -r d; do
+            [ -n "$d" ] || continue
+            if [ -d "$d" ]; then
+                found_list="$found_list $h"
+                [ -z "$detected" ] && detected="$h"
+            fi
+        done <<EOF
+$(host_dirs "$h")
+EOF
     done
     HOST="${detected:-opencode}"
+    # 机器上同时存在多个 Agent 目录时给出提示（不改变结果，只让人知道还能装到别处）
+    _n=$(printf '%s' "$found_list" | wc -w | tr -d ' ')
+    if [ "$_n" -gt 1 ]; then
+        echo "ℹ 检测到多个 Agent 目录：${found_list# }。已按优先级装到 ${HOST}；如需装到别的，加 HOST=<名称> 或 PREFIX=<路径>。" >&2
+    fi
 fi
 case "$HOST" in
     opencode)   PREFIX="${PREFIX:-$HOME/.config/opencode/skills}" ;;
     workbuddy)  PREFIX="${PREFIX:-$HOME/.workbuddy/skills}" ;;
     lobsterai)  PREFIX="${PREFIX:-$HOME/Library/Application Support/LobsterAI/SKILLs}" ;;
+    doubao)
+        if [ -n "$DOUBAO_WORKSPACE" ]; then
+            PREFIX="${PREFIX:-$DOUBAO_WORKSPACE/.user_skills}"
+        else
+            echo "⚠ 未找到豆包数据目录（Doubao/User Data/Default/.doubao/agent_mode/workspace）。请用 PREFIX=<豆包技能目录> 指定。" >&2
+            PREFIX="${PREFIX:-$HOME/.doubao/skills}"
+        fi
+        ;;
     *)          PREFIX="${PREFIX:-$HOST}" ;;
 esac
 # 头部标签：显式 PREFIX 时显示 custom，否则显示探测到的 host

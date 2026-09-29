@@ -98,5 +98,52 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
                 temp.cleanup()
 
 
+    def test_status_filter_and_resubmit_rule_are_opt_in(self):
+        """v0.2.8：状态过滤与新规则必须「默认不影响旧行为，配置后才生效」。"""
+        csv_text = (
+            "单据号,工号,费用类型,发生日期,提交日期,金额,商户,审批状态\n"
+            "E1,EMP1,差旅,2025-03-01,2025-03-02,500,酒店A,已撤回\n"
+            "E2,EMP1,差旅,2025-03-01,2025-03-05,800,酒店A,已同意\n"
+            "E3,EMP2,餐饮,2025-03-03,2025-03-03,200,餐厅B,已同意\n"
+            "E4,EMP2,餐饮,2025-03-03,2025-03-03,200,餐厅B,已撤回\n"
+        )
+
+        def run(data, policy=None, out=None):
+            cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)]
+            if policy:
+                cmd += ["--policy", str(policy)]
+            completed = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            return [json.loads(l)["finding_type"]
+                    for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td) / "expenses.csv"
+            data.write_text(csv_text, encoding="utf-8")
+
+            # ① 不配置 status_filter（= 旧行为）：撤回行照样参与 → 出现假重复，且没有新规则
+            naive = Path(td) / "naive"
+            types = run(data, None, naive)
+            self.assertIn("exact-duplicate-employee-date-amount", types)
+            self.assertNotIn("resubmit-after-rejection-amount-increase", types)
+            self.assertFalse((naive / "excluded_by_status.csv").exists())
+
+            # ② 配置 status_filter：假重复消失，新规则出现，被排除行单独落盘（不静默丢弃）
+            policy = Path(td) / "policy.json"
+            policy.write_text(json.dumps({"policy_version": "T", "default_currency": "CNY",
+                                          "status_filter": {"include": ["已同意"]}}), encoding="utf-8")
+            filtered = Path(td) / "filtered"
+            types = run(data, policy, filtered)
+            self.assertNotIn("exact-duplicate-employee-date-amount", types)
+            self.assertIn("resubmit-after-rejection-amount-increase", types)
+            self.assertIn("已撤回", (filtered / "excluded_by_status.csv").read_text(encoding="utf-8"))
+
+            # ③ 反例：撤回后重提但金额未增加 → 不应触发新规则
+            data2 = Path(td) / "no_increase.csv"
+            data2.write_text(csv_text.replace(",2025-03-05,800,", ",2025-03-05,500,"), encoding="utf-8")
+            types = run(data2, policy, Path(td) / "out2")
+            self.assertNotIn("resubmit-after-rejection-amount-increase", types)
+
+
 if __name__ == "__main__":
     unittest.main()

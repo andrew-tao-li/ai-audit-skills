@@ -20,6 +20,17 @@
   - 上架命令（认证完成后）：`skillhub login --key skh_xxx --host https://api.skillhub.cn` → `skillhub publish dist-v2/skillhub/<skill> --dry-run` → 去 `--dry-run` 正式发。
   - **LICENSE 不一致已了结**（2026-09-28）：许可范围**明确划分**——各 skill = **MIT-0**（manifest + SkillHub frontmatter），仓库脚手架 = **Apache-2.0**（根 `LICENSE`）；中英文 README 均已写明，不再标"待统一"。理由：两者实质差异对本项目≈0（无专利/NOTICE），明确划分即可消除法务 review 的歧义。
 
+- **真实审计师反馈驱动的改进（2026-09-29，已完成 v0.3.7）**：一位真实审计师用**真实差旅台账**（155 有效行、3 人）实测 expense-audit-v2，报告见对话记录。核心发现与处理：
+  - 🔴 **最严重**：真实台账带「审批状态」列（已同意/已撤回/已拒绝），而脚本没有状态概念 → **47 条发现里 39 条（83%）是"撤回后又重提"造成的假阳性**。→ **已修（v0.2.8）**：新增可选 `status_filter`；被排除行写入 `excluded_by_status.csv`（绝不静默丢弃）。
+  - 🟠 **附带红利**：有状态后可做新规则 → **「撤回/拒绝后重提且金额增加」**（报告里真发现 1 例 +¥2,400）→ **已做**。
+  - 🟠 **装入错平台**：`install.sh` 只认 opencode/workbuddy/lobsterai，豆包被回退成 opencode → **已修**：新增豆包支持（`Doubao/User Data/Default/.doubao/agent_mode/workspace/.user_skills`，Win=`%LOCALAPPDATA%` / mac=`Application Support`），**追加在探测顺序最后，不影响任何既有平台**；多 Agent 并存时给提示。
+  - 🟠 **多列金额要手工预处理** → **已做**：`amount_columns` 多列求和 + 新增 `references/field-mapping-guide.md`（含"表头不在第一行"这一已知边界）。
+  - ⚪ 附件名 `&amp;` → 判定为对方下载工具问题，非本工具缺陷。
+  **仍未做（P2，需单独立项）**：
+  1. **代报销**（区别"报销人"与"实际出差人"）——报告里 81/78 条交叉验证发现都指向它；
+  2. **交叉验证**（报销 × 出差申请 × 打卡）——报告里真正的大鱼在这里，但需三表 join，**建议单开一个 skill**（塞进单表的 expense 会把它撑变形）；
+  3. 表头不在第一行（`--header-row`）——目前靠预处理，未做配置项。
+
 - **L2 反馈/评分机制**（已出设计，暂缓，2026-09-23）：让作者收到技能在别人 Agent 上的使用反馈。暂缓原因：① 现在用户太少、反馈稀疏；② 平台适配不确定，现在做可能牺牲稳健性。
   设计要点（已定，下次可直接开工）：
   - 核心原则：离线脚本一行不动、绝不自动上报；反馈是「旁路」，完全可选、默认关。

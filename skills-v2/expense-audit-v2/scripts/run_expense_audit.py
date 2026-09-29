@@ -17,7 +17,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.7"
+VERSION = "0.2.8"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -29,6 +29,7 @@ FINDING_TYPE_ZH = {
     "future-date": "未来日期", "missing-expense-type": "缺费用类型", "sequential-invoice": "发票连号",
     "invoice-format-anomaly": "发票格式异常", "large-amount-low-level-approval": "大额低层级审批",
     "space-time-conflict": "时空冲突", "cross-period": "跨期入账", "high-frequency-small-amount": "高频小额",
+    "resubmit-after-rejection-amount-increase": "撤回/拒绝后重提且金额增加",  # v0.2.8
 }
 PRIORITY_ZH = {"critical": "严重", "high": "高", "medium": "中", "low": "低"}
 STRENGTH_ZH = {"strong": "强", "moderate": "中", "weak": "弱"}
@@ -51,6 +52,8 @@ ALIASES = {
     "business_purpose": ["business_purpose", "purpose", "description", "事由", "用途", "业务目的"],
     "origin_city": ["origin_city", "from_city", "departure_city", "出发城市", "出发地"],
     "dest_city": ["dest_city", "destination_city", "to_city", "arrival_city", "目的城市", "目的地", "到达城市"],
+    # v0.2.8：审批/单据状态（真实台账几乎都有；不配置 status_filter 时完全不影响分析）
+    "status": ["status", "approval_status", "approval_state", "state", "状态", "审批状态", "单据状态", "报销状态", "流程状态", "审批结果"],
 }
 CORE_FIELDS = ("expense_id", "employee_id", "amount", "expense_date")
 OUTPUT_FIELDS = tuple(ALIASES.keys())
@@ -159,6 +162,10 @@ POLICY_KEYS = frozenset({
     "as_of_date",  # v0.2.0: future-date 基准日
     "cross_period_months",  # v0.2.1: 跨期入账阈值（月）
     "high_frequency_window_days", "high_frequency_min_count", "high_frequency_max_amount",  # v0.2.1: 高频小额
+    # v0.2.8 新增（**全部可选**；不配置 = 与旧版行为完全一致）
+    "status_filter",          # 只分析/排除指定审批状态：{"include": [...], "exclude": [...]}
+    "resubmit_window_days",   # 「撤回/拒绝后重提且金额增加」的关联窗口（天），默认 90
+    "amount_columns",         # 多列金额求和（台账没有单一金额列、金额分散在多列时使用）
 })
 
 
@@ -188,7 +195,7 @@ def load_json(path: Optional[Path]) -> Dict[str, Any]:
     return value
 
 
-def resolve_mapping(headers: Sequence[str], explicit: Dict[str, Any]) -> Tuple[Dict[str, str], List[str]]:
+def resolve_mapping(headers: Sequence[str], explicit: Dict[str, Any], allow_missing_amount: bool = False) -> Tuple[Dict[str, str], List[str]]:
     by_normalized = defaultdict(list)
     for header in headers:
         by_normalized[norm_header(header)].append(header)
@@ -210,13 +217,17 @@ def resolve_mapping(headers: Sequence[str], explicit: Dict[str, Any]) -> Tuple[D
         elif len(matches) > 1:
             warnings.append("字段 %s 存在多个候选：%s" % (canonical, ", ".join(matches)))
     missing = [field for field in CORE_FIELDS if field not in mapping]
+    # v0.2.8：若配置了 amount_columns（多列金额求和），则允许没有单一 amount 列
+    if allow_missing_amount:
+        missing = [field for field in missing if field != "amount"]
     if missing:
         raise ValueError("缺少核心字段映射：%s。请使用 --field-map 提供明确映射" % ", ".join(missing))
     return mapping, warnings
 
 
 def normalize_rows(
-    source_rows: Sequence[Dict[str, Any]], mapping: Dict[str, str], default_currency: str
+    source_rows: Sequence[Dict[str, Any]], mapping: Dict[str, str], default_currency: str,
+    amount_columns: Optional[Sequence[str]] = None,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, int]]:
     clean: List[Dict[str, Any]] = []
     bad: List[Dict[str, Any]] = []
@@ -229,6 +240,16 @@ def normalize_rows(
             row[canonical] = normalized
             if normalized != ("" if raw is None else str(raw).strip()):
                 changes["trimmed_or_normalized_text_values"] += 1
+        # v0.2.8：多列金额求和——仅当配置了 amount_columns 且该行没有单一金额列时生效
+        if amount_columns and not norm_text(row.get("amount")):
+            _total, _found = 0.0, False
+            for _col in amount_columns:
+                _v = parse_amount(source.get(_col))
+                if _v is not None and math.isfinite(_v):
+                    _total += _v
+                    _found = True
+            if _found:
+                row["amount"] = repr(round(_total, 6))
         amount = parse_amount(row["amount"])
         expense_date = parse_date(row["expense_date"])
         reasons = []
@@ -384,7 +405,90 @@ def _adjust_priority_by_amount(score: int, strength: str, amount: Optional[float
     return score
 
 
-def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: ResultBuilder) -> Tuple[List[str], Dict[str, Any]]:
+def apply_status_filter(rows: List[Dict[str, Any]], policy: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """v0.2.8：按审批状态筛选（**可选**）。
+
+    - 不配置 `status_filter` → 原样返回，与旧版行为完全一致。
+    - 配置后：不符合条件的行不参与分析，但会单独输出到 `excluded_by_status.csv`，
+      **绝不静默丢弃**；状态为空的行一律保留（不猜、不藏）。
+    """
+    cfg = policy.get("status_filter")
+    if not isinstance(cfg, dict):
+        return rows, []
+    include = {norm_text(x).lower() for x in (cfg.get("include") or []) if norm_text(x)}
+    exclude = {norm_text(x).lower() for x in (cfg.get("exclude") or []) if norm_text(x)}
+    if not include and not exclude:
+        return rows, []
+    kept: List[Dict[str, Any]] = []
+    dropped: List[Dict[str, Any]] = []
+    for row in rows:
+        status = norm_text(row.get("status")).lower()
+        if not status:                      # 状态未知 → 保留，不因缺字段而被排除
+            kept.append(row)
+        elif include:
+            (kept if status in include else dropped).append(row)
+        elif status in exclude:
+            dropped.append(row)
+        else:
+            kept.append(row)
+    return kept, dropped
+
+
+def _rule_resubmit_after_rejection(rows, excluded, policy, builder) -> None:
+    """v0.2.8：同一员工 + 同一费用类型 + 同一商户——先被撤回/拒绝，之后重提且金额增加。
+
+    只在配置了 `status_filter` 且存在被排除行时触发；`resubmit_window_days: 0` 可关闭。
+    """
+    window = policy.get("resubmit_window_days", 90)
+    try:
+        window = int(window)
+    except (TypeError, ValueError):
+        window = 90
+    if window <= 0 or not excluded:
+        return
+
+    def _day(row):
+        value = row.get("expense_date") or row.get("submit_date")
+        try:
+            from datetime import date as _date
+            return _date.fromisoformat(str(value)[:10])
+        except (TypeError, ValueError):
+            return None
+
+    approved: Dict[Any, List[Dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        approved[(row.get("employee_id"), row.get("expense_type"), row.get("vendor_name"))].append(row)
+
+    for rejected in excluded:
+        key = (rejected.get("employee_id"), rejected.get("expense_type"), rejected.get("vendor_name"))
+        r_amount, r_day = rejected.get("amount"), _day(rejected)
+        if not isinstance(r_amount, (int, float)) or r_day is None:
+            continue
+        for later in approved.get(key, []):
+            l_amount, l_day = later.get("amount"), _day(later)
+            if not isinstance(l_amount, (int, float)) or l_day is None:
+                continue
+            if l_amount <= r_amount:
+                continue
+            if abs((l_day - r_day).days) > window:
+                continue
+            builder.add(
+                "resubmit-after-rejection-amount-increase",
+                "撤回/拒绝后重提，且金额增加", 3, "moderate",
+                [rejected, later],
+                ("expense_id", "employee_id", "expense_type", "vendor_name", "amount", "status"),
+                ["同一员工、同一费用类型、同一商户：先有 1 条「%s」记录（%.2f），%d 天后又有 1 条「%s」记录（%.2f），金额增加 %.2f"
+                 % (rejected.get("status") or "被拒/撤回", r_amount, abs((l_day - r_day).days),
+                    later.get("status") or "通过", l_amount, l_amount - r_amount)],
+                ["可能是修正后重提（正常），也可能是先试小额、通过后再加码"],
+                ["核对两次提交的原始凭证与审批意见，确认金额变化的业务原因"],
+                ["调取该申请单的完整审批历史与附件"],
+                [{"factor": "resubmit_after_rejection_amount_increase", "points": 3}],
+            )
+
+
+def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: ResultBuilder,
+              status_excluded: Optional[List[Dict[str, Any]]] = None) -> Tuple[List[str], Dict[str, Any]]:
     skipped: List[str] = []
     exact_pairs = set()
     for group in group_records(rows, ("employee_id", "invoice_number", "currency", "amount"), ("invoice_number",)):
@@ -855,6 +959,9 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     else:
         skipped.append("high-frequency-small-amount：high_frequency_min_count ≤ 1 已禁用")
 
+    # v0.2.8：撤回/拒绝后重提且金额增加（仅在配置了 status_filter 时才有数据可判，默认不影响）
+    _rule_resubmit_after_rejection(rows, status_excluded or [], policy, builder)
+
     return skipped, {
         "near_duplicate_window_days": near_days,
         "near_duplicate_amount_tolerance": near_tolerance,
@@ -929,16 +1036,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         validate_policy(policy)
     explicit_map = load_json(args.field_map.resolve() if args.field_map else None)
     headers, source_rows, sheet = read_table(input_path, args.sheet)
-    mapping, warnings = resolve_mapping(headers, explicit_map)
+    mapping, warnings = resolve_mapping(headers, explicit_map, allow_missing_amount=bool(policy.get("amount_columns")))
     if not policy.get("default_currency"):
         warnings.append("未配置 default_currency，缺失币种按 CNY 处理")
-    clean, bad, changes = normalize_rows(source_rows, mapping, str(policy.get("default_currency", "CNY")))
+    clean, bad, changes = normalize_rows(source_rows, mapping, str(policy.get("default_currency", "CNY")), policy.get("amount_columns"))
+    # v0.2.8：按审批状态筛选（可选；不配置 status_filter 时与旧版行为完全一致）
+    analyzable, status_excluded = apply_status_filter(clean, policy)
+    if status_excluded:
+        warnings.append("已按 status_filter 排除 %d 行（见 excluded_by_status.csv），这些行不参与分析" % len(status_excluded))
     builder = ResultBuilder(input_path.name, source_hash, policy)
-    skipped, parameters = run_rules(clean, policy, builder)
+    skipped, parameters = run_rules(analyzable, policy, builder, status_excluded=status_excluded)
     validate(builder.findings, builder.evidence)
 
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
     write_csv(output / "bad_rows.csv", bad, ("source_row", "reasons", "raw_record"))
+    if status_excluded:
+        write_csv(output / "excluded_by_status.csv",
+                  [{"source_row": r.get("_source_row"), "expense_id": r.get("expense_id"),
+                    "employee_id": r.get("employee_id"), "status": r.get("status"),
+                    "amount": r.get("amount"), "expense_date": r.get("expense_date")} for r in status_excluded],
+                  ("source_row", "expense_id", "employee_id", "status", "amount", "expense_date"))
     flat = []
     for finding in builder.findings:
         flat.append({
@@ -963,9 +1080,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "- 源文件：`%s`" % input_path.name,
         "- 工作表：`%s`" % (sheet or "CSV"), "- 源数据行数：%d" % len(source_rows),
         "- 有效行数：%d" % len(clean), "- Bad rows：%d" % len(bad),
+        "- 参与分析行数：%d" % len(analyzable),
+    ]
+    if status_excluded:
+        quality.append("- 按 status_filter 排除：%d 行（见 excluded_by_status.csv，不参与分析）" % len(status_excluded))
+    quality.extend([
         "- 字段映射：`%s`" % json.dumps(mapping, ensure_ascii=False),
         "- 标准化计数：`%s`" % json.dumps(changes, ensure_ascii=False), "", "## 源字段空值率", "",
-    ]
+    ])
     quality.extend("- `%s`: %.2f%%" % (field, rate * 100) for field, rate in null_rates.items())
     if warnings or skipped:
         quality.extend(["", "## 警告与跳过规则", ""] + ["- " + item for item in warnings + skipped])
@@ -1027,7 +1149,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "input_files": input_files, "parameters": parameters, "field_mapping": mapping,
         "scripts": {script_path.name: "sha256:" + sha256_file(script_path)},
         "warnings": warnings, "skipped_rules": skipped, "network_access": False,
-        "outputs": ["clean_expenses.csv", "bad_rows.csv", "findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", "dashboard.html"],
+        "outputs": ["clean_expenses.csv", "bad_rows.csv"]
+        + (["excluded_by_status.csv"] if status_excluded else [])
+        + ["findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", "dashboard.html"],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -1074,6 +1198,7 @@ def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir)
         "space-time-conflict": "同一人在同一时间不应出现在两地；同日多笔行程需能衔接。",
         "cross-period": "费用应计入其发生期间，不应跨期入账。",
         "high-frequency-small-amount": "短期内高频次小额报销需要确认业务真实性。",
+        "resubmit-after-rejection-amount-increase": "被撤回/拒绝的申请不应在重提时无理由地提高金额。",
     }
 
     def type_zh(ft):
