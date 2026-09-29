@@ -1,7 +1,7 @@
 ---
 name: investigation-assistant-v2
 description: "在授权、人员、期间和数据来源已明确后，把举报、投诉、邮件、消息和日志整理为可追溯调查工作空间，包括证据清单与哈希、只读副本、时间线、关系、证据矩阵、反证、假设登记、访谈计划和保管链。必须先取得显式授权（authorization_confirmed=true）、明确范围（persons_in_scope/date_range/allowed_sources）和禁用联网（network_access=false）。Use when the user asks to organize an authorized internal investigation; mentions chain-of-custody, custody log, SHA-256 integrity check, scope filter, out-of-scope exclusion, entity index, evidence matrix, hypothesis register, interview plan, case memo, authorized whistleblower case files, or timezone-aware timeline. Do not use for initial expense/procurement screening, covert collection, secret monitoring, private chat scraping, social media lookups, contacting subjects directly, deleting evidence, expunging records, or automatic discipline/guilt decisions."
-version: 0.2.4
+version: 0.2.5
 slug: andrew-tao-li-investigation-assistant
 displayName: 授权内调查材料整理
 summary: 在已获授权、范围明确的前提下，把举报、邮件、消息与日志整理为可追溯调查工作空间：证据清单与哈希、时间线、证据矩阵、反证、访谈计划。不做责任认定。

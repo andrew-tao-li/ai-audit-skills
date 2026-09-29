@@ -1,12 +1,12 @@
 ---
 name: procurement-fraud-v2
 description: "对供应商主数据、采购订单、付款、员工和投标文本执行采购舞弊红旗筛查，识别共享属性（银行账号/电话/地址/邮箱/法人）、员工—供应商关联、peer-group 价格离群、拆单、流程时序倒置、采购员集中度、投标文本余弦相似度、报价子簇异常、新成立供应商接大单、超额付款、付款早于下单、收货早于审批。Use when the user asks to screen procurement CSV/XLSX data, vendor master, purchase orders, payments, bid text, or mentions shared accounts, split orders, three-way match, approval timing, red flags, collusion indicators, new vendor with large order, overpayment, or asks for findings.jsonl/relationship_graph.json/investigation_handoff.json. Do not use for employee expense claims, draft policies, write contracts, vendor onboarding/offboarding, automatic blacklisting, payment freezes, final collusion/corruption/guilt decisions, vendor email drafting, internet lookups, or summarization."
-version: 0.2.4
+version: 0.2.5
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
   predecessor: "procurement-fraud 0.1.1"
-  changelog: "v0.2.4: 报告改版——第一屏执行摘要（论点+调查移交建议+关键指标+风险分布+Top3+明细入口），发现补「现象/依据/建议/待澄清」与按类型汇总；反馈说明改为人话（webhook 移入 references/feedback.md）；summary 增加反馈邀请。v0.2.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展（多别名）/ 流程方向可配置（forward/either/strict）/ 同日审批豁免 / bid-price-pattern 子簇检测 / 新成立供应商接大单（默认阈值 20000）/ 超额付款 / 付款早于下单 / 收货早于审批（独立规则）/ split-order 月度去重（防订阅型重复告警）/ SKILL.md 必查项清单 / 四层标记"
+  changelog: "v0.2.5: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.4: 报告改版——第一屏执行摘要（论点+调查移交建议+关键指标+风险分布+Top3+明细入口），发现补「现象/依据/建议/待澄清」与按类型汇总；反馈说明改为人话（webhook 移入 references/feedback.md）；summary 增加反馈邀请。v0.2.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展（多别名）/ 流程方向可配置（forward/either/strict）/ 同日审批豁免 / bid-price-pattern 子簇检测 / 新成立供应商接大单（默认阈值 20000）/ 超额付款 / 付款早于下单 / 收货早于审批（独立规则）/ split-order 月度去重（防订阅型重复告警）/ SKILL.md 必查项清单 / 四层标记"
 ---
 
 # Procurement Fraud Red-Flag Detection

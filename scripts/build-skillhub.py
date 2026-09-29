@@ -34,6 +34,7 @@ OUT_ROOT = ROOT / "dist-v2" / "skillhub"
 SKILLS = {
     "expense-audit-v2": {
         "slug": "andrew-tao-li-expense-audit",
+        "category": "professional", "sub_categories": ["pro-tax-accounting", "pro-risk-control"],
         "display_name": "费用报销审计",
         "summary": ("扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、"
                     "发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。"),
@@ -41,6 +42,7 @@ SKILLS = {
     },
     "procurement-fraud-v2": {
         "slug": "andrew-tao-li-procurement-fraud",
+        "category": "professional", "sub_categories": ["pro-risk-control", "pro-tax-accounting"],
         "display_name": "采购舞弊红旗筛查",
         "summary": ("对供应商主数据、采购订单、付款、员工与投标文本做舞弊红旗筛查：共享账户、价格离群、"
                     "拆单、流程倒置、投标文本雷同等。仅输出复核线索，不做舞弊认定。"),
@@ -48,6 +50,7 @@ SKILLS = {
     },
     "investigation-assistant-v2": {
         "slug": "andrew-tao-li-investigation-assistant",
+        "category": "professional", "sub_categories": ["pro-legal", "pro-risk-control"],
         "display_name": "授权内调查材料整理",
         "summary": ("在已获授权、范围明确的前提下，把举报、邮件、消息与日志整理为可追溯调查工作空间："
                     "证据清单与哈希、时间线、证据矩阵、反证、访谈计划。不做责任认定。"),
@@ -55,6 +58,7 @@ SKILLS = {
     },
     "cn-entity-relation-check": {
         "slug": "andrew-tao-li-cn-entity-relation",
+        "category": "professional", "sub_categories": ["pro-legal", "pro-risk-control"],
         "display_name": "中国工商关联排查",
         "summary": ("核查两个主体（公司/自然人）在中国公开工商信息中是否存在可验证关联，"
                     "输出「关联 / 不关联 / 待核查」三态结论。公开关系 ≠ 真实利益关联。"),

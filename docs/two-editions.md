@@ -59,10 +59,17 @@ python3 scripts/build-skillhub.py --verify-only
 # 官方 CLI 本地预检（不发布、不需要登录）
 ~/.local/bin/skillhub publish dist-v2/skillhub/expense-audit-v2 --dry-run
 
-# 上架（实名认证 + 创建 API key 后；先 dry-run 再正式发）
-skillhub login --key skh_xxx --host https://api.skillhub.cn
-skillhub publish dist-v2/skillhub/expense-audit-v2 --changelog "首次发布"
+# ★ 正式发布：用本仓库的发布器（**带分类**，官方 CLI 不带）
+python3 scripts/publish-skillhub.py --dry-run      # 看 payload
+python3 scripts/publish-skillhub.py                # 发全部 4 个（含自动限频 70s）
+python3 scripts/publish-skillhub.py expense-audit-v2   # 只发一个
 ```
+
+> **为什么不用官方 CLI 发布**：官方 `skillhub publish` 的 payload 里**没有** `category` / `subCategories`
+> 字段，发出来的 skill 永远是「未分类」——而分类决定它能否出现在**分类浏览**里。
+> `scripts/publish-skillhub.py` 照官方 multipart 契约自己发，额外带上分类
+> （分类配置的单一来源是 `scripts/build-skillhub.py` 的 `SKILLS`）。
+> **实测（2026-09-29）：服务端接受这两个字段，且分类立即生效**（新版本号仍需审核）。
 
 **已验证（2026-09-28 首次，之后每次改 skill 都会重跑）**：官方 CLI `skillhub 2026.8.5`
 （`--cli-only --no-self-upgrade`，装到 `~/.skillhub` + `~/.local/bin/skillhub`，未改 `.zshrc`），

@@ -19,7 +19,17 @@
   - 发布命令：`skillhub publish dist-v2/skillhub/<skill> --changelog "..."`（注意**限频**：连续发 4 个会撞 429，需间隔约 1 分钟）
   - 审核通过后可用：`skillhub comment list <slug>`（用户评论）、`skillhub skill evaluation <slug>`（**平台 AI 五维评估报告**）、
     `skillhub skill reports <slug>`（科恩+云鼎安全报告）、`skillhub skill rankings`（下载/安装/收藏/排名）
-  - **下一步**：审核通过后，把上述数据接进每日企业微信日报（这是**真实使用数据**的主渠道）
+  - **已接入每日日报**（2026-09-29）：`evolution/skillhub_stats.py` + `evolve.sh` Step 6b——
+    下载/安装/收藏/评论 + GitHub star/issue，带**增量**（↑安装 3、💬新评论 1）；只读、失败不中断。
+  - **分类（2026-09-29 实测）**：
+    - 官方 CLI 的 publish payload **没有** `category` / `subCategories` → CLI 发出来永远「未分类」，而分类决定能否进**分类浏览**。
+    - **但服务端接受这两个字段**（实测 HTTP 201，且分类**立即生效**，新版本号仍需审核）→
+      新增 `scripts/publish-skillhub.py`（照官方 multipart 契约自己发 + 带分类 + 自动限频 70s）；
+      分类的单一来源是 `scripts/build-skillhub.py` 的 `SKILLS`。
+    - 网页端也能改（个人中心 → 我的 Skill → 编辑），但会触发内容重审。
+    - 四个 skill 现已全部设为 `professional`（行业专业）+ 对应子类。
+  - **版本对齐**：为了让 SkillHub 版与 canonical 一致，发了 **v0.3.9**（纯版本号 + 发布器，**脚本零变化**）。
+  - **下一步**：等审核通过（3–7 个工作日），届时日报里的数字开始动
   - 平台要求 SKILL.md frontmatter 含 `slug/displayName/version/summary/license`（与我们的 `name/description/metadata` 不同）。
   - 三线安全审核：**内容合规 + 科恩实验室漏洞扫描 + 云鼎 AI 模型安全评估**，3–7 工作日；任一不过即拒。
   - 我们 canonical 里有两处**会被安全审核盯上**（对 GitHub 分发合理，但不能直接上传）：
