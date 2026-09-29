@@ -10,7 +10,16 @@
 
 - **ClawHub 上架**（已调研完毕，暂缓，2026-09-22）：`clawhub` CLI 已装（v0.23.3）、license 已改 MIT-0、SKILL.md frontmatter（version/author）已就绪。剩两件事待用户：① 跑 `clawhub login`（设备流）或给 API token；② ~~决定仓库根 `LICENSE` 是否也改 MIT-0~~ → **已决（2026-09-28）：仓库根保持 Apache-2.0，与 skill 的 MIT-0 通过 README 明确划分范围，不再统一**。发布命令已备好（见 install.md 或 `clawhub skill publish ./skills-v2/<skill> --slug ... --version 0.2.0`）。
 
-- **SkillHub.cn 上架**（净化版已就绪，2026-09-27）：**等用户实名认证**（手机验证码 + 腾讯云人脸核身）。
+- **SkillHub.cn 上架**（✅ **已提交，2026-09-29，审核中**）：
+  - 命名空间：`@indiv-ai-audit`（用户已设，7 天可改一次；**改名会让原坐标/@名称/Slug 立即失效**，慎改）
+  - 4 个 skill 已发布（skillId `256491`–`256494`），状态 **pending review**（3–7 个工作日）：
+    `andrew-tao-li-expense-audit@0.2.9` / `-procurement-fraud@0.2.4` / `-investigation-assistant@0.2.4` / `-cn-entity-relation@0.1.4`
+  - **slug 是全网唯一的**（不是命名空间内唯一）：`expense-audit` 已被 `@clawhub_mohitagw15856` 与 `@org-0ll53pt7` 占用，
+    故保留 `andrew-tao-li-` 前缀——**这是必要的，不是冗余**（平台文档也建议 slug 带上作者标识）
+  - 发布命令：`skillhub publish dist-v2/skillhub/<skill> --changelog "..."`（注意**限频**：连续发 4 个会撞 429，需间隔约 1 分钟）
+  - 审核通过后可用：`skillhub comment list <slug>`（用户评论）、`skillhub skill evaluation <slug>`（**平台 AI 五维评估报告**）、
+    `skillhub skill reports <slug>`（科恩+云鼎安全报告）、`skillhub skill rankings`（下载/安装/收藏/排名）
+  - **下一步**：审核通过后，把上述数据接进每日企业微信日报（这是**真实使用数据**的主渠道）
   - 平台要求 SKILL.md frontmatter 含 `slug/displayName/version/summary/license`（与我们的 `name/description/metadata` 不同）。
   - 三线安全审核：**内容合规 + 科恩实验室漏洞扫描 + 云鼎 AI 模型安全评估**，3–7 工作日；任一不过即拒。
   - 我们 canonical 里有两处**会被安全审核盯上**（对 GitHub 分发合理，但不能直接上传）：
