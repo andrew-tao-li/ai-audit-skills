@@ -6,6 +6,7 @@
 openclaw skills install ./skills-v2/expense-audit-v2 --as expense-audit-v2
 openclaw skills install ./skills-v2/procurement-fraud-v2 --as procurement-fraud-v2
 openclaw skills install ./skills-v2/investigation-assistant-v2 --as investigation-assistant-v2
+openclaw skills install ./skills-v2/cn-entity-relation-check --as cn-entity-relation-check
 ```
 
 也可放在 `<workspace>/skills/` 或 `<workspace>/.agents/skills/`；工作区 `skills/` 的优先级更高。Canonical skill 没有 OpenClaw 私有 gating，因此不需要适配副本。
