@@ -17,6 +17,11 @@
 4. **公众号定稿发文** —— `docs/wechat-article.md` 已就绪，4 个标题候选待选
 5. **找 1–2 位真实审计师试用** —— Layer 3 的真正起点
 
+### 🆕 待开发新技能（方向已定，**等用户说开工**）
+**`audit-sql-builder`（审计取数 SQL 生成器）** —— 场景："只知道业务系统名 → 拿到能分析的数据"。
+把审计需求翻译成 SQL，解决"系统 old、数据取不出来"这一环；取完直接喂给 `expense-audit-v2`。
+**完整设计已落成文档：[`docs/PLAN-audit-sql-builder.md`](docs/PLAN-audit-sql-builder.md)（下次直接从「设计」一节开工）**
+
 ### 🟢 AI 可自动做（已在做 / 待做）
 6. **ClawHub 上架准备**：分类/主题映射进配置、复用净化版、写发布脚本（只差 login）
 7. **`CONTRIBUTING.md`**（Layer 1 唯一遗留）
@@ -55,7 +60,15 @@
     **可引用的第三方安全结论**（可写进 README/公众号）· 真实安装量 · 为 SkillHub 的"认领"做准备。
   - 历史：`clawhub` CLI 已装（v0.23.3，`/opt/homebrew/bin/clawhub`）、license 已改 MIT-0。剩两件事待用户：① 跑 `clawhub login`（设备流）或给 API token；② ~~决定仓库根 `LICENSE` 是否也改 MIT-0~~ → **已决（2026-09-28）：仓库根保持 Apache-2.0，与 skill 的 MIT-0 通过 README 明确划分范围，不再统一**。发布命令已备好（见 install.md 或 `clawhub skill publish ./skills-v2/<skill> --slug ... --version 0.2.0`）。
 
-- **SkillHub.cn 上架**（✅ **已提交，2026-09-29，审核中**）：
+- **SkillHub.cn 上架**（🎉 **2026-09-30 审核通过，已上线**）：
+  - **四个 skill 全部公开可搜可装**，版本 `0.2.10 / 0.2.5 / 0.2.5 / 0.1.6`（**与 canonical 对齐**）。
+  - **科恩 + 云鼎两份安全报告已生成**（`skillhub skill reports <slug> --namespace indiv-ai-audit` 可查）。
+  - **评论通道已开**（`skillhub comment list ...`，当前 0 条）；**AI 五维评估报告尚未生成**（稍后自动补）。
+  - 官方安装行：`skillhub install <slug> --namespace indiv-ai-audit --dir <skills目录>`
+    （**`--dir` 必须指向当前 Agent 的 skills 目录**，否则装到 `./skills/` 不被识别）。
+  - 主页：`https://skillhub.cn/skills/<slug>`（4 个都 200）。已把安装命令写进 `install.md`。
+  - 历史（提交过程）：
+
   - 命名空间：`@indiv-ai-audit`（用户已设，7 天可改一次；**改名会让原坐标/@名称/Slug 立即失效**，慎改）
   - 4 个 skill 已发布（skillId `256491`–`256494`），状态 **pending review**（3–7 个工作日）：
     `andrew-tao-li-expense-audit@0.2.9` / `-procurement-fraud@0.2.4` / `-investigation-assistant@0.2.4` / `-cn-entity-relation@0.1.4`

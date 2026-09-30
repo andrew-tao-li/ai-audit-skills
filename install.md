@@ -85,15 +85,41 @@ PREFIX=~/.my-custom-path bash  # 显式指定安装目录
 
 ### 通过 marketplace 一键装
 
-- **ClawHub**（OpenClaw / WorkBuddy / 有道龙虾）：`clawhub install <slug>`
-- **SkillHub**（Claude Code / Cursor / OpenCode 等）：`npx @skill-hub/cli install <slug> --agent <agent>`
-- 两者都是**辅助选项**——你还没发布也能完整使用这些 skill（全部从 GitHub 装）。
+- **SkillHub.cn（中国版 · ✅ 已上架）**：见下方「SkillHub.cn 安装」
+- **ClawHub（国际 / OpenClaw 生态）**：`clawhub install <slug>`（⬜ 尚未上架）
+- **SkillHub.club（国际版）**：`npx @skill-hub/cli install <slug> --agent <agent>`（⬜ 尚未上架，**与 skillhub.cn 是两个平台**）
+- 三者都是**辅助选项**——你没登录任何平台也能完整使用这些 skill（全部从 GitHub 装）。
 
-### 发布到 marketplace 的步骤
+### SkillHub.cn 安装（我们的 4 个技能已上架）
 
-- ClawHub：`clawhub login` → `clawhub publish ./skills-v2/<skill> --slug <slug> --version <v>`。详见 https://docs.openclaw.ai/guides/clawhub。
-- SkillHub.cn（中国版，需先做实名认证）：浏览器登录 skillhub.cn → 个人中心 → 发布 Skill → 上传 zip。
-- SkillHub.club（国际版）：`npx @skill-hub/cli login` → `npx @skill-hub/cli publish`。
+命名空间：**`@indiv-ai-audit`**。官方 CLI：
+
+```bash
+# 通用形式（--dir 必须指向当前 Agent 的 skills 目录，否则会装到 ./skills/ 不被识别）
+skillhub install <slug> --namespace indiv-ai-audit --dir <skills 目录>
+
+# 我们的四个（skills 目录按你的 Agent 换，例如 ~/.claude/skills）
+skillhub install andrew-tao-li-expense-audit            --namespace indiv-ai-audit --dir ~/.claude/skills
+skillhub install andrew-tao-li-procurement-fraud        --namespace indiv-ai-audit --dir ~/.claude/skills
+skillhub install andrew-tao-li-investigation-assistant  --namespace indiv-ai-audit --dir ~/.claude/skills
+skillhub install andrew-tao-li-cn-entity-relation       --namespace indiv-ai-audit --dir ~/.claude/skills
+```
+
+**或者给 AI 一句话**（官方安装指引：<https://skillhub.cn/install/skillhub.md>）：
+
+> 根据 https://skillhub.cn/install/skillhub.md 安装 `andrew-tao-li-expense-audit`（namespace: `indiv-ai-audit`）
+
+技能主页（可直接浏览/复制 prompt）：<https://skillhub.cn/skills/andrew-tao-li-expense-audit> ·
+<https://skillhub.cn/skills/andrew-tao-li-procurement-fraud> ·
+<https://skillhub.cn/skills/andrew-tao-li-investigation-assistant> ·
+<https://skillhub.cn/skills/andrew-tao-li-cn-entity-relation>
+
+### 发布到 marketplace 的步骤（作者用）
+
+- **SkillHub.cn**：`skillhub login --key skh_xxx --host https://api.skillhub.cn` →
+  `python3 scripts/build-skillhub.py`（生成净化版）→ `python3 scripts/publish-skillhub.py`（**带分类**，官方 CLI 不带）。
+  发布有**限频**，连发多个需间隔约 70s（脚本已内置）。
+- **ClawHub**：`clawhub login` → `scripts/publish-clawhub.sh`（用净化版 + ClawHub 自己的分类/主题）。
 
 ---
 
