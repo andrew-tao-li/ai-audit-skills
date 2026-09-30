@@ -1,4 +1,4 @@
-"""SkillHub 上架的**单一配置源**：展示名 / 简介 / 标签 / 分类 / 详细介绍。
+"""SkillHub / ClawHub 上架的**单一配置源**：展示名 / 简介 / 标签 / 分类 / 详细介绍。
 
 谁在用：
   - scripts/build-skillhub.py       → 生成 dist-v2/skillhub/<skill>/ 的 frontmatter
@@ -11,6 +11,9 @@ HOMEPAGE = "https://github.com/andrew-tao-li/ai-audit-skills"
 
 SKILLS = {
     "expense-audit-v2": {
+        # ClawHub 有独立的分类体系（与 SkillHub 不同），最多 3 分类 / 5 主题
+        "clawhub_categories": ['finance', 'security'],
+        "clawhub_topics": ['audit', 'expense', 'reimbursement', 'fraud-detection', 'offline'],
         "display_name": '费用报销审计',
         "tags": ['审计', '费用审计', '报销', '发票', '差旅', '反舞弊', '财税处理', '风险风控'],
         "slug": "andrew-tao-li-expense-audit",
@@ -20,6 +23,9 @@ SKILLS = {
         "intro": "给审计/财务人员用的**费用报销异常扫描**工具。喂进一张费用台账（CSV/XLSX），它做两件事：\n① **数据体检**——分离坏行、标准化字段、给出数据质量报告；\n② **确定性规则扫描**——重复发票号、同员工同日同金额、超制度上限、拆分报销、统计离群、自审自批、发票跨人复用、提交早于消费、未来日期、缺费用类型、发票连号/格式异常、大额低层级审批、时空冲突、跨期入账、高频小额等。\n\n产出：**给经理看的 HTML 全景报告**（第一页就是结论：几条高风险、涉及多少钱、先看哪三条）、`summary.md`、`findings.csv`、`evidence.jsonl`（每条线索都能追回源行）。\n\n**边界**：只做\"数据之间对得上\"的核对，**不判断业务是否真实发生**（例：一张合规的客情费发票，无法判断当时是否真的在宴请客户）。未发现问题 ≠ 没有问题；最终结论必须由有资质的审计师做出。\n\n**隐私**：全程离线，不联网、不上传、不需要任何 API Key。",
     },
     "procurement-fraud-v2": {
+        # ClawHub 有独立的分类体系（与 SkillHub 不同），最多 3 分类 / 5 主题
+        "clawhub_categories": ['security', 'finance'],
+        "clawhub_topics": ['audit', 'procurement', 'fraud-detection', 'vendor', 'offline'],
         "display_name": '采购舞弊红旗筛查',
         "tags": ['审计', '采购', '反舞弊', '供应商', '招投标', '价格异常', '风险风控'],
         "slug": "andrew-tao-li-procurement-fraud",
@@ -29,6 +35,9 @@ SKILLS = {
         "intro": "给审计/采购/合规人员用的**采购红旗筛查**工具。输入供应商主数据、采购订单、付款、员工与投标文本（CSV/XLSX），输出可追溯的红旗清单。\n\n覆盖：供应商间共享银行账号/电话/邮箱/地址/法人、**员工—供应商**共享属性（利益冲突红线）、peer-group 价格离群、拆单采购、付款早于下单、收货早于审批、下单早于审批、超额付款、新成立供应商接大单、采购员—供应商集中度、投标文本字符级 TF-IDF 相似度、报价子簇异常等。\n\n产出：HTML 全景报告（含**调查移交建议**）、`findings.csv`、`relationship_graph.json`（供应商关系图）、`investigation_handoff.json`。\n\n**边界**：共享账号、价格离群、流程异常、文本雷同都只是**复核线索**，不能单独或自动证明串标、利益输送或舞弊。未发现问题 ≠ 没有问题；最终结论必须由有资质人员做出。\n\n**隐私**：全程离线，不联网、不上传、不需要任何 API Key。",
     },
     "investigation-assistant-v2": {
+        # ClawHub 有独立的分类体系（与 SkillHub 不同），最多 3 分类 / 5 主题
+        "clawhub_categories": ['security', 'knowledge'],
+        "clawhub_topics": ['audit', 'investigation', 'evidence', 'compliance', 'offline'],
         "display_name": '授权内调查材料整理',
         "tags": ['审计', '内部调查', '证据链', '内控', '合规', '举报处理', '法律合规', '风险风控'],
         "slug": "andrew-tao-li-investigation-assistant",
@@ -38,6 +47,9 @@ SKILLS = {
         "intro": "给内部调查/内审/合规人员用的**调查材料整理**工具。**必须先取得显式授权**（授权文号、涉及人员、时间范围、允许来源），否则拒绝读取内容——这是硬门槛。\n\n在授权范围内：登记原始文件并计算 SHA-256、生成只读副本与保管链、抽取时间线（时区感知）、建立实体索引与关系、生成「事项 × 证据」矩阵（同时保留**支持证据、反证、替代解释、缺失证据**）、假设登记、访谈计划与案卷模板。越界数据单独隔离。\n\n产出：HTML 全景报告（授权范围与待验证事项一屏可见）、`timeline.csv`、`evidence_matrix.csv`、`hypothesis_register.csv`、`interview_plan.csv`、`chain_of_custody.jsonl`。\n\n**边界**：本工具只做**证据整理**，不做责任认定。用户指控与关键词命中均为待验证线索，不是事实。未命中不代表事项未发生；最终判断必须由有资质人员做出。\n\n**隐私**：全程离线，不联网、不上传、不需要任何 API Key。",
     },
     "cn-entity-relation-check": {
+        # ClawHub 有独立的分类体系（与 SkillHub 不同），最多 3 分类 / 5 主题
+        "clawhub_categories": ['security', 'research'],
+        "clawhub_topics": ['audit', 'due-diligence', 'related-party', 'china', 'offline'],
         "display_name": '中国工商关联排查',
         "tags": ['审计', '关联方', '工商信息', '尽职调查', '实际控制人', '利益冲突', '风险风控'],
         "slug": "andrew-tao-li-cn-entity-relation",

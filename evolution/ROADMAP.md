@@ -6,9 +6,54 @@
 
 ---
 
+## 📋 当前 To-Do（2026-09-30 整理）
+
+> 分三类：**卡在用户手上** / **AI 可自动做** / **暂缓（有理由）**。
+
+### 🔴 卡在用户手上（AI 做不了）
+1. **等 SkillHub 审核**（9/29 提交，3–7 工作日 → 预计 10/2–10/9）
+2. **（可选）改昵称** —— 个人页当前显示「学涛」；不想公开真名就改笔名
+3. **`clawhub login`** —— ClawHub 发布必须本人 GitHub 授权（5 分钟）
+4. **公众号定稿发文** —— `docs/wechat-article.md` 已就绪，4 个标题候选待选
+5. **找 1–2 位真实审计师试用** —— Layer 3 的真正起点
+
+### 🟢 AI 可自动做（已在做 / 待做）
+6. **ClawHub 上架准备**：分类/主题映射进配置、复用净化版、写发布脚本（只差 login）
+7. **`CONTRIBUTING.md`**（Layer 1 唯一遗留）
+8. **SkillHub 审核状态跟踪**：日报里增加"审核状态变化"提醒
+9. **公众号草稿自动同步**：把最新能力（交叉核验/分类/两版架构）写进 `docs/wechat-article.md`
+10. **平台数据周报视图**：日报现在只有当日快照，可加"本周 vs 上周"
+
+### ⏸ 暂缓（有理由，不是忘了）
+11. L2 反馈/评分机制（用户太少；平台评论已覆盖主要场景）
+12. 企查查真实 Provider（等 cn-entity 实机跑通三态）
+13. expense 数据层聚合（weekend 噪声 / 缺配置提示）——会动 F1 期望，需同步改黄金集
+14. 代报销（区分报销人/实际出差人）——要改数据模型
+15. `--header-row`（表头不在第一行）——已在接入指南写明是已知边界
+
+### ⛔ 客观做不到
+16. GUI 平台（WorkBuddy/龙虾/Cursor）自动测试 —— Mac mini 够不着用户的 GUI
+
+---
+
 ## ⏸ 暂缓事项（下次回顾框架时提醒）
 
-- **ClawHub 上架**（已调研完毕，暂缓，2026-09-22）：`clawhub` CLI 已装（v0.23.3）、license 已改 MIT-0、SKILL.md frontmatter（version/author）已就绪。剩两件事待用户：① 跑 `clawhub login`（设备流）或给 API token；② ~~决定仓库根 `LICENSE` 是否也改 MIT-0~~ → **已决（2026-09-28）：仓库根保持 Apache-2.0，与 skill 的 MIT-0 通过 README 明确划分范围，不再统一**。发布命令已备好（见 install.md 或 `clawhub skill publish ./skills-v2/<skill> --slug ... --version 0.2.0`）。
+- **ClawHub 上架**（⬜ **已完全准备好，只差 `clawhub login`**，2026-09-30）：
+  - ⚠️ **关键决定：ClawHub 也发净化版**（`dist-v2/skillhub/<skill>/`），不是 canonical——
+    canonical 里的「反馈外发 webhook」与 `curl|bash` 正好撞上 ClawHub 安全审计的三个关注点
+    （**凭据暴露 / 不安全执行 / 过度代理**）。与 SkillHub 同一逻辑：**市场版=净化版，GitHub canonical=全功能版**。
+  - **ClawHub 没有"质量评估"**，它有**安全审计**（Audit status `Pass/Review/Warn/Malicious` + Risk `Low/Medium/High` + findings）；
+    扫描方 = SkillSpector + **腾讯朱雀 A.I.G** + 自研 ClawScan；以 **OWASP Agentic Skills Top 10** 为透镜。
+    与我们互补（SkillHub 答"好不好"，ClawHub 答"安不安全"）。审计页：`/<owner>/skills/<slug>/security-audit`。
+  - 顺带：ClawHub **拒收含 `.pyc/.pyo/.pyd` 的 skill**（某 CVE 未修）——我们纯 `.py`，不受影响。
+  - **ClawHub 分类体系统统与 SkillHub 不同**（`security/finance/operations/knowledge/research…`，最多 3 分类 + 5 主题），
+    已映射进 `scripts/skillhub_config.py` 的 `clawhub_categories` / `clawhub_topics`。
+  - `scripts/publish-clawhub.sh` **已重写**：改用净化版 + 从配置读 ClawHub 分类/主题 + 带来源仓库信息；
+    已用 `--dry-run` 验证（`Would publish expense-audit-v2@0.2.10`）。
+  - **唯一卡点**：`clawhub login`（设备流，必须用户本人 GitHub 授权）。另外官方要求「GitHub 账号足够老才能过上传闸门」。
+  - 好处：打开国际/OpenClaw 生态（我们 SKILL.md 已声称支持它）· **SkillHub 会自动镜像 ClawHub**（多一个国内分发源）·
+    **可引用的第三方安全结论**（可写进 README/公众号）· 真实安装量 · 为 SkillHub 的"认领"做准备。
+  - 历史：`clawhub` CLI 已装（v0.23.3，`/opt/homebrew/bin/clawhub`）、license 已改 MIT-0。剩两件事待用户：① 跑 `clawhub login`（设备流）或给 API token；② ~~决定仓库根 `LICENSE` 是否也改 MIT-0~~ → **已决（2026-09-28）：仓库根保持 Apache-2.0，与 skill 的 MIT-0 通过 README 明确划分范围，不再统一**。发布命令已备好（见 install.md 或 `clawhub skill publish ./skills-v2/<skill> --slug ... --version 0.2.0`）。
 
 - **SkillHub.cn 上架**（✅ **已提交，2026-09-29，审核中**）：
   - 命名空间：`@indiv-ai-audit`（用户已设，7 天可改一次；**改名会让原坐标/@名称/Slug 立即失效**，慎改）
