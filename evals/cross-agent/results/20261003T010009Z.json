@@ -1,0 +1,137 @@
+{
+  "timestamp": "20261003T010009Z",
+  "platform": "opencode",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-lrrr_8f1/out，并告诉我发现了几条 finding。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "skill 调用=['expense-audit-v2']"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_expense_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['finding', '发现']"
+        }
+      ],
+      "skill_calls": [
+        "expense-audit-v2"
+      ],
+      "shell_cmds": [
+        "python3 scripts/run_expense_audit.py --input examples/input/expenses.csv --policy examples/input/policy.json --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-lrrr_8f1/out"
+      ],
+      "answer_excerpt": "已完成。用 `expense-audit-v2` 跑了它包内自带的 `examples/input` 样例（`expenses.csv` + `policy.json`），输出写到了指定目录。\n\n## 结果\n\n**发现 11 条 finding**（证据 72 条，有效记录 14 行，坏行 1 行）。\n\n风险分布：高 1 / 中 8 / 低 2。\n\n| 类型 | 数量 |\n|---|---|\n| 发票号重复（exact-duplicate-invoice） | 1 |\n| 同员工同日同金额 | 1 |\n| 金额近似（near-duplicate） | 1 |\n| 超制度上限（policy-threshold） | 3 |\n| 拆单报销（split-expense） | 1 |\n| 周末消费（weekend-signal） | 2 |\n| 异常高额（robust-outlier） | 1 |\n| 发票连号（sequential-invoice） | 1 |\n\n**唯一高风险**是 `EXP-000001`：发票号 `INV-1001` + 金额 920 在两条记录里完全相同（strong 证据）。其余均为中/低风险复核线索。\n\n输出文件已写入 `/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-a",
+      "stderr_tail": "",
+      "duration_s": 33.1
+    },
+    {
+      "id": "procurement-trigger-and-run",
+      "skill": "procurement-fraud-v2",
+      "prompt": "用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-qqoxma1d/out，并告诉我发现了几条红旗。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "skill 调用=['procurement-fraud-v2']"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_procurement_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['红旗', 'finding', '发现']"
+        }
+      ],
+      "skill_calls": [
+        "procurement-fraud-v2"
+      ],
+      "shell_cmds": [
+        "ls -la examples/input",
+        "python3 scripts/run_procurement_audit.py --check-env",
+        "python3 scripts/run_procurement_audit.py --check-env --config examples/input/config.json",
+        "python3 scripts/run_procurement_audit.py --input-dir examples/input --config examples/input/config.json --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-qqoxma1d/out",
+        "ls -la /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-qqoxma1d/out"
+      ],
+      "answer_excerpt": "已完成运行。使用 `procurement-fraud-v2` 跑通了包内 `examples/input` 样例，输出写到指定目录 `/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-qqoxma1d/out`。\n\n## 结果\n\n**共发现 12 条红旗（findings），附带 71 条证据（evidence）**，调查移交建议为「recommended」。\n\n按风险优先级分布：\n\n| 优先级 | 数量 |\n|---|---|\n| 高 | 1 |\n| 中 | 8 |\n| 低 | 3 |\n\n按类型分布（每类各 1 条）：\n\n- 供应商共享账户\n- 员工供应商共享电话\n- 价格异常偏高\n- 拆单采购\n- 投标文本雷同\n- 报价异常聚集\n- 报价模式异常\n- 下单早于审批\n- 付款早于审批\n- 收货早于下单\n- 收货早于审批\n- 采购员供应商集中\n\n## 说明\n\n- 输出目录完整生成了 `summary.md`、`findings.csv/jsonl`、`evidence.jsonl`、`relationship_graph.json`、`investigation_handoff.json`、`dashboard.html`、`data_quality.md`、标准化表、",
+      "stderr_tail": "",
+      "duration_s": 31.9
+    },
+    {
+      "id": "cn-entity-three-state",
+      "skill": "cn-entity-relation-check",
+      "prompt": "用 cn-entity-relation-check skill 判断两个主体「上海甲科技有限公司」和「上海乙科技有限公司」有没有公开工商关联。它包内 examples/input/company_company_related.json 是证据。请给出三态结论（关联/不关联/待核查）并说明依据。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "skill 调用=['cn-entity-relation-check']"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['关联']"
+        }
+      ],
+      "skill_calls": [
+        "cn-entity-relation-check"
+      ],
+      "shell_cmds": [
+        "cd /Users/rockymary/ai-audit-skills/repo/skills-v2/cn-entity-relation-check && python3 scripts/cli.py --a \"上海甲科技有限公司\" --b \"上海乙科技有限公司\" --graph examples/input/company_company_related.json",
+        "cd /Users/rockymary/ai-audit-skills/repo/skills-v2/cn-entity-relation-check && python3 scripts/cli.py --a \"上海甲科技有限公司\" --b \"上海乙科技有限公司\" --graph examples/input/company_company_related.json --entities-resolved --structured-provider --scope-complete"
+      ],
+      "answer_excerpt": "## 三态结论：**关联（RELATED）**\n\n依据 `cn-entity-relation-check` v0.1.6 的三态判定协议，确定性脚本对这份证据给出的状态是 **`RELATED`（关联）**。\n\n### 一、事实（证据原文，来自 `examples/input/company_company_related.json`）\n\n| 项 | 内容 |\n|---|---|\n| 主体 A | 上海甲科技有限公司，`canonical_id: 91310000MA1K3A000X`（已锚定） |\n| 主体 B | 上海乙科技有限公司，`canonical_id: 91310000MA1K3B000Y`（已锚定） |\n| 自然人 P1 | 张三，`canonical_id: person-zhangsan-001`（已消歧，非重名） |\n| 边 1 | 张三 → 甲：`LEGAL_REP`（法定代表人），现行 |\n| 边 2 | 张三 → 乙：`SHAREHOLDER`（股东，持股 35%），现行 |\n| 能力声明 | `structured_company_data=true`、`company_entity_resolution=true`、`company_shareholders=true`、`company_key_people=true`、`negative_sem",
+      "stderr_tail": "",
+      "duration_s": 53.5
+    },
+    {
+      "id": "no-trigger-control",
+      "skill": null,
+      "prompt": "请只回答数字：1+1 等于几？",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "未加载任何 skill",
+          "ok": true,
+          "detail": "skill 调用=[]"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [],
+      "answer_excerpt": "2",
+      "stderr_tail": "",
+      "duration_s": 5.1
+    }
+  ]
+}
