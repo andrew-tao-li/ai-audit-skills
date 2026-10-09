@@ -250,6 +250,68 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             types, _ = run_csv("单据号,工号,姓名,金额,发生日期,审批人\nC1,E001,张三,100,2026-10-09,张三\n", base / "b")
             self.assertIn("self-approval", types)
 
+    def _run_with_policy(self, csv_text, policy, out):
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td) / "e.csv"; data.write_text(csv_text, encoding="utf-8")
+            cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)]
+            if policy is not None:
+                pol = Path(td) / "p.json"; pol.write_text(json.dumps(policy), encoding="utf-8")
+                cmd += ["--policy", str(pol)]
+            r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                               env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            return {json.loads(l)["finding_type"]
+                    for l in (Path(out) / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()}
+
+    def test_optional_v0213_rules_are_opt_in(self):
+        """跨商户拆单 / 绝对大额 / 商户集中度：默认关闭，配置后才生效（帕累托）。"""
+        base = Path(tempfile.mkdtemp())
+        cm = ("单据号,工号,费用类型,发生日期,金额,商户\n"
+              "X1,EMP1,办公,2026-10-09,400,V1\nX2,EMP1,办公,2026-10-09,400,V2\nX3,EMP1,办公,2026-10-09,400,V3\n")
+        thr = {"policy_version": "T", "default_currency": "CNY",
+               "approval_thresholds": [{"amount": 1000, "currency": "CNY"}], "split_window_days": 0}
+        self.assertNotIn("split-expense-cross-merchant", self._run_with_policy(cm, thr, base / "cm_off"))
+        self.assertIn("split-expense-cross-merchant",
+                      self._run_with_policy(cm, dict(thr, split_cross_merchant=True), base / "cm_on"))
+
+        la = "单据号,工号,费用类型,发生日期,金额\nZ1,EMP1,差旅,2026-10-09,6000\n"
+        self.assertNotIn("large-amount", self._run_with_policy(la, {"policy_version": "T", "default_currency": "CNY"}, base / "la_off"))
+        self.assertIn("large-amount", self._run_with_policy(
+            la, {"policy_version": "T", "default_currency": "CNY", "large_amount_threshold": 5000, "large_amount_check": True}, base / "la_on"))
+
+        vc = ("单据号,工号,费用类型,发生日期,金额,商户\n"
+              + "".join("W%d,EMP9,办公,2026-10-%02d,100,集中商户A\n" % (i, i) for i in range(1, 7))
+              + "".join("W%d,EMP9,办公,2026-10-%02d,100,其他商户B\n" % (i, i - 6) for i in range(7, 9)))
+        self.assertNotIn("vendor-concentration", self._run_with_policy(vc, {"policy_version": "T", "default_currency": "CNY"}, base / "vc_off"))
+        self.assertIn("vendor-concentration", self._run_with_policy(
+            vc, {"policy_version": "T", "default_currency": "CNY", "vendor_concentration_check": True}, base / "vc_on"))
+
+    def test_allowlist_suppresses_but_records(self):
+        """白名单：只移出「全部行都命中」的告警，且完整写进 suppressed_findings.csv（不静默丢弃）。"""
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            data = base / "e.csv"
+            data.write_text("单据号,工号,费用类型,发生日期,金额,商户\n"
+                            "D1,EMP5,餐饮,2026-10-09,200,餐厅B\nD2,EMP5,餐饮,2026-10-09,200,餐厅B\n", encoding="utf-8")
+            # 无白名单：重复告警应在，且没有 suppressed 文件
+            o1 = base / "o1"
+            self._run_with_policy(data.read_text(encoding="utf-8"), None, o1)
+            self.assertIn("exact-duplicate-employee-date-amount",
+                          (o1 / "findings.jsonl").read_text(encoding="utf-8"))
+            self.assertFalse((o1 / "suppressed_findings.csv").exists())
+            # 有白名单：重复告警被移出，但 suppressed_findings.csv 完整留痕
+            allow = base / "allow.csv"
+            allow.write_text("expense_id,employee_id,vendor_name,invoice_number,expense_type,amount_max,reason\n"
+                             ",,餐厅B,,餐饮,500,园区餐厅工作餐\n", encoding="utf-8")
+            o2 = base / "o2"
+            r = subprocess.run([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(o2), "--allowlist", str(allow)],
+                               capture_output=True, text=True, encoding="utf-8", errors="replace",
+                               env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertNotIn("exact-duplicate-employee-date-amount", (o2 / "findings.jsonl").read_text(encoding="utf-8"))
+            supp = (o2 / "suppressed_findings.csv").read_text(encoding="utf-8")
+            self.assertIn("园区餐厅工作餐", supp)
+
 
 if __name__ == "__main__":
     unittest.main()

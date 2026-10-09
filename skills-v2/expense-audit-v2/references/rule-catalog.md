@@ -89,4 +89,36 @@
 
 > **默认口径**：出差申请可替代打卡。若公司要求出差期间也打卡，设 `require_swipe_during_travel: true`。
 
+## 跨商户拆单（v0.2.13，可选，默认关闭）
+
+`split_cross_merchant: true` 时启用。与「拆单报销」同一目的，但**不要求同一商户**：
+
+- 分组：同一**员工** + 同一**币种**（不再含商户）；
+- 条件：窗口内 **≥2 个不同商户**，每笔金额低于 `approval_thresholds` 的阈值，**合计超过**阈值；
+- 输出：`split-expense-cross-merchant`。
+
+> 为什么默认关闭：跨商户一起加总会引入较多正常消费（同一段时间的多笔独立支出），需要按公司实际口径开启。
+
+## 绝对大额（v0.2.13，可选，默认关闭）
+
+`large_amount_check: true` + `large_amount_threshold` 时启用 → `large-amount`。
+
+- 适用：公司**没有制度额度/审批阈值**，但仍想按"绝对金额"确定复核优先级。
+- 与 `large-amount-low-level-approval` **自动去重**（已被后者覆盖的行不再重复报）。
+- 与 `robust-outlier` 的区别：后者是**同类内的相对离群**（需要同类样本 ≥ `outlier_min_group_size`）；前者是**绝对金额**。
+
+> **想让"异常高额"跑出来，至少要有下面之一**：① `policy_thresholds`（制度上限）② `large_amount_threshold` + `low_level_approver_keywords` ③ `large_amount_check` ④ 同类样本足够多（相对离群）。
+
+## 商户集中度（v0.2.13，可选，默认关闭）
+
+`vendor_concentration_check: true` 时启用 → `vendor-concentration`。
+
+- 口径：`vendor_concentration_scope`（`employee` 默认 / `department`）；
+- 条件：该员工/部门在该商户的笔数 ≥ `vendor_concentration_min_count`（默认 5）**且** 占比 ≥ `vendor_concentration_share`（默认 0.6）；
+- 定位：**关系/串通风险的复核线索**（如回扣、指定供应商），不是结论。
+
+## 白名单（v0.2.13，可选输入 `--allowlist`）
+
+见 SKILL.md「可选白名单」。要点：**只压制"整条告警的每一行都命中"**；被压制内容写入 `suppressed_findings.csv`，**绝不静默丢弃**。
+
 

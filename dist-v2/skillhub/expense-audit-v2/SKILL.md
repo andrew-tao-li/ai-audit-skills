@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.13
+version: 0.2.14
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -185,6 +185,37 @@ python3 scripts/run_expense_audit.py \
 - **「打卡地与出差地不一致」** 只是提示——可能中转、改道或地点解析偏差，由用户判断是否需要介意。
 
 配置字段见 [rule-catalog](references/rule-catalog.md) 与 [真实台账接入指南](references/field-mapping-guide.md)。
+
+## v0.2.13 新增：日期、口径与三项可选规则（**新增能力全部默认关闭**）
+
+### 直接生效（不需要任何配置）
+
+- **中文日期**：`2026年10月09日`、`2026年10月9日`、`2026年10月09日 12:30`、`20261009` 等都能识别（旧版会把它们当坏行）。
+- **自审自批口径**：报销人可以是**工号或姓名**；若出现「审批人是姓名、报销人是工号」这类**口径不一致**，会在 `data_quality.md` 明确提示（不再静默漏检）。想同时支持两种，表里同时给「工号」与「姓名」两列。
+
+### 可选规则（写进 `policy.json` 才启用；不写 = 与旧版完全一致）
+
+| 字段 | 用途 | 默认 |
+|---|---|---|
+| `split_cross_merchant` | **跨商户拆单**：同一员工在窗口内、**跨 ≥2 个商户**的多笔（每笔低于阈值、合计超过阈值）→ `split-expense-cross-merchant`（配合 `approval_thresholds` / `split_window_days`） | `false` |
+| `large_amount_check` | **绝对大额**：公司没有制度额度时，按 `large_amount_threshold` 给出复核线索 → `large-amount`（与「大额低层级审批」自动去重） | `false` |
+| `vendor_concentration_check` | **商户集中度**：某员工/部门支出过度集中于单一商户 → `vendor-concentration` | `false` |
+| `vendor_concentration_min_count` | 商户集中度：该商户的最少笔数 | `5` |
+| `vendor_concentration_share` | 商户集中度：占比阈值 | `0.6` |
+| `vendor_concentration_scope` | 商户集中度口径：`employee`（默认）/ `department` | `employee` |
+
+### 可选白名单（命令行 `--allowlist <csv>`）
+
+把"已知无风险"的行（小额固定支出、上期已核实单据）从告警里排除。**只压制「该条告警的每一行都命中」的情况**，
+且被压制内容**完整**写入 `suppressed_findings.csv`，并在 `data_quality.md` 与 `run_manifest.json` 计数——**绝不静默丢弃**。
+
+```csv
+expense_id,employee_id,vendor_name,invoice_number,expense_type,amount_max,reason
+,,餐厅B,,餐饮,500,园区日常餐费（已核实）
+E2025001,,,,,,上期已核实
+```
+
+> 空列 = 通配；`amount_max` = 金额上限。至少填一个条件，否则该行会被忽略。不提供 `--allowlist` 时，本功能完全不参与（与旧版一致）。
 
 ## Output contract
 

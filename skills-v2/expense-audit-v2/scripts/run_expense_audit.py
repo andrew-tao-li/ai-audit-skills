@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.13"
+VERSION = "0.2.14"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -30,6 +30,10 @@ FINDING_TYPE_ZH = {
     "invoice-format-anomaly": "发票格式异常", "large-amount-low-level-approval": "大额低层级审批",
     "space-time-conflict": "时空冲突", "cross-period": "跨期入账", "high-frequency-small-amount": "高频小额",
     "resubmit-after-rejection-amount-increase": "撤回/拒绝后重提且金额增加",  # v0.2.8
+    # v0.2.13：以下三条均为**可选**（默认关闭）
+    "split-expense-cross-merchant": "跨商户拆单",
+    "large-amount": "绝对大额",
+    "vendor-concentration": "商户集中度",
     # v0.2.9：出差交叉核验（需提供 --travel-requests / --attendance）
     "expense-without-travel-request": "差旅报销无对应出差申请",
     "office-swipe-on-offsite-claim": "报销称外地但当天有公司打卡",
@@ -62,6 +66,8 @@ ALIASES = {
 }
 CORE_FIELDS = ("expense_id", "employee_id", "amount", "expense_date")
 OUTPUT_FIELDS = tuple(ALIASES.keys())
+# v0.2.13：白名单可匹配的字段（CSV 列名）；空列 = 通配。另支持 amount_max（金额上限）。
+ALLOWLIST_FIELDS = ("expense_id", "employee_id", "employee_name", "vendor_name", "invoice_number", "expense_type")
 
 
 def norm_text(value: Any) -> str:
@@ -180,6 +186,13 @@ POLICY_KEYS = frozenset({
     "resubmit_window_days",   # 「撤回/拒绝后重提且金额增加」的关联窗口（天），默认 90
     "amount_columns",         # 多列金额求和（台账没有单一金额列、金额分散在多列时使用）
     "travel_cross_check",     # v0.2.9：出差交叉核验（报销 × 出差申请 × 打卡；不配置=完全不启用）
+    # v0.2.13 新增（**全部可选、默认关闭**；不配置 = 与旧版行为完全一致）
+    "split_cross_merchant",            # 跨商户拆单（配合 approval_thresholds / split_window_days）
+    "large_amount_check",              # 绝对大额（配合 large_amount_threshold）
+    "vendor_concentration_check",      # 商户集中度
+    "vendor_concentration_min_count",  # 商户集中度：最少笔数，默认 5
+    "vendor_concentration_share",      # 商户集中度：占比阈值，默认 0.6
+    "vendor_concentration_scope",      # 商户集中度：employee（默认）或 department
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -328,14 +341,73 @@ def priority(score: int) -> str:
     return "low"
 
 
+class Allowlist:
+    """v0.2.13：用户自备的白名单——显式、可审计、**绝不静默丢弃**。
+
+    用途：把"已知无风险"的行（小额固定支出、上期已核实单据）从告警里排除。
+    被压制的内容会**完整写入** `suppressed_findings.csv`，并在 manifest / 数据质量报告中计数。
+    未提供白名单文件时，本类不参与任何逻辑（与旧版完全一致）。
+    """
+
+    def __init__(self, entries: List[Dict[str, str]]):
+        self.entries = entries
+
+    @classmethod
+    def load(cls, path: Optional[Path]) -> Optional["Allowlist"]:
+        if path is None:
+            return None
+        if not path.is_file():
+            raise FileNotFoundError("白名单文件不存在：%s" % path)
+        entries: List[Dict[str, str]] = []
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            for raw in csv.DictReader(handle):
+                entry = {norm_text(k): norm_text(v) for k, v in raw.items() if k is not None}
+                entry = {k: v for k, v in entry.items() if v}
+                if any(entry.get(f) for f in ALLOWLIST_FIELDS) or entry.get("amount_max"):
+                    entries.append(entry)
+        return cls(entries)
+
+    def match(self, record: Dict[str, Any]) -> Optional[Dict[str, str]]:
+        for entry in self.entries:
+            ok = True
+            for field in ALLOWLIST_FIELDS:
+                want = entry.get(field)
+                if want and match_key(want) != match_key(record.get(field)):
+                    ok = False
+                    break
+            if not ok:
+                continue
+            amax = entry.get("amount_max")
+            if amax:
+                value = parse_amount(record.get("amount"))
+                limit = parse_amount(amax)
+                if value is None or limit is None or value > limit:
+                    continue
+            return entry
+        return None
+
+    def match_all(self, records: Sequence[Dict[str, Any]]) -> Optional[List[Dict[str, str]]]:
+        """只有当一条 finding 的**每一行**都命中白名单时才返回命中条目（否则返回 None）。"""
+        reasons: List[Dict[str, str]] = []
+        for record in records:
+            entry = self.match(record)
+            if entry is None:
+                return None
+            reasons.append(entry)
+        return reasons
+
+
 class ResultBuilder:
-    def __init__(self, source_file: str, source_hash: str, policy: Optional[Dict[str, Any]] = None):
+    def __init__(self, source_file: str, source_hash: str, policy: Optional[Dict[str, Any]] = None,
+                 allowlist: Optional["Allowlist"] = None):
         self.source_file = source_file
         self.source_hash = "sha256:" + source_hash
         self.evidence: List[Dict[str, Any]] = []
         self.findings: List[Dict[str, Any]] = []
+        self.suppressed: List[Dict[str, Any]] = []   # v0.2.13：被白名单压制的告警（留痕，不丢弃）
         self._evidence_cache: Dict[Tuple[int, str], str] = {}
         self.policy = policy or {}
+        self.allowlist = allowlist
 
     def evidence_for(self, record: Dict[str, Any], field: str) -> str:
         key = (int(record["_source_row"]), field)
@@ -371,6 +443,22 @@ class ResultBuilder:
         next_steps: Sequence[str],
         factors: Sequence[Dict[str, Any]],
     ) -> None:
+        # v0.2.13：命中用户白名单的 finding 不进入 findings，但**完整留痕**到 suppressed（不静默丢弃）
+        if self.allowlist is not None:
+            matched = self.allowlist.match_all(records)
+            if matched is not None:
+                amounts = [a for a in (parse_amount(r.get("amount")) for r in records) if a is not None]
+                self.suppressed.append({
+                    "finding_type": finding_type,
+                    "title": title,
+                    "rows": len(records),
+                    "expense_ids": "|".join(norm_text(r.get("expense_id")) for r in records),
+                    "employees": "|".join(sorted({norm_text(r.get("employee_id")) for r in records if r.get("employee_id")})),
+                    "vendors": "|".join(sorted({norm_text(r.get("vendor_name")) for r in records if r.get("vendor_name")})),
+                    "max_amount": max(amounts) if amounts else "",
+                    "suppressed_reason": "|".join(sorted({str(m.get("reason", "")) for m in matched if m.get("reason")})),
+                })
+                return
         refs = []
         amounts = []
         for record in records:
@@ -844,6 +932,41 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                                 ["核对采购/服务内容、审批层级和原始支付时间"],
                                 [{"factor": "split_expense", "points": 3, "rule_id": threshold.get("rule_id"), "window_days": split_days}])
 
+    # v0.2.13：跨商户拆单（**可选，默认关闭**）——真实项目中存在员工在同一窗口内、在不同商户各刷一笔、
+    # 每笔都低于审批阈值的情形。默认不启用 = 与旧版完全一致；只有 split_cross_merchant=true 才生效。
+    if thresholds and policy.get("split_cross_merchant", False):
+        for threshold in thresholds:
+            amount_threshold = parse_amount(threshold.get("amount"))
+            currency = str(threshold.get("currency", "")).upper()
+            if amount_threshold is None:
+                continue
+            egroups: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
+            for row in rows:
+                if currency and row["currency"] != currency:
+                    continue
+                egroups[(row["employee_id"], row["currency"])].append(row)
+            cross_seen = set()
+            for group in egroups.values():
+                group.sort(key=lambda r: r["expense_date"])
+                for start, first in enumerate(group):
+                    end_date = date.fromisoformat(first["expense_date"])
+                    window = [r for r in group[start:] if (date.fromisoformat(r["expense_date"]) - end_date).days <= split_days]
+                    vendors = {match_key(r["vendor_name"]) for r in window if match_key(r["vendor_name"])}
+                    # 必须「跨商户」（≥2 个不同商户），且每笔都低于阈值、合计超过阈值
+                    if len(window) < 2 or len(vendors) < 2 or any(r["amount"] >= amount_threshold for r in window):
+                        continue
+                    total = sum(r["amount"] for r in window)
+                    key = tuple(sorted(r["expense_id"] for r in window))
+                    if total > amount_threshold and key not in cross_seen:
+                        cross_seen.add(key)
+                        builder.add("split-expense-cross-merchant", "同员工短期内跨商户多笔合计超过审批阈值（疑似拆单）", 3, "moderate", window,
+                                    ("expense_id", "employee_id", "expense_date", "vendor_name", "amount"),
+                                    ["%d 笔单笔低于 %.2f %s 的费用分布在 %d 个商户，合计 %.2f %s" % (len(window), amount_threshold, window[0]["currency"], len(vendors), total, window[0]["currency"])],
+                                    ["该组合符合疑似拆单的配置条件（跨商户）"],
+                                    ["是否为独立业务、不同费用承担人、分期结算，或正常的高频小额采购？"],
+                                    ["核对采购/服务内容、审批层级和原始支付时间"],
+                                    [{"factor": "split_expense_cross_merchant", "points": 3, "rule_id": threshold.get("rule_id"), "window_days": split_days}])
+
     if policy.get("weekend_check", False):
         # v0.2.0: 节假日列表支持（如 ["2026-10-01", "2026-10-02"]）
         holidays = set()
@@ -1012,6 +1135,27 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                         ["审批人是否对应金额权限？是否存在代审批？"],
                         ["核对组织架构中的审批权限表和审批流"],
                         [{"factor": "large_amount_low_level_approval", "points": 4, "threshold": large_amount_threshold}])
+
+    # v0.2.13：绝对大额（**可选，默认关闭**）——公司没有制度额度/审批阈值时，也能按"绝对金额"给出复核线索。
+    # 默认不启用 = 与旧版完全一致；只有 large_amount_check=true 才生效。
+    # 与「大额低层级审批」去重：已被后者覆盖的行不再重复报。
+    if policy.get("large_amount_check", False):
+        low_level_covered = set()
+        if low_level_keywords:
+            for row in rows:
+                _a = norm_text(row.get("approver")).lower()
+                if (row.get("amount") or 0) >= large_amount_threshold and _a and any(kw in _a for kw in low_level_keywords):
+                    low_level_covered.add(row["expense_id"])
+        large_rows = [r for r in rows
+                      if (r.get("amount") or 0) >= large_amount_threshold and r["expense_id"] not in low_level_covered]
+        if large_rows:
+            builder.add("large-amount", "单笔金额达到配置的大额阈值", 3, "moderate", large_rows,
+                        ("expense_id", "employee_id", "amount", "currency", "expense_type"),
+                        ["%d 条记录金额 ≥ %s %s" % (len(large_rows), large_amount_threshold, large_rows[0]["currency"])],
+                        ["大额本身不是问题；仅用于确定复核优先级"],
+                        ["是否有业务合理性说明与相应层级的审批？是否附合同/验收/明细？"],
+                        ["抽取大额样本核对原始单据、业务实质与审批层级"],
+                        [{"factor": "large_amount", "points": 3, "threshold": large_amount_threshold}])
 
     # ============ v0.2.0 新增规则 ============
 
@@ -1218,6 +1362,38 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     else:
         skipped.append("high-frequency-small-amount：high_frequency_min_count ≤ 1 已禁用")
 
+    # v0.2.13：商户集中度（**可选，默认关闭**）——某员工/部门的支出过度集中在单一商户。
+    # 默认不启用 = 与旧版完全一致；只有 vendor_concentration_check=true 才生效。
+    if policy.get("vendor_concentration_check", False):
+        vc_min = int(policy.get("vendor_concentration_min_count", 5))
+        vc_share = float(policy.get("vendor_concentration_share", 0.6))
+        vc_scope = str(policy.get("vendor_concentration_scope", "employee"))
+        vgroups: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        for row in rows:
+            key = norm_text(row.get("department") if vc_scope == "department" else row.get("employee_id"))
+            if key:
+                vgroups[key].append(row)
+        for scope_key, group in vgroups.items():
+            if len(group) < vc_min:
+                continue
+            by_vendor: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+            for row in group:
+                vendor_key = match_key(row["vendor_name"])
+                if vendor_key:
+                    by_vendor[vendor_key].append(row)
+            if not by_vendor:
+                continue
+            top_vendor, top_rows = max(by_vendor.items(), key=lambda kv: len(kv[1]))
+            share = len(top_rows) / len(group)
+            if len(top_rows) >= vc_min and share >= vc_share:
+                builder.add("vendor-concentration", "支出过度集中于单一商户", 2, "weak", top_rows,
+                            ("expense_id", "employee_id", "vendor_name", "amount", "expense_date"),
+                            ["%s 共 %d 笔费用，其中 %d 笔（%.0f%%）集中在同一商户“%s”" % (scope_key, len(group), len(top_rows), share * 100, top_rows[0]["vendor_name"])],
+                            ["集中度高本身不是问题；仅作为关系/串通风险的复核线索"],
+                            ["该商户是否为长期定点供应商、协议单位或唯一可选渠道？"],
+                            ["核对商户资质、比价记录、招采流程与关联关系"],
+                            [{"factor": "vendor_concentration", "points": 2, "share": round(share, 2)}])
+
     # v0.2.8：撤回/拒绝后重提且金额增加（仅在配置了 status_filter 时才有数据可判，默认不影响）
     _rule_resubmit_after_rejection(rows, status_excluded or [], policy, builder)
 
@@ -1272,6 +1448,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # v0.2.9：可选辅助数据，用于出差交叉核验（不提供则完全不启用）
     parser.add_argument("--travel-requests", type=Path, help="可选：出差申请单（CSV/XLSX）")
     parser.add_argument("--attendance", type=Path, help="可选：打卡/考勤记录（CSV/XLSX）")
+    # v0.2.13：可选白名单（显式豁免、可审计、不静默丢弃）
+    parser.add_argument("--allowlist", type=Path,
+                        help="可选：白名单 CSV（列：expense_id/employee_id/vendor_name/invoice_number/expense_type/amount_max/reason）")
     parser.add_argument("--check-env", action="store_true")
     args = parser.parse_args(argv)
     if args.check_env:
@@ -1296,6 +1475,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     policy = load_json(args.policy.resolve() if args.policy else None)
     if policy:
         validate_policy(policy)
+    allowlist = Allowlist.load(args.allowlist.resolve() if args.allowlist else None)
     explicit_map = load_json(args.field_map.resolve() if args.field_map else None)
     headers, source_rows, sheet = read_table(input_path, args.sheet)
     mapping, warnings = resolve_mapping(headers, explicit_map, allow_missing_amount=bool(policy.get("amount_columns")))
@@ -1306,7 +1486,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     analyzable, status_excluded = apply_status_filter(clean, policy)
     if status_excluded:
         warnings.append("已按 status_filter 排除 %d 行（见 excluded_by_status.csv），这些行不参与分析" % len(status_excluded))
-    builder = ResultBuilder(input_path.name, source_hash, policy)
+    builder = ResultBuilder(input_path.name, source_hash, policy, allowlist=allowlist)
     skipped, parameters = run_rules(analyzable, policy, builder, status_excluded=status_excluded)
 
     # v0.2.9：出差交叉核验（可选）。不提供辅助数据时**一行也不产生**，输出与旧版完全一致。
@@ -1348,6 +1528,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     write_csv(output / "findings.csv", flat, ("finding_id", "finding_type", "title", "risk_priority", "evidence_strength", "risk_score", "entities", "evidence_refs"))
     write_jsonl(output / "findings.jsonl", builder.findings)
     write_jsonl(output / "evidence.jsonl", builder.evidence)
+    # v0.2.13：被白名单压制的告警——完整留痕（可复核、可撤销），绝不静默丢弃
+    if builder.suppressed:
+        write_csv(output / "suppressed_findings.csv", builder.suppressed,
+                  ("finding_type", "title", "rows", "expense_ids", "employees", "vendors", "max_amount", "suppressed_reason"))
 
     null_rates = {}
     for header in headers:
@@ -1362,6 +1546,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ]
     if status_excluded:
         quality.append("- 按 status_filter 排除：%d 行（见 excluded_by_status.csv，不参与分析）" % len(status_excluded))
+    if allowlist is not None:
+        quality.append("- 白名单：%d 条条目，压制 %d 条告警（见 suppressed_findings.csv；被压制内容完整留痕，不静默丢弃）"
+                       % (len(allowlist.entries), len(builder.suppressed)))
     quality.extend([
         "- 字段映射：`%s`" % json.dumps(mapping, ensure_ascii=False),
         "- 标准化计数：`%s`" % json.dumps(changes, ensure_ascii=False), "", "## 源字段空值率", "",
@@ -1432,8 +1619,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "input_files": input_files, "parameters": parameters, "field_mapping": mapping,
         "scripts": {script_path.name: "sha256:" + sha256_file(script_path)},
         "warnings": warnings, "skipped_rules": skipped, "network_access": False,
+        "allowlist": ({"entries": len(allowlist.entries), "suppressed_findings": len(builder.suppressed)} if allowlist is not None else None),
         "outputs": ["clean_expenses.csv", "bad_rows.csv"]
         + (["excluded_by_status.csv"] if status_excluded else [])
+        + (["suppressed_findings.csv"] if builder.suppressed else [])
         + ["findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", "dashboard.html"],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
