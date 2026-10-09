@@ -11,11 +11,11 @@
 > 分三类：**卡在用户手上** / **AI 可自动做** / **暂缓（有理由）**。
 
 ### 🔴 卡在用户手上（AI 做不了）
-1. **等 SkillHub 审核**（9/29 提交，3–7 工作日 → 预计 10/2–10/9）
+1. ~~等 SkillHub 审核~~ ✅ **2026-09-30 已通过、已上线**
 2. **（可选）改昵称** —— 个人页当前显示「学涛」；不想公开真名就改笔名
 3. **`clawhub login`** —— ClawHub 发布必须本人 GitHub 授权（5 分钟）
 4. **公众号定稿发文** —— `docs/wechat-article.md` 已就绪，4 个标题候选待选
-5. **找 1–2 位真实审计师试用** —— Layer 3 的真正起点
+5. **找 1–2 位真实审计师试用** —— Layer 3 的真正起点（**当前唯一真正的瓶颈：上架 9 天 0 安装**）
 
 ### 🆕 待开发新技能（方向已定，**等用户说开工**）
 **`audit-sql-builder`（审计取数 SQL 生成器）** —— 场景："只知道业务系统名 → 拿到能分析的数据"。
@@ -23,11 +23,12 @@
 **完整设计已落成文档：[`docs/PLAN-audit-sql-builder.md`](docs/PLAN-audit-sql-builder.md)（下次直接从「设计」一节开工）**
 
 ### 🟢 AI 可自动做（已在做 / 待做）
-6. **ClawHub 上架准备**：分类/主题映射进配置、复用净化版、写发布脚本（只差 login）
-7. **`CONTRIBUTING.md`**（Layer 1 唯一遗留）
-8. **SkillHub 审核状态跟踪**：日报里增加"审核状态变化"提醒
+6. ~~ClawHub 上架准备~~ ✅ 已完成（只差 `clawhub login`）
+7. ~~`CONTRIBUTING.md`~~ ✅ 已完成
+8. ~~SkillHub 审核状态跟踪~~ ✅ 已完成（每日例行 Step 6b 拉平台数据）
 9. **公众号草稿自动同步**：把最新能力（交叉核验/分类/两版架构）写进 `docs/wechat-article.md`
 10. **平台数据周报视图**：日报现在只有当日快照，可加"本周 vs 上周"
+17. ~~**安装层加固**~~ ✅ **完成（2026-10-09）** —— 见下「安装层加固记录」
 
 ### ⏸ 暂缓（有理由，不是忘了）
 11. L2 反馈/评分机制（用户太少；平台评论已覆盖主要场景）
@@ -38,6 +39,31 @@
 
 ### ⛔ 客观做不到
 16. GUI 平台（WorkBuddy/龙虾/Cursor）自动测试 —— Mac mini 够不着用户的 GUI
+
+---
+
+## 🔧 安装层加固记录（2026-10-09，来自真实审计师实机反馈）
+
+> **背景**：一位真实审计师（Windows + 豆包工作）安装时遇到一连串问题；他的宿主 Agent 最终**自己想办法**
+> （用 API 列文件 + 逐个下载 17 个文件）装成了——**成功，但不可控**。据此做了下面一轮加固。
+> **这一层以前几乎零覆盖**（所有自动化都在"装完之后"，从没测过"装的过程"）。
+
+| # | 问题 | 修复 |
+|---|---|---|
+| 1 | **豆包目录认错产品**：只认「豆包」`Doubao/.doubao`，审计师实际是「豆包工作」`DoubaoWork/.doubaowork` | `install.sh` / `install.ps1` 两套都探测，优先「豆包工作」；弱匹配兜底（只有应用数据目录、workspace 未建） |
+| 2 | **Windows 没有 bash**：`install.sh` 是 `.sh`，跑不了 | 新增 **`install.ps1`**（Windows 原生，Windows PowerShell 5.1+ / PS7+），参数与 install.sh 一致（`-Agent/-Prefix/-Version/-Mirror/-Skills/-DetectOnly`） |
+| 3 | **宿主被迫"自己发明"装法** | 官方两条路：`install.ps1`；或「浏览器下载 release zip + 解压」（零命令行） |
+| 4 | **触发「危险指令」确认**，用户不确定能否允许 | `install.md` / `adapters/doubao.md` 写清"官方命令只下载+解压"；并给出零命令行的替代路 |
+| 5 | **`github.com` 主站不通**（api/raw 可通） | 下载与版本解析都加**网络降级**：`github.com` → GitHub API 资产接口（跟随 302 到 CDN）；版本再兜底到 raw 上的 `VERSION`；另加 `MIRROR=` 镜像前缀 |
+| 6 | 版本可能硬编码/过时 | 仍是"每次解析最新 tag"（API → 重定向 → raw 三路） |
+| 7 | 用户不知道会装到哪 | 新增 `--detect-only` / `-DetectOnly`（不联网、不安装，只打印解析结果） |
+| 8 | 上面这些没有回归测试 | 新增 `evals/tests/test_install_detection.py`（9 用例，`install.sh` 与 `install.ps1` 双跑；已在 `validate_pack --run-tests` 里） |
+
+**顺带修正**：`install.sh` 现在也探测 Claude Code / Cursor / Codex / Gemini（追加在末尾，不改变既有优先级）——
+以前 `install.md` 声称支持但脚本其实没探测。
+
+**注意**：`install.sh` / `install.ps1` **不在 `skills-v2/` 里**，所以本次**不需要发新 release**
+（它们从 `main` 分支实时拉取）。
 
 ---
 

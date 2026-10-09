@@ -4,7 +4,7 @@
 >
 > Agent 可读区。如果你（智能体）被用户要求装 andrew-tao-li 提供的审计 skill：
 > 1. 找下表的「中文/英文友好名」，得到对应的 `skill-id`。
-> 2. 跑下面「Install 命令」对应那行。
+> 2. 跑下面「Install 命令」对应那行；**Windows 且机器上没有 bash 的，改用 `install.ps1`**（见「Windows 用户」一节）。
 >
 > 整个文件就是一个「统一安装入口」，URL 永远指向 `main` 分支、`install.sh` 内部自动取 GitHub 最新 tag。本文件是 mirror，权威源在仓库。
 
@@ -38,6 +38,34 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 - 自动检测 Agent 类型（OpenCode / WorkBuddy / LobsterAI / 豆包 / Claude Code / Cursor / Codex 等），装到对应 `skills/` 目录
 - 装完报告装到哪、装了哪些
 - 打错字会立刻报错，不会静默失败
+
+### Windows 用户：没有 bash 也能装（两条路，任选其一）
+
+> Windows 自带的是 PowerShell；`install.sh` 是 bash 脚本，需要 Git Bash / WSL。**没有 bash 时走下面两条。**
+
+**路 1（推荐）：PowerShell 安装脚本**（与 `install.sh` 等价：自动探测 → 下载最新版 → 解压）
+
+```powershell
+$f="$env:TEMP\ai-audit-install.ps1"; iwr -UseBasicParsing https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.ps1 -OutFile $f; powershell -ExecutionPolicy Bypass -File $f
+```
+
+只装某一个就在结尾加 `-Skills expense-audit-v2`；不确定装到哪，先跑 `-DetectOnly` 看解析出的目录。
+
+**路 2（零命令行）：浏览器下载 + 解压**（最不吓人，不需要放开任何命令执行）
+
+1. 打开 <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest>
+2. 下载需要的 `<skill>.zip`
+3. 右键「全部解压缩」
+4. 把解出来的整个文件夹，放进你的 Agent 技能目录（见文末表格，或 `install.ps1 -DetectOnly` 的输出）
+
+### 如果宿主提示「危险指令」怎么办
+
+安装技能本质上就两步：**从 GitHub 下载一个 zip、解压到技能目录**。宿主之所以提示，通常是因为
+「下载 + 解压/执行」这个动作撞上了它的安全策略。**请先看命令内容再决定**：
+
+- 我们的官方命令只会访问 `github.com` / `raw.githubusercontent.com` / `api.github.com`，只会写到你自己的技能目录；
+- 不放心就走**路 2**（浏览器下载 + 手动解压），**完全不需要放开命令行**；
+- 也不建议让宿主 Agent「自己想办法」装（它可能会逐个文件去抓，版本和完整性都不受控）——用上面这两条官方路径。
 
 ---
 
@@ -132,16 +160,51 @@ skillhub install andrew-tao-li-cn-entity-relation       --namespace indiv-ai-aud
 | OpenCode | `~/.config/opencode/skills` |
 | WorkBuddy | `~/.workbuddy/skills` |
 | LobsterAI | `~/Library/Application Support/LobsterAI/SKILLs`（macOS；另有 `~/.lobsterai/skills` 兜底） |
-| **豆包（豆包工作）** | `<豆包数据目录>/Doubao/User Data/Default/.doubao/agent_mode/workspace/.user_skills`（Windows `%LOCALAPPDATA%` / macOS `Application Support`） |
+| **豆包工作**（DoubaoWork） | `<数据目录>/DoubaoWork/User Data/Default/.doubaowork/agent_mode/workspace/.user_skills`（Windows `%LOCALAPPDATA%` / macOS `Application Support`） |
+| **豆包**（个人版） | `<数据目录>/Doubao/User Data/Default/.doubao/agent_mode/workspace/.user_skills` |
+| Claude Code | `~/.claude/skills` |
+| Cursor | `~/.cursor/skills` |
+| Codex | `~/.codex/skills`（另有 `~/.agents/skills` 兜底） |
+| Gemini CLI | `~/.gemini/skills` |
 
-> 探测顺序为 OpenCode → WorkBuddy → LobsterAI → **豆包**。**豆包放在最后，因此不会改变任何既有平台的安装结果**；
-> 机器上同时存在多个 Agent 目录时，脚本会打印提示，并告诉你如何用 `HOST=` 指定另一个。
+> ⚠️ **「豆包工作」和「豆包」是两个产品、两套目录**（`DoubaoWork`/`.doubaowork` 与 `Doubao`/`.doubao`）。
+> 2026-10 的真实审计师用的是「豆包工作」——早期脚本只写了个人版路径，导致探测失败，**现已两套都认**。
+>
+> 探测顺序为 OpenCode → WorkBuddy → LobsterAI → **豆包** → Claude / Cursor / Codex / Gemini。
+> 新加的都在**末尾**，因此不会改变任何既有平台的安装结果；机器上同时存在多个 Agent 目录时，
+> 脚本会打印提示，并告诉你如何用 `HOST=` / `-Agent` 指定另一个。
+>
+> 不确定会装到哪？先自检（不联网、不安装，只打印解析结果）：
+> ```bash
+> bash install.sh --detect-only                 # macOS / Git Bash / WSL
+> ```
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File .\install.ps1 -DetectOnly   # Windows
+> ```
 
-如果自动检测不对，可以显式指定（环境变量）：
-```
+如果自动检测不对，可以显式指定（环境变量 / 参数二选一）：
+```bash
 curl ... | HOST=workbuddy bash
 curl ... | HOST=doubao bash
 curl ... | PREFIX=~/.my-custom-path bash
+```
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Agent doubao
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Prefix C:\my\skills
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Skills expense-audit-v2
+```
+
+### 网络受限时（github.com 连不上、但 api / raw 能通）
+
+部分企业网/国内网络会出现 `github.com` 超时而 `api.github.com`、`raw.githubusercontent.com` 可通。
+`install.sh` / `install.ps1` 已内置**网络降级**：直连失败会自动改用 GitHub API 资产接口下载。
+若仍不通，可指定镜像前缀（镜像需按 `<前缀>/<版本>/<skill>.zip` 提供文件）：
+
+```bash
+MIRROR=https://my.mirror/ bash install.sh expense-audit-v2
+```
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Mirror https://my.mirror/
 ```
 
 ### 锁定版本
@@ -179,8 +242,12 @@ rm -rf ~/.config/opencode/skills/expense-audit-v2
 | 3 | 沙箱拒绝写 `/tmp` 子目录 | `curl(23)`「系统找不到指定的文件」 | install.sh 已改为下载到目标目录（见下）；手动装则直接解压到 skills 目录 |
 | 4 | HEAD 请求超时 | `curl -I` 对 GitHub 返回 000 | 用 GET；或 API JSON（带 `User-Agent`） |
 | 5 | 沙箱拒绝删除部分路径 | 删除被 Blocked | 测试产物留在原位即可 |
+| 6 | 机器上没有 bash | `install.sh` 无法执行（`.sh` 需要 Git Bash / WSL） | 用 `install.ps1`，或走「浏览器下载 + 解压」 |
+| 7 | `github.com` 主站不通 | 直连超时（但 `api.github.com` / `raw.githubusercontent.com` 通） | 脚本已内置降级（自动改用 API 资产接口）；必要时设 `MIRROR=` |
+| 8 | 豆包目录探测不到 | 早期脚本只认「豆包」，实际是「豆包工作」 | 已修复（两套都认）；用 `-DetectOnly` 确认 |
 
-> install.sh 已针对这些做过加固：版本探测改用 API+`User-Agent`+`sed`（不依赖 python3），下载直接落目标目录（不用 mktemp/`/tmp`）。
+> install.sh 已针对这些做过加固：版本探测改用 API+`User-Agent`+`sed`（不依赖 python3），下载直接落目标目录（不用 mktemp/`/tmp`），
+> 并在 `github.com` 不可达时降级到 GitHub API 资产接口。**Windows 无 bash 时请改用 `install.ps1`。**
 
 ### ZIP 直链（不走 install.sh，手动下载/检查用）
 

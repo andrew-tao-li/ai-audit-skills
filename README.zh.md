@@ -61,6 +61,9 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 > **WorkBuddy 用户推荐路径**：智能体管理 → 通过 URL 导入 → `https://github.com/andrew-tao-li/ai-audit-skills`
 > **OpenClaw / Lobster / 有道龙虾用户**：`clawhub install expense-audit-v2`（**已准备就绪、尚未上架**——上架通道在作者侧，见 [install.md](install.md)）
 > **国内 SkillHub**：发布到 `https://skillhub.cn`（"专为中国用户优化的 AI Skills 社区"）
+> **⚠️ Windows 用户（机器上没有 bash）**：`install.sh` 跑不了，请用同目录的 `install.ps1`：
+> `powershell -ExecutionPolicy Bypass -File .\install.ps1`；或直接「浏览器下载 release zip + 解压」。详见 [install.md](install.md)。
+> **豆包 / 豆包工作**：注意是**两个产品、两套目录**（`DoubaoWork`/`.doubaowork` 与 `Doubao`/`.doubao`），脚本两套都认，`HOST=doubao` 可显式指定。
 
 ## 快速上手
 
@@ -118,7 +121,7 @@ ai-audit-skills/
 ├── evals/                      黑盒黄金测试 + F1 评分
 ├── evolution/                  Auto-Research 框架 + 路线图
 ├── dist-v2/                    每个 skill 的发布 zip
-├── install.sh / install.md      一键安装脚本 + 文档
+├── install.sh / install.ps1 / install.md   一键安装脚本（bash + Windows PowerShell）+ 文档
 ├── README.md / README.zh.md    本文件
 └── VERSIONS.json               技能版本清单
 ```

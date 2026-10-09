@@ -80,7 +80,8 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 
 - **WorkBuddy**：技能管理 → 「通过 URL 导入」→ 填 `https://github.com/andrew-tao-li/ai-audit-skills`（或某个 skill 子目录，如 `…/tree/main/skills-v2/expense-audit-v2`）。
 - **有道龙虾（LobsterAI）**：Skill Store 直接装，或 `clawhub install expense-audit-v2`（**通道已就绪、尚未上架**）。
-- **豆包（豆包工作）**：把 skill 目录复制到豆包工作区的 `.user_skills/` 下（Windows `%LOCALAPPDATA%\Doubao\User Data\Default\.doubao\agent_mode\workspace\.user_skills`；macOS 在 `~/Library/Application Support/Doubao/…` 同一路径）。用安装脚本亦可：`HOST=doubao`。
+- **豆包 / 豆包工作**：把 skill 目录复制到工作区的 `.user_skills/` 下。**注意这是两个产品、两套目录**——「豆包工作」用 `DoubaoWork\…\.doubaowork\…`，个人版「豆包」用 `Doubao\…\.doubao\…`（Windows 在 `%LOCALAPPDATA%` 下，macOS 在 `~/Library/Application Support/` 下）。用安装脚本亦可：`HOST=doubao`（Windows 见下方「Windows 用户」）。
+- **Windows 用户**：`install.sh` 是 bash 脚本，需要 Git Bash / WSL。没有 bash 请用同目录的 `install.ps1`（PowerShell），或直接「浏览器下载 release zip + 解压」——见 [install.md](install.md)。
 
 每个 skill 根目录带 `manifest.json`（id/name/version/description/author/type/triggers/tags/license），WorkBuddy / ClawHub 直接认。
 
@@ -103,6 +104,8 @@ ai-audit-skills/
 ├── skills-v2/              四个独立 skill
 ├── docs/                   公共数据协议与方法边界
 ├── adapters/               各 Agent 的安装说明
+├── install.sh              一键安装（bash：macOS / Linux / Git Bash / WSL）
+├── install.ps1             一键安装（Windows PowerShell）
 ├── dist-v2/                按 skill 分开的 ZIP 快照
 └── evals/                  pack 级结构、黑盒评分、触发和跨 Agent 评估
 ```

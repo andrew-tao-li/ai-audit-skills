@@ -1,5 +1,19 @@
 # Changelog
 
+## 安装层加固 — 2026-10-09（`install.sh` / 新增 `install.ps1`，**无需 release**）
+
+来自一位真实审计师（Windows + 豆包工作）的实机反馈：安装**最终成功，但过程惊险**——宿主 Agent 只能自己想办法（逐个文件下载），不可控。据此加固安装层（这一层以前几乎零覆盖）：
+
+- **豆包目录认错产品**：以前只认「豆包」`Doubao/.doubao`；审计师实际是「豆包工作」**`DoubaoWork/.doubaowork`**。现两套都探测，并支持"只有应用数据目录、workspace 未建"的弱匹配。
+- **新增 `install.ps1`**：Windows 原生 PowerShell 安装脚本（`.sh` 需要 bash，很多审计师机器没有）。参数与 `install.sh` 对齐：`-Agent/-Prefix/-Version/-Mirror/-Skills/-DetectOnly`。
+- **网络降级**：`github.com` 主站不通（`api.github.com` / `raw` 可通）时，下载与版本解析自动回退到 GitHub API 资产接口 / raw；另加 `MIRROR=` 镜像前缀。
+- **自检**：新增 `--detect-only` / `-DetectOnly`（不联网、不安装，只打印解析到的安装目录）。
+- **回归测试**：新增 `evals/tests/test_install_detection.py`（9 用例，`install.sh` + `install.ps1` 双跑），已接入 `validate_pack --run-tests`。
+- **文档**：`install.md` 增「Windows 用户」「危险指令怎么办」「网络受限」；`adapters/doubao.md` 写清「豆包 vs 豆包工作」；README 同步。
+- **顺带修正**：`install.sh` 现在也探测 Claude Code / Cursor / Codex / Gemini（追加在末尾，不改变既有优先级）——以前文档声称支持但脚本没探测。
+
+> `install.sh` / `install.ps1` 不属于 `skills-v2/`，从 `main` 分支实时拉取，**本次不产生新 release**。
+
 ## v0.3.4 — 2026-09-26（pack release）
 
 - **dashboard 扩展到其余 3 个 skill**（沿用 expense 的"面向管理者"风格：先说发现、全中文、去技术细节）：
