@@ -17,7 +17,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.5"
+VERSION = "0.2.6"
 SKILL = "procurement-fraud-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -976,14 +976,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "3. 主动核对公共地址、模板、独家供应、紧急采购和系统补录等替代解释。", "",
         "## 输出文件", "", "**审计结论（给人看）**：summary.md、findings.csv、findings.jsonl、investigation_handoff.json", "",
         "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、各标准化数据表、bad_rows.csv、evidence.jsonl、relationship_graph.json", "",
-        "## 这个工具好用吗？（可选反馈）", "",
-        "如果它对你有帮助，可以对 AI 说一句「**做匿名反馈**」，它会把这次运行的匿名统计（筛查出几类问题、耗时）发给作者，帮作者改进工具。", "",
-        "**不含供应商名称、员工、银行账号、金额**；核心分析全程在你本地、不联网。你不说，它就不会发。", "",
+        "## 这个工具好用吗？（可选反馈，工具不会自动外发）", "",
+        "如果它对你有帮助，可以对 AI 说一句「**生成反馈内容**」——它会生成一段**不含任何敏感信息**的统计（筛查出几类问题、耗时）并**展示给你**，由**你自己**决定是否复制走、发到作者的 GitHub Issue。", "",
+        "**不含供应商名称、员工、银行账号、金额**；核心分析全程在你本地。**你不发，就没有任何内容离开你的电脑。**", "",
         "想反馈时，把这句发给 AI 即可（可附意见，如「速度偏慢」）：", "",
-        "> 做匿名反馈",
+        "> 生成反馈内容",
     ]
     (output / "summary.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
-    print("提示：如果本工具有帮助，可以对我说「做匿名反馈」——只发送匿名统计（不含供应商名称/员工/银行账号/金额），核心分析始终在本地、不联网。", file=sys.stderr)
+    print("提示：如果本工具有帮助，可以对我说「生成反馈内容」——我会生成一段不含敏感信息的统计（不含供应商名称/员工/银行账号/金额）给你，由你自己决定是否发给作者。核心分析在本地；工具不会自动外发任何内容。", file=sys.stderr)
 
     script = Path(__file__).resolve()
     if args.config:

@@ -1,6 +1,6 @@
 # AI Audit Skill Pack
 
-一组可独立安装、默认离线、结果可追溯的审计 Agent Skills（最新版见 [releases/latest](https://github.com/andrew-tao-li/ai-audit-skills/releases/latest)）：
+一组可独立安装、默认离线、结果可追溯的审计 Agent Skills（最新版见 [releases/latest](https://github.com/andrew-tao-li/ai-audit-skills/releases/latest)）。**分析脚本本身离线**；唯一的联网动作是**可选的版本检查**（只读一个公开的版本号文件，可关闭），每个 skill 的 `SKILL.md` 开头都有「**联网与风险（必读）**」把边界说清：
 
 - `expense-audit-v2`：费用、报销与发票异常全量扫描。
 - `procurement-fraud-v2`：采购舞弊红旗、供应商关系、价格、拆单、流程和标书相似度筛查。

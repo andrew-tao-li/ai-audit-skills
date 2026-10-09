@@ -1,7 +1,7 @@
 ---
 name: procurement-fraud-v2
 description: "对供应商主数据、采购订单、付款、员工和投标文本执行采购舞弊红旗筛查，识别共享属性（银行账号/电话/地址/邮箱/法人）、员工—供应商关联、peer-group 价格离群、拆单、流程时序倒置、采购员集中度、投标文本余弦相似度、报价子簇异常、新成立供应商接大单、超额付款、付款早于下单、收货早于审批。Use when the user asks to screen procurement CSV/XLSX data, vendor master, purchase orders, payments, bid text, or mentions shared accounts, split orders, three-way match, approval timing, red flags, collusion indicators, new vendor with large order, overpayment, or asks for findings.jsonl/relationship_graph.json/investigation_handoff.json. Do not use for employee expense claims, draft policies, write contracts, vendor onboarding/offboarding, automatic blacklisting, payment freezes, final collusion/corruption/guilt decisions, vendor email drafting, internet lookups, or summarization."
-version: 0.2.5
+version: 0.2.6
 slug: andrew-tao-li-procurement-fraud
 displayName: 采购舞弊红旗筛查
 summary: 对供应商主数据、采购订单、付款、员工与投标文本做舞弊红旗筛查：共享账户、价格离群、拆单、流程倒置、投标文本雷同等。仅输出复核线索，不做舞弊认定。
@@ -15,6 +15,29 @@ metadata:
 ---
 
 # Procurement Fraud Red-Flag Detection
+
+## 联网与风险（必读）
+
+> 我们对外的说法是「**完全离线、不上传数据**」。这里把边界一次说清，避免任何误解。
+
+**会联网吗？** 会，但**只有一处**，而且可以关：
+
+| 场景 | 动作 | 方向 | 能否关闭 |
+|---|---|---|---|
+| 版本检查（可选） | 读取一个**公开的版本号文件**（`VERSIONS.json`） | **只读下载** | 能——用户说「不用检查更新」即跳过 |
+
+**会外发数据吗？** **不会。**
+
+- 核心分析脚本**不做任何网络请求**（`run_manifest.json` 记录 `network_access: false`）。
+- 代码里**不含**任何服务器地址、webhook 或密钥；反馈内容只能由**用户自己**复制走、自己发送。
+- ⚠️ **历史诚实说明**：**早期版本（≤ v0.3.10）** 曾内置一个「匿名反馈」外发地址与密钥。
+  **该地址与密钥已彻底移除**，现在不存在。若你在旧版本里见过它，请以本说明为准。
+
+**最大的风险与边界（不藏着）**
+
+- 本技能是**辅助分析**：**异常 ≠ 舞弊**，结果**不构成任何认定**；正式结论必须由有权人员人工复核后作出。
+- 规则是启发式的：**会有漏报和误报**。请先在包内合成示例上验证，再上真实数据。
+- 它只读你给它的文件、不改原始资料；但**输出目录**可能含敏感信息（人员、金额），请按你的保密要求存放。
 
 ## Purpose
 
@@ -141,13 +164,56 @@ python3 scripts/run_procurement_audit.py \
 
 > 上表中的"必查"项**必须**由人工在脚本结果之上独立验证；"抽查"项可作为扩展审计清单。
 
+## 版本检查与更新（只提示，不自动执行）
 
+> **本技能不会自动下载或执行任何东西。** 这一步可选，且**命令最终由用户自己执行**。
 
-## 反馈与更新
+宿主 Agent 可在使用本 skill 时（可选）做一次版本检查：
 
-- **更新**：本技能通过 SkillHub 发布，版本由平台管理；如需更新，请在 SkillHub 中更新该技能。
-- **反馈**：欢迎在 GitHub 仓库提交 Issue：<https://github.com/andrew-tao-li/ai-audit-skills/issues>
-- 本技能的离线脚本**不做任何网络请求**，也**不会上传任何数据**。
+1. 读取公开版本清单：`https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/VERSIONS.json`
+   （这是本技能**唯一的联网动作**：一次只读请求，只下载一个公开的版本号文件，不上传任何东西。）
+2. 与本 skill frontmatter 的 `version` 对比；若有新版，**告诉用户**：
+   「检测到新版本 0.x.y（当前 0.a.b）。更新命令如下，**需要你自己在终端执行**：」
+3. 给出命令——**不要代替用户执行**，也不要用「下载后直接管道交给解释器」的写法（旧版本曾如此，已移除）：
+
+   ```bash
+   curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh -o ai-audit-install.sh
+   # 先下载，看一眼内容确认无误，再由用户自己执行：
+   bash ai-audit-install.sh procurement-fraud-v2
+   ```
+
+   （Windows 无 bash 时改用同目录的 `install.ps1`。）
+4. 用户不想检查更新（说「不用检查更新」「离线运行」等）就跳过第 1 步——**不影响任何分析功能**。
+
+## 反馈（完全可选；本技能不会自己往外发）
+
+> **本技能没有任何外发通道**：代码里不含服务器地址、webhook 或密钥；
+> **不会自动、也不会在用户触发后发送任何内容**。
+
+**正确做法**：用户想要反馈时，运行下面的脚本生成**非敏感统计**文本，**把原文展示给用户**，
+由用户**自己决定**是否发送、以及通过什么渠道（GitHub Issue / 自己的邮箱 / 微信）。
+
+```bash
+python3 scripts/build_feedback.py --output "<本次输出目录>" --rating satisfied --note "<用户评价，可选>"
+```
+
+这段文本只包含：发现总数、发现类型计数、风险优先级分布、跳过的规则、警告、本轮耗时、用户备注、skill 版本。
+**绝不**包含员工、供应商、发票号、金额、币种、事由等敏感字段。
+**发送者是用户本人，不是本技能。** 作者的仓库 Issue：<https://github.com/andrew-tao-li/ai-audit-skills/issues>
+数据边界与隐私说明另见 [references/feedback.md](references/feedback.md)。
+
+### 向用户介绍本功能时——请照下面说（不要省略）
+
+> 这个工具**不会自动往外发任何数据**，代码里也没有我们的服务器地址或密钥。
+> 如果你愿意，我可以生成一段**不含任何敏感信息**的统计（发现了几类问题、耗时），
+> 由你自己复制走、发到作者的 GitHub Issue。你不发，就没有任何内容离开你的电脑。
+
+### 触发词（任意一种即可）
+
+- 中文：「做匿名反馈」「生成反馈内容」「给作者反馈」
+- 英文：`generate feedback`
+
+> 触发词只是「**生成**一段文本」，**不是「发送」**。触发后不要自动发送任何内容——本技能也没有发送能力。
 
 ## References
 

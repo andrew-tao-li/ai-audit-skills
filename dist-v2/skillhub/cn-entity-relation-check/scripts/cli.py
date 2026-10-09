@@ -66,7 +66,7 @@ def main() -> int:
     if args.dashboard:
         build_dashboard_html(result, args.dashboard)
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    print("提示：如果本工具有帮助，可以对我说「做匿名反馈」——只发送匿名统计（不含主体名称/统一社会信用代码），核心分析始终在本地、不联网。", file=sys.stderr)
+    print("提示：如果本工具有帮助，可以对我说「生成反馈内容」——我会生成一段不含敏感信息的统计（不含主体名称/统一社会信用代码）给你，由你自己决定是否发给作者。核心分析在本地；工具不会自动外发任何内容。", file=sys.stderr)
     return 0
 
 

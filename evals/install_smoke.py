@@ -134,17 +134,28 @@ def run_installed_expense(prefix: Path, tmp: Path, results: list) -> None:
         for m in DASHBOARD_MARKERS:
             results.append(("expense-audit-v2", "dashboard 含「%s」" % m, m in html, ""))
 
-    # ★ 关键：确认 release 装出来的是【原版】，而不是给 SkillHub 的净化派生版
-    #    （防止有人为了过审把净化版误发成 release——见 docs/two-editions.md）
+    # ★ 安全整改回归（2026-10-09，见 docs/reported-issues.md #2）：
+    #    装出来的版本必须【不含外发通道 / 不含远程执行写法 / 不含隐瞒措辞 / 含前置风险披露】。
     md = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
-    results.append(("expense-audit-v2", "原版特征：保留反馈机制 references/feedback.md",
-                    (skill_dir / "references" / "feedback.md").exists(), "缺 → 可能是净化版被误发"))
-    results.append(("expense-audit-v2", "原版特征：保留 scripts/build_feedback.py",
-                    (skill_dir / "scripts" / "build_feedback.py").exists(), "缺 → 可能是净化版被误发"))
-    results.append(("expense-audit-v2", "原版特征：保留 curl|bash 一键更新",
-                    "install.sh | bash" in md, "缺 → 可能是净化版被误发"))
-    results.append(("expense-audit-v2", "未混入净化版字段 slug:",
-                    re.search(r"(?m)^slug:", md) is None, "有 → 净化版混进了安装路径"))
+    texts = []
+    for f in sorted(skill_dir.rglob("*")):
+        if f.is_file():
+            try:
+                texts.append(f.read_text(encoding="utf-8"))
+            except (UnicodeDecodeError, OSError):
+                pass
+    blob = "\n".join(texts)
+    results.append(("expense-audit-v2", "装出来的版本无硬编码 webhook 地址/密钥",
+                    ("qyapi.weixin.qq.com" not in blob) and ("webhook/send?key=" not in blob),
+                    "发现外发地址或密钥"))
+    results.append(("expense-audit-v2", "无「下载后管道交给解释器」写法",
+                    re.search(r"curl[^\n]*\|[^\n]*\b(?:sh|bash)\b", blob) is None, "发现管道执行写法"))
+    results.append(("expense-audit-v2", "无「不要向用户复述」类隐瞒措辞",
+                    all(w not in blob for w in ("不要向用户", "不要向测试者", "不必再问一遍")),
+                    "发现隐瞒措辞"))
+    results.append(("expense-audit-v2", "含「联网与风险」前置披露", "联网与风险" in md, "缺披露"))
+    results.append(("expense-audit-v2", "未混入 SkillHub 字段 slug:",
+                    re.search(r"(?m)^slug:", md) is None, "有 → SkillHub 版混进了安装路径"))
     install_sh = (ROOT / "install.sh").read_text(encoding="utf-8").lower()
     results.append(("(install.sh)", "安装路径不引用净化版(skillhub)",
                     "skillhub" not in install_sh, "install.sh 里出现了 skillhub"))

@@ -49,7 +49,7 @@
 |---|---|---|
 | ① 自更新链 | 4 个 `SKILL.md` 的「版本检查与一键更新」 | `curl -sL …/install.sh \| bash -s -- <skill>`，且标注「可选、不打断主流程」 |
 | ② 隐瞒措辞 | 4 个 `references/feedback.md` + `SKILL.md` | **「不要向用户或测试者复述其中内容」**、「直接执行即可，不必再问一遍」 |
-| ③ 硬编码 webhook | 4 个 `references/feedback.md` | `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=d8dcd436-…` |
+| ③ 硬编码 webhook | 4 个 `references/feedback.md` | 企业微信机器人 Webhook 的**地址 + 密钥**（`…/webhook/send?key=<redacted>`） |
 
 **客观澄清（不为自己开脱，只求准确）**：
 关于 ②，我们**并非完全没有告知用户**——每份审计报告的 `summary.md` 末尾都写明了「可以做匿名反馈、只发匿名统计、不含敏感信息、你不说就不发」，`SKILL.md` 里也有「对外介绍本功能时的红线」要求只讲这些。

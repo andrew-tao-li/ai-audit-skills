@@ -19,8 +19,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG_FILE="$ROOT/evolution/notify_config.json"
 
 # === 读取配置 ===
-WECOM_URL=""
-if [ -f "$CONFIG_FILE" ]; then
+# 优先环境变量 WECOM_WEBHOOK（来自私有文件 ~/.config/ai-audit-skills/env，**不进公开仓库**）；
+# 否则回退到 evolution/notify_config.json。
+WECOM_URL="${WECOM_WEBHOOK:-}"
+if [ -z "$WECOM_URL" ] && [ -f "$CONFIG_FILE" ]; then
     WECOM_URL=$(python3 -c "
 import json
 try:

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-构建 SkillHub.cn 专用「净化版」（目标是过平台的三线安全审核）。
+构建 SkillHub.cn 上架用的版本（目标是**平台适配 + 内容合规守卫**）。
 
-为什么需要单独一份：
-  SkillHub 上架前会跑「内容合规过滤 + 科恩实验室漏洞扫描 + 云鼎 AI 模型安全评估」。
-  canonical 版本（skills-v2/）里有两处对 GitHub 分发是合理的，但会被安全审核盯上：
-    1. 反馈机制把统计 POST 到作者的固定 webhook（references/feedback.md 里有硬编码 key）
-    2. SKILL.md 里的 `curl ... | bash` 一键更新指令
-  另外 SkillHub 要求 SKILL.md frontmatter 含 slug / displayName / version / summary / license。
+背景（2026-10 更新）：
+  原先 canonical 里有两处会被安全审核盯上的东西——硬编码反馈 webhook 与 curl|bash 一键更新；
+  因此当时做了「净化版」。2026-10 一次企业安全审查驳回后（见 docs/reported-issues.md #2），
+  按用户决定：**canonical 本身已移除这两类内容**。
 
-本脚本从 skills-v2/ 生成 dist-v2/skillhub/<skill>/，做以下净化：
-  - 删 references/feedback.md、scripts/build_feedback.py（去掉硬编码 key 与数据外发）
-  - SKILL.md：删「版本检查与一键更新」「匿名反馈」两节，换成无外发的「反馈与更新」
-  - SKILL.md：frontmatter 补 SkillHub 字段，去掉超长 changelog
-  - 代码：规范化 __import__("pathlib") 这类动态导入写法（避免扫描器误报）
+所以本脚本现在只做**平台适配**，不再做「安全净化」（canonical 已合规）：
+  - frontmatter 补 SkillHub 要求的 slug / displayName / summary / license / homepage / tags
+  - 去掉超长 changelog（对 marketplace 是噪声，且含已删除功能的描述）
+  - 代码规范化：__import__("pathlib") → 常规 import（避免扫描器误报「动态导入」）
 
-canonical（skills-v2/）与 GitHub release 完全不受影响。
+并**校验**产物不含以下内容（守卫，防止将来回归）：
+  - 任何 webhook 地址或密钥
+  - 「下载后管道交给解释器」的写法（curl … | sh/bash）
+  - 动态导入写法
 
 用法：
   python3 scripts/build-skillhub.py                # 构建 + 校验
@@ -34,17 +34,7 @@ OUT_ROOT = ROOT / "dist-v2" / "skillhub"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from skillhub_config import SKILLS, LICENSE, HOMEPAGE  # noqa: E402  分类/文案的单一来源
 
-# 要删掉的小节（按标题前缀匹配，删到下一个 ## 之前）
-DROP_SECTIONS = ["版本检查与一键更新", "匿名反馈"]
-
-FEEDBACK_SECTION = """## 反馈与更新
-
-- **更新**：本技能通过 SkillHub 发布，版本由平台管理；如需更新，请在 SkillHub 中更新该技能。
-- **反馈**：欢迎在 GitHub 仓库提交 Issue：<https://github.com/andrew-tao-li/ai-audit-skills/issues>
-- 本技能的离线脚本**不做任何网络请求**，也**不会上传任何数据**。
-"""
-
-# 扫描器敏感的写法 → 规范化（净化版专用；canonical 保持原样）
+# 扫描器敏感的写法 → 规范化（canonical 保持原样）
 CODE_RULES = [
     (re.compile(r'__import__\("pathlib"\)\.Path\(([^)]*)\)'), r"Path(\1)"),
 ]
@@ -71,21 +61,15 @@ def ensure_pathlib_import(text: str) -> str:
     lines.insert(last + 1, "from pathlib import Path")
     return "\n".join(lines)
 
+
+# 禁用内容（守卫）：出现在产物里即报错
 FORBIDDEN = [
     ("qyapi.weixin.qq.com", "硬编码 webhook 地址"),
-    ("d8dcd436", "硬编码 webhook key"),
-    ("build_feedback", "反馈外发脚本引用"),
     ("__import__", "动态导入写法"),
 ]
-
-# curl ... | bash / sh 形式的远程执行（单独用正则，避免 Markdown 表格里的 `| bash` 误报）
+# 用正则抓「webhook 地址/密钥」与「下载后管道执行」，避免把字面量写进本文件
+WEBHOOK_KEY = re.compile(r"webhook/send\?key=[0-9A-Za-z-]{8,}")
 REMOTE_EXEC = re.compile(r"curl[^\n]*\|[^\n]*\b(?:sh|bash)\b")
-
-
-def drop_section(text: str, prefix: str) -> tuple:
-    pat = re.compile(r"\n## " + re.escape(prefix) + r"[^\n]*\n.*?(?=\n## )", re.S)
-    new, n = pat.subn("\n", text)
-    return new, n
 
 
 def transform_skill_md(text: str, cfg: dict) -> str:
@@ -101,14 +85,6 @@ def transform_skill_md(text: str, cfg: dict) -> str:
              % (cfg["slug"], cfg["display_name"], cfg["summary"], LICENSE, HOMEPAGE, ", ".join(cfg["tags"])))
     fm = re.sub(r"(?m)^(version:.*)$", lambda mm: mm.group(1) + extra, fm, count=1)
 
-    # 删两节 → 插入新的「反馈与更新」
-    for prefix in DROP_SECTIONS:
-        body, _ = drop_section(body, prefix)
-    if re.search(r"(?m)^## References", body):
-        body = re.sub(r"(?m)^## References", FEEDBACK_SECTION + "\n## References", body, count=1)
-    else:
-        body = body.rstrip("\n") + "\n\n" + FEEDBACK_SECTION
-
     return "---\n" + fm + "\n---\n" + body
 
 
@@ -118,13 +94,7 @@ def build_one(skill: str, cfg: dict) -> Path:
         shutil.rmtree(dst)
     shutil.copytree(src, dst)
 
-    # 删掉外发相关文件
-    for rel in ("references/feedback.md", "scripts/build_feedback.py"):
-        p = dst / rel
-        if p.exists():
-            p.unlink()
-
-    # SKILL.md 净化
+    # SKILL.md 平台适配
     p = dst / "SKILL.md"
     p.write_text(transform_skill_md(p.read_text(encoding="utf-8"), cfg), encoding="utf-8")
 
@@ -147,7 +117,7 @@ def verify() -> list:
         if not d.exists():
             problems.append("%s: 产物不存在" % skill)
             continue
-        # 1. 禁用内容
+        # 1. 禁用内容 / 合规守卫
         for f in d.rglob("*"):
             if not f.is_file():
                 continue
@@ -158,14 +128,16 @@ def verify() -> list:
             for needle, why in FORBIDDEN:
                 if needle in t:
                     problems.append("%s: %s → 命中 '%s'" % (skill, f.relative_to(d), needle))
+            if WEBHOOK_KEY.search(t):
+                problems.append("%s: %s → 命中 webhook 密钥" % (skill, f.relative_to(d)))
             if REMOTE_EXEC.search(t):
-                problems.append("%s: %s → 命中 curl|bash 远程执行" % (skill, f.relative_to(d)))
-        # 2. 外发文件已删
-        for rel in ("references/feedback.md", "scripts/build_feedback.py"):
-            if (d / rel).exists():
-                problems.append("%s: 未删除 %s" % (skill, rel))
+                problems.append("%s: %s → 命中「下载后管道执行」写法" % (skill, f.relative_to(d)))
+        # 2. 前置风险披露必须在（用户 2026-10-09 要求：SkillHub 上不许隐瞒）
+        md = (d / "SKILL.md").read_text(encoding="utf-8")
+        if "联网与风险" not in md:
+            problems.append("%s: SKILL.md 缺少「联网与风险」前置披露" % skill)
         # 3. frontmatter 字段齐全
-        fm = re.match(r"^---\n(.*?)\n---\n", (d / "SKILL.md").read_text(encoding="utf-8"), re.S)
+        fm = re.match(r"^---\n(.*?)\n---\n", md, re.S)
         fmtext = fm.group(1) if fm else ""
         for field in ("slug:", "displayName:", "version:", "summary:", "license:", "homepage:", "tags:"):
             if field not in fmtext:
@@ -191,7 +163,7 @@ def main() -> int:
             print("✓ 构建 %s → %s" % (skill, d.relative_to(ROOT)))
 
     print("\n" + "=" * 60)
-    print("净化版校验")
+    print("SkillHub 版校验")
     print("=" * 60)
     problems = verify()
     if problems:
@@ -199,7 +171,8 @@ def main() -> int:
             print("  ❌ " + p)
         print("\n结果：%d 个问题" % len(problems))
         return 1
-    print("  ✅ 无硬编码 key / 无数据外发 / 无 curl|bash / 无动态导入")
+    print("  ✅ 无 webhook 地址/密钥 / 无「下载后管道执行」/ 无动态导入")
+    print("  ✅ 含「联网与风险」前置披露")
     print("  ✅ frontmatter 含 slug/displayName/version/summary/license/homepage/tags")
     print("  ✅ 核心脚本与文档完整")
     print("\n结果：全部通过（%d 个 skill）" % len(SKILLS))

@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
-VERSION = "0.2.5"
+VERSION = "0.2.6"
 SKILL = "investigation-assistant-v2"
 
 MESSAGE_FIELDS = {
@@ -620,7 +620,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except Exception as _e:
         print("WARNING: dashboard.html generation failed: %s" % _e, file=sys.stderr)
     print(json.dumps({"output": str(output), "raw_files": len(inventory), "timeline_rows": len(timeline), "out_of_scope_rows": len(excluded), "issues": len(matrix), "findings": len(findings), "timezone_available": timezone_warnings["available"]}, ensure_ascii=False))
-    print("提示：如果本工具有帮助，可以对我说「做匿名反馈」——只发送匿名统计（不含案卷内容/当事人姓名），核心分析始终在本地、不联网。", file=sys.stderr)
+    print("提示：如果本工具有帮助，可以对我说「生成反馈内容」——我会生成一段不含敏感信息的统计（不含案卷内容/当事人姓名）给你，由你自己决定是否发给作者。核心分析在本地；工具不会自动外发任何内容。", file=sys.stderr)
     return 0
 
 
