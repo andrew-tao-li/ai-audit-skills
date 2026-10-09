@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -23,7 +24,7 @@ class ProcurementAuditEndToEndTest(unittest.TestCase):
         output = Path(temp.name) / "out"
         completed = subprocess.run(
             [sys.executable, str(SCRIPT), "--input-dir", str(INPUT), "--config", str(CONFIG), "--output", str(output)],
-            capture_output=True, text=True, encoding="utf-8"
+            capture_output=True, text=True, encoding="utf-8", errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8"}
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         return temp, output

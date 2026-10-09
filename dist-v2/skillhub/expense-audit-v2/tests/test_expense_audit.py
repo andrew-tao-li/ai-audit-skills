@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -24,7 +25,7 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
         output = Path(temp.name) / "out"
         completed = subprocess.run(
             [sys.executable, str(SCRIPT), "--input", str(input_path), "--policy", str(POLICY), "--output", str(output)],
-            capture_output=True, text=True, encoding="utf-8"
+            capture_output=True, text=True, encoding="utf-8", errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8"}
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         return temp, output
@@ -112,7 +113,7 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)]
             if policy:
                 cmd += ["--policy", str(policy)]
-            completed = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+            completed = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
             self.assertEqual(completed.returncode, 0, completed.stderr)
             return [json.loads(l)["finding_type"]
                     for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
@@ -172,7 +173,7 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
 
             def types(extra, out):
                 cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--policy", str(pol), "--output", str(out)] + extra
-                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
                 self.assertEqual(r.returncode, 0, r.stderr)
                 return [json.loads(l)["finding_type"]
                         for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
