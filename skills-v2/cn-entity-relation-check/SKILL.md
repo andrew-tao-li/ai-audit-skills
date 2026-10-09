@@ -1,12 +1,12 @@
 ---
 name: cn-entity-relation-check
 description: "对两个主体（公司/自然人）核查中国公开工商信息中是否存在可验证关联，支持公司-公司、公司-自然人、自然人-自然人三类组合，输出关联/不关联/待核查三态结论。Use when the user asks whether two companies or people are related, requests 关联排查/关联分析/关系穿透/股权穿透, supplier-employee relationship checks, related-party screening, 共同股东/高管/法人 overlap, 实际控制/最终受益人, or Chinese corporate due-diligence tasks. Do not use for risk scoring, fraud conviction, benefit-transfer conclusions, personal background investigation (family, private contact, social media), or internal hidden-relationship mining."
-version: 0.1.6
+version: 0.1.7
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline decision core; Python 3.10+ for scripts; structured corporate data (MCP/API) preferred, web search as fallback"
   predecessor: null
-  changelog: "v0.1.6: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.1.4: 报告改版——第一屏执行摘要（三态结论+主体对+关键指标+最直接的关系+数据源范围+下一步），路径分「最直接」与「其余」；反馈说明改为人话（webhook 移入 references/feedback.md）；修复 cli.py 缺 import sys。v0.1.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）；结果 JSON 增 skill/skill_version 字段。v0.1.0: 三态判定协议（关联/不关联/待核查）/ 实体锚定 + 自然人重名消歧 / 强弱证据分层 / 确定性决策引擎 + result_validator / max_depth=3 的 BFS 路径查找 / Provider Adapter 抽象 / 零真实 Key"
+  changelog: "v0.1.7: 触发词补「股权穿透」（定期巡检提案）。v0.1.6: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.1.4: 报告改版——第一屏执行摘要（三态结论+主体对+关键指标+最直接的关系+数据源范围+下一步），路径分「最直接」与「其余」；反馈说明改为人话（webhook 移入 references/feedback.md）；修复 cli.py 缺 import sys。v0.1.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）；结果 JSON 增 skill/skill_version 字段。v0.1.0: 三态判定协议（关联/不关联/待核查）/ 实体锚定 + 自然人重名消歧 / 强弱证据分层 / 确定性决策引擎 + result_validator / max_depth=3 的 BFS 路径查找 / Provider Adapter 抽象 / 零真实 Key"
 ---
 
 # 关联排查（中国公开工商关系）
