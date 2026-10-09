@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.12"
+VERSION = "0.2.13"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -41,6 +41,7 @@ STRENGTH_ZH = {"strong": "强", "moderate": "中", "weak": "弱"}
 ALIASES = {
     "expense_id": ["expense_id", "id", "claim_id", "report_id", "单据号", "报销单号", "费用编号"],
     "employee_id": ["employee_id", "emp_id", "employee", "staff_id", "员工编号", "工号", "员工"],
+    "employee_name": ["employee_name", "emp_name", "员工姓名", "姓名"],
     "department": ["department", "dept", "部门"],
     "expense_type": ["expense_type", "category", "type", "费用类型", "费用类别", "报销类型"],
     "expense_date": ["expense_date", "date", "transaction_date", "发生日期", "费用日期", "报销日期"],
@@ -106,8 +107,16 @@ def parse_date(value: Any) -> Optional[str]:
     text = norm_text(value)
     if not text:
         return None
-    text = text.split("T")[0].split(" ")[0]
-    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%d/%m/%Y", "%m/%d/%Y"):
+    text = re.split(r"[T\s]+", text.strip(), maxsplit=1)[0]
+    # v0.2.13：中文日期「2026年10月9日」（可跟时间/后缀）——真实台账里很常见，
+    # 以前认不出来会被当成坏行，导致这一天相关的规则全部失联。
+    m = re.match(r"^(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日", text)
+    if m:
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3))).isoformat()
+        except ValueError:
+            return None
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y%m%d", "%d/%m/%Y", "%m/%d/%Y"):
         try:
             return datetime.strptime(text, fmt).date().isoformat()
         except ValueError:
@@ -245,6 +254,10 @@ def resolve_mapping(headers: Sequence[str], explicit: Dict[str, Any], allow_miss
     # v0.2.8：若配置了 amount_columns（多列金额求和），则允许没有单一 amount 列
     if allow_missing_amount:
         missing = [field for field in missing if field != "amount"]
+    # v0.2.13：报销人身份允许用「姓名」——没有 employee_id 但有 employee_name 时，视为满足
+    #（真实台账里小公司常常只有姓名没有工号；见审计师反馈第 4 条）
+    if "employee_id" in missing and "employee_name" in mapping:
+        missing = [field for field in missing if field != "employee_id"]
     if missing:
         raise ValueError("缺少核心字段映射：%s。请使用 --field-map 提供明确映射" % ", ".join(missing))
     return mapping, warnings
@@ -265,6 +278,9 @@ def normalize_rows(
             row[canonical] = normalized
             if normalized != ("" if raw is None else str(raw).strip()):
                 changes["trimmed_or_normalized_text_values"] += 1
+        # v0.2.13：只有姓名、没有工号时，用姓名充当 employee_id（保证下游按人分组的规则仍正确）
+        if not row.get("employee_id") and row.get("employee_name"):
+            row["employee_id"] = row["employee_name"]
         # v0.2.8：多列金额求和——仅当配置了 amount_columns 且该行没有单一金额列时生效
         if amount_columns and not norm_text(row.get("amount")):
             _total, _found = 0.0, False
@@ -999,22 +1015,41 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
 
     # ============ v0.2.0 新增规则 ============
 
-    # 规则：自审自批（approver == employee_id）—— 高信号
+    # 规则：自审自批（审批人与报销人是同一人）—— 高信号
+    # v0.2.13：报销人可以是 employee_id 或 employee_name；审批人命中其一即算自审自批。
     self_approval_pairs = []
     for row in rows:
         approver = norm_text(row.get("approver"))
-        employee = norm_text(row.get("employee_id"))
-        if approver and employee and approver == employee:
+        identities = {norm_text(row.get("employee_id")), norm_text(row.get("employee_name"))}
+        identities.discard("")
+        if approver and approver in identities:
             self_approval_pairs.append(row)
     if self_approval_pairs:
         builder.add("self-approval", "审批人与报销人为同一人（自审自批）", 4, "strong",
                     self_approval_pairs,
                     ("expense_id", "employee_id", "approver", "amount", "expense_type"),
-                    ["%d 条记录的审批人 ID 与报销人 ID 相同" % len(self_approval_pairs)],
+                    ["%d 条记录的审批人与报销人相同" % len(self_approval_pairs)],
                     ["自审自批违反基本内部控制原则，除非制度另有规定"],
                     ["是否存在代审批、紧急事后补批或权限错误？"],
                     ["核对审批日志、组织架构和代审批授权"],
                     [{"factor": "self_approval", "points": 4}])
+    else:
+        # v0.2.13：口径提示——审批人列像是姓名、报销人列像是工号时，几乎必然漏检。
+        # 明确写入 skipped，而不是静默"没发现"。这正是真实审计师反馈的第 4 条。
+        approver_vals = [norm_text(r.get("approver")) for r in rows if norm_text(r.get("approver"))]
+        emp_vals = [norm_text(r.get("employee_id")) for r in rows if norm_text(r.get("employee_id"))]
+        has_name_col = any(norm_text(r.get("employee_name")) for r in rows)
+        if approver_vals and emp_vals and not has_name_col:
+            def _cjk(val: str) -> bool:
+                return any("\u4e00" <= ch <= "\u9fff" for ch in val)
+
+            approver_cjk = sum(1 for v in approver_vals if _cjk(v)) / len(approver_vals)
+            employee_cjk = sum(1 for v in emp_vals if _cjk(v)) / len(emp_vals)
+            if approver_cjk >= 0.6 and employee_cjk <= 0.2:
+                skipped.append(
+                    "self-approval：审批人列疑似「姓名」、报销人列疑似「工号」，两者口径可能不一致，"
+                    "可能漏检自审自批；建议统一为工号或姓名（或提供 employee_name 列）"
+                )
 
     # 规则：发票跨人复用（同一发票号被不同员工使用）
     invoice_employee = defaultdict(set)

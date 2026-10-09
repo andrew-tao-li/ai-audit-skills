@@ -1,4 +1,5 @@
 import csv
+import importlib.util
 import json
 import os
 import subprocess
@@ -189,6 +190,65 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             self.assertIn("office-swipe-on-offsite-claim", t1)    # E2：当天公司打卡
             self.assertIn("attendance-city-mismatch", t1)         # E3：打卡地与出差地不同城
             self.assertEqual(len(t1), 3)                          # E4 不应误报
+
+    # ── v0.2.13（来自真实审计师反馈第 1、4 条）───────────────────────────────
+    def test_chinese_date_formats_are_parsed(self):
+        """中文日期「2026年10月09日 12:30」必须能识别——旧版识别不了，会当成坏行。"""
+        spec = importlib.util.spec_from_file_location("expense_audit_mod", SCRIPT)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cases = {
+            "2026年10月09日 12:30": "2026-10-09",
+            "2026年10月9日": "2026-10-09",
+            "2026年10月09日12:30": "2026-10-09",
+            "20261009": "2026-10-09",
+            "2026-10-09T12:30": "2026-10-09",
+            "不是日期": None,
+            "2026年13月40日": None,
+        }
+        for raw, want in cases.items():
+            self.assertEqual(mod.parse_date(raw), want, "解析 %r" % raw)
+
+        csv_text = ("单据号,工号,金额,发生日期\n"
+                    "E1,EMP1,100,2026年10月09日 12:30\n"
+                    "E2,EMP1,200,2026年10月9日\n")
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td) / "cn.csv"; data.write_text(csv_text, encoding="utf-8")
+            out = Path(td) / "out"
+            r = subprocess.run([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)],
+                               capture_output=True, text=True, encoding="utf-8", errors="replace",
+                               env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            bad = [l for l in (out / "bad_rows.csv").read_text(encoding="utf-8").splitlines() if l.strip()]
+            self.assertEqual(len(bad) - 1, 0, "中文日期不应进坏行：%s" % bad)
+
+    def test_self_approval_accepts_name_and_hints_on_mismatch(self):
+        """报销人可用姓名；口径不一致时必须提示，不得静默漏检。"""
+        def run_csv(csv_text, out):
+            with tempfile.TemporaryDirectory() as td:
+                data = Path(td) / "e.csv"; data.write_text(csv_text, encoding="utf-8")
+                o = Path(out)
+                r = subprocess.run([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(o)],
+                                   capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                types = [json.loads(l)["finding_type"]
+                         for l in (o / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+                manifest = json.loads((o / "run_manifest.json").read_text(encoding="utf-8"))
+                return types, manifest.get("skipped_rules", [])
+
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            # ① 只有姓名、没有工号：应能运行，且姓名命中 → 自审自批
+            types, _ = run_csv("单据号,姓名,金额,发生日期,审批人\nB1,张三,100,2026-10-09,张三\n", base / "n")
+            self.assertIn("self-approval", types)
+            # ② 报销人是工号、审批人是姓名 → 不得静默漏检，必须提示口径不一致
+            types, skipped = run_csv("单据号,工号,金额,发生日期,审批人\nA1,E001,100,2026-10-09,张三\n", base / "m")
+            self.assertNotIn("self-approval", types)
+            self.assertTrue(any("口径" in s for s in skipped), "应提示口径不一致：%s" % skipped)
+            # ③ 工号 + 姓名都有、审批人是姓名 → 命中
+            types, _ = run_csv("单据号,工号,姓名,金额,发生日期,审批人\nC1,E001,张三,100,2026-10-09,张三\n", base / "b")
+            self.assertIn("self-approval", types)
 
 
 if __name__ == "__main__":
