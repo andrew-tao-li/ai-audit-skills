@@ -95,16 +95,18 @@
 ## ⏸ 暂缓事项（下次回顾框架时提醒）
 
 - **ClawHub 上架**（⬜ **已完全准备好，只差 `clawhub login`**，2026-09-30）：
-  - ⚠️ **关键决定：ClawHub 也发净化版**（`dist-v2/skillhub/<skill>/`），不是 canonical——
-    canonical 里的「反馈外发 webhook」与 `curl|bash` 正好撞上 ClawHub 安全审计的三个关注点
-    （**凭据暴露 / 不安全执行 / 过度代理**）。与 SkillHub 同一逻辑：**市场版=净化版，GitHub canonical=全功能版**。
+  - ⚠️ **关键决定（2026-10-09 更新）**：clawhub 发 `dist-v2/skillhub/<skill>/`（SkillHub 适配版）。
+    **注意**：2026-10 安全整改后 **canonical 本身已合规范**——不再有「反馈外发 webhook」「`curl|bash` 更新指令」，
+    也不再有任何"隐瞒"措辞（见 [`docs/reported-issues.md`](docs/reported-issues.md) #2）。
+    因此 ClawHub 安全审计的三个关注点（**凭据暴露 / 不安全执行 / 过度代理**）**从根本上已不成立**。
+    适配版与 canonical 的差异只剩 frontmatter 等平台字段。
   - **ClawHub 没有"质量评估"**，它有**安全审计**（Audit status `Pass/Review/Warn/Malicious` + Risk `Low/Medium/High` + findings）；
     扫描方 = SkillSpector + **腾讯朱雀 A.I.G** + 自研 ClawScan；以 **OWASP Agentic Skills Top 10** 为透镜。
     与我们互补（SkillHub 答"好不好"，ClawHub 答"安不安全"）。审计页：`/<owner>/skills/<slug>/security-audit`。
   - 顺带：ClawHub **拒收含 `.pyc/.pyo/.pyd` 的 skill**（某 CVE 未修）——我们纯 `.py`，不受影响。
   - **ClawHub 分类体系统统与 SkillHub 不同**（`security/finance/operations/knowledge/research…`，最多 3 分类 + 5 主题），
     已映射进 `scripts/skillhub_config.py` 的 `clawhub_categories` / `clawhub_topics`。
-  - `scripts/publish-clawhub.sh` **已重写**：改用净化版 + 从配置读 ClawHub 分类/主题 + 带来源仓库信息；
+  - `scripts/publish-clawhub.sh` **已重写**：改用 SkillHub 适配版 + 从配置读 ClawHub 分类/主题 + 带来源仓库信息；
     已用 `--dry-run` 验证（`Would publish expense-audit-v2@0.2.10`）。
   - **唯一卡点**：`clawhub login`（设备流，必须用户本人 GitHub 授权）。另外官方要求「GitHub 账号足够老才能过上传闸门」。
   - 好处：打开国际/OpenClaw 生态（我们 SKILL.md 已声称支持它）· **SkillHub 会自动镜像 ClawHub**（多一个国内分发源）·

@@ -145,9 +145,9 @@ skillhub install andrew-tao-li-cn-entity-relation       --namespace indiv-ai-aud
 ### 发布到 marketplace 的步骤（作者用）
 
 - **SkillHub.cn**：`skillhub login --key skh_xxx --host https://api.skillhub.cn` →
-  `python3 scripts/build-skillhub.py`（生成净化版）→ `python3 scripts/publish-skillhub.py`（**带分类**，官方 CLI 不带）。
+  `python3 scripts/build-skillhub.py`（生成 SkillHub 适配版）→ `python3 scripts/publish-skillhub.py`（**带分类**，官方 CLI 不带）。
   发布有**限频**，连发多个需间隔约 70s（脚本已内置）。
-- **ClawHub**：`clawhub login` → `scripts/publish-clawhub.sh`（用净化版 + ClawHub 自己的分类/主题）。
+- **ClawHub**：`clawhub login` → `scripts/publish-clawhub.sh`（用 SkillHub 适配版 + ClawHub 自己的分类/主题）。
 
 ---
 

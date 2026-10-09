@@ -78,7 +78,7 @@ def main() -> int:
         "## 发布",
         "",
         "```bash",
-        "python3 scripts/build-skillhub.py         # 生成净化版 + 自检",
+        "python3 scripts/build-skillhub.py         # 生成 SkillHub 适配版 + 合规自检",
         "python3 scripts/publish-skillhub.py --dry-run   # 看 payload（含分类）",
         "python3 scripts/publish-skillhub.py             # 发布全部（自动限频 70s）",
         "```",

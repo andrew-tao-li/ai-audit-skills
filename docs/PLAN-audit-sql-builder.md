@@ -151,7 +151,7 @@ out/
       `references/` / `scripts/` / `examples/` / `tests/` / `requirements.txt`
 - [ ] 纳入 `install.sh`（如适用）、`VERSIONS.json`、`evals/validate_pack.py`、trigger-prompts
 - [ ] 做 **SkillHub / ClawHub 双版本适配**：`scripts/skillhub_config.py` 加一项（slug / 分类 / 文案），
-      `scripts/build-skillhub.py` 会自动生成净化版（若本技能无外发/curl 内容，净化差异可能为空）
+      `scripts/build-skillhub.py` 会自动生成 SkillHub 适配版（frontmatter 等平台字段）+ 合规守卫校验
 - [ ] 面向用户的文案**只写事实**（不虚构作者人数、从业年限、测试者数量、机构背书）
 
 ---

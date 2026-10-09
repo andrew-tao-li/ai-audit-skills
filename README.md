@@ -93,7 +93,7 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 
 - **黑盒 F1**：expense 25 / procurement 14 / investigation 3 个黄金测试集，全部 **100%**。
 - **OpenCode 全自动验收**（`evals/cross-agent/`）：**4/4** —— 在真实 Agent 上验证「该触发时是否加载正确 skill、是否执行脚本、是否产出预期文件」，含一条负面对照。
-- **安装冒烟**（`evals/install_smoke.py`）：从 `releases/latest` 下载 → `install.sh` 安装 → 真跑一遍，**24 项全过**；并断言装出来的是**原版**（而非 SkillHub 净化版）。
+- **安装冒烟**（`evals/install_smoke.py`）：从 `releases/latest` 下载 → `install.sh` 安装 → 真跑一遍，**25 项全过**；并断言装出来的版本**无外发地址/密钥、无管道执行、无隐瞒措辞、含「联网与风险」前置披露**。
 - **宿主实机**：Codex 项目级发现与安装路径执行通过；WorkBuddy 5.5.6 与 LobsterAI 2026.5.22 均已执行综合样例并完成文件级回归。
 - **仍未完成**：各宿主的**完整隐式路由验收**（每 skill 20 正 + 20 反，共 120 条/宿主）。详见 [测试摘要](evals/test-report-2026-09-15.md) 与 [跨 Agent 验收矩阵](evals/cross-agent-matrix.md)。
 

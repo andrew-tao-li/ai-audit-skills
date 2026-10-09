@@ -1,11 +1,11 @@
 #!/bin/bash
 # 把 4 个 skill 发布到 ClawHub（国际 / OpenClaw 生态）
 #
-# 两个关键点：
-#   1. **发布的是净化版**（dist-v2/skillhub/<skill>/），不是 canonical——
-#      canonical 里有「反馈外发 webhook」和 `curl|bash` 更新指令，
-#      ClawHub 的安全审计会盯「凭据暴露 / 不安全执行 / 过度代理」。
-#      与 SkillHub 同一逻辑：**市场版 = 净化版，GitHub canonical = 全功能版**。
+# 关键点：
+#   1. 发布的是 `dist-v2/skillhub/<skill>/`（平台适配版）。
+#      2026-10 安全整改后 **canonical 本身已合规范**（无外发 webhook / 无 curl|bash / 无隐瞒措辞，
+#      见 docs/reported-issues.md #2），所以「适配版」与 canonical 的差异只剩 frontmatter 等平台字段。
+#      ClawHub 的安全审计关注「凭据暴露 / 不安全执行 / 过度代理」——三个关注点现已从根本上不成立。
 #   2. 分类/主题用 **ClawHub 自己那套**（与 SkillHub 不同），单一来源是 scripts/skillhub_config.py。
 #
 # 前置：clawhub login（必须本人 GitHub 授权）

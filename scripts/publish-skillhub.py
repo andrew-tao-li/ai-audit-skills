@@ -148,7 +148,7 @@ def main() -> int:
             continue
         skill_dir = OUT_ROOT / name
         if not (skill_dir / "SKILL.md").exists():
-            print("✗ 未找到净化版产物：%s（先跑 scripts/build-skillhub.py）" % skill_dir, file=sys.stderr)
+            print("✗ 未找到 SkillHub 适配版产物：%s（先跑 scripts/build-skillhub.py）" % skill_dir, file=sys.stderr)
             failed += 1
             continue
 
