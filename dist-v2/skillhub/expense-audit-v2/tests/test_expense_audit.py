@@ -443,6 +443,39 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             for rid in ids:
                 self.assertIn(rid, on)
 
+    def test_payee_and_weekday_checks_are_opt_in(self):
+        """v0.2.20：开票方↔收款方（文件驱动）与日期↔周几（flag 驱动）——默认零回归。"""
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+
+            def run(rows_csv, policy=None, payments=None, name="x"):
+                data = base / (name + ".csv"); data.write_text(rows_csv, encoding="utf-8")
+                out = base / ("o_" + name)
+                cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)]
+                if policy:
+                    pol = base / ("p_" + name + ".json"); pol.write_text(json.dumps(policy), encoding="utf-8")
+                    cmd += ["--policy", str(pol)]
+                if payments:
+                    pay = base / ("pay_" + name + ".csv"); pay.write_text(payments, encoding="utf-8")
+                    cmd += ["--payments", str(pay)]
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                return {json.loads(l)["finding_type"]
+                        for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()}
+
+            ledger = ("单据号,工号,费用类型,发生日期,金额,商户,发票号,周几\n"
+                      "R1,E1,维修,2024-05-01,12000,甲维修厂,INV001,周日\n"
+                      "R2,E1,维修,2024-06-01,8000,甲维修厂,INV002,周日\n")
+            # ① 两者都不触发：findings 必须为空（"原来场景不变"的关键断言）
+            self.assertEqual(run(ledger, name="off"), set())
+            # ② 提供收款记录 → 替票命中（R1 收款方≠开票方；R2 一致，不报）
+            pay = "expense_id,payee,invoice_issuer,amount\nR1,丙公司,甲维修厂,12000\nR2,甲维修厂,甲维修厂,8000\n"
+            self.assertIn("invoice-payee-mismatch", run(ledger, payments=pay, name="pay"))
+            # ③ 开启 weekday_check → 日期与周几不符命中
+            self.assertIn("weekday-mismatch",
+                          run(ledger, policy={"policy_version": "T", "default_currency": "CNY", "weekday_check": True}, name="wd"))
+
 
 if __name__ == "__main__":
     unittest.main()

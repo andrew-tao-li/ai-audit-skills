@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.19"
+VERSION = "0.2.20"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -48,6 +48,9 @@ FINDING_TYPE_ZH = {
     "consecutive-nightly-invoicing": "连续逐晚开票",
     "same-amount-no-invoice": "同商户同额且无发票号",
     "lodging-night-mismatch": "住宿晚数与入离店日期不符",
+    # v0.2.20：开票方↔实际收款方（替票）/ 日期↔周几
+    "invoice-payee-mismatch": "开票方与实际收款方不一致",
+    "weekday-mismatch": "日期与周几不符",
     # v0.2.9：出差交叉核验（需提供 --travel-requests / --attendance）
     "expense-without-travel-request": "差旅报销无对应出差申请",
     "office-swipe-on-offsite-claim": "报销称外地但当天有公司打卡",
@@ -80,6 +83,8 @@ ALIASES = {
     "check_out": ["check_out", "checkout", "check_out_date", "departure_date", "离店日期", "退房日期"],
     "nights": ["nights", "night_count", "room_nights", "晚数", "住宿晚数", "间夜"],
     "room_number": ["room_number", "room_no", "room", "房号", "房间号"],
+    # v0.2.20：日期↔周几一致性（篡改日期时"周几"往往对不上）
+    "weekday": ["weekday", "day_of_week", "week_day", "周几", "星期几", "星期", "礼拜"],
     "project_code": ["project_code", "project", "项目编号", "项目代码"],
     "approver": ["approver", "approved_by", "审批人"],
     "payment_date": ["payment_date", "付款日期", "支付日期"],
@@ -240,6 +245,7 @@ POLICY_KEYS = frozenset({
     "lodging_min_nights",              # 连续逐晚开票：最少连续天数，默认 3
     "lodging_types",                   # 住宿类费用类型关键词，默认见 LODGING_DEFAULT_TYPES
     "lodging_same_amount_min_count",   # 同商户同额无发票：最少笔数，默认 3
+    "weekday_check",                   # v0.2.20：日期 ↔ 周几一致性（识别篡改；默认关闭）
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -275,6 +281,17 @@ TRAVEL_VERIFICATION_ALIASES = {
     "pnr": ["pnr", "booking_ref", "record_locator", "订座记录", "订座号"],
     "source": ["source", "来源", "数据来源", "核验来源"],
     "source_reliability": ["source_reliability", "reliability", "来源可靠性", "可靠性"],
+}
+
+# v0.2.20：支付/收款记录（`--payments`）字段别名——用于「开票方 ↔ 实际收款方」比对（替票嫌疑）。
+# 本技能**不联网**；这份记录由使用者从支付流水/银行回单/收款凭证整理而来。
+PAYMENT_ALIASES = {
+    "expense_id": ["expense_id", "id", "claim_id", "单据号", "报销单号"],
+    "payee": ["payee", "payee_name", "收款方", "收款人", "收款单位", "实际收款方", "收款账户名", "商户名称"],
+    "payee_account": ["payee_account", "account", "收款账号", "收款账户", "账号"],
+    "invoice_issuer": ["invoice_issuer", "issuer", "开票方", "销方名称", "销售方", "开票单位", "发票抬头"],
+    "amount": ["amount", "金额", "付款金额", "支付金额"],
+    "payment_date": ["payment_date", "付款日期", "支付日期", "收款日期"],
 }
 
 
@@ -942,6 +959,107 @@ def run_travel_verification(rows, verification_rows, builder) -> List[str]:
     unverified = sum(1 for r in rows if norm_text(r.get("expense_id")) and norm_text(r.get("expense_id")) not in by_id)
     if unverified:
         notes.append("travel-verification：%d 条报销单未提供外部核验记录，未做真实性核验" % unverified)
+    return notes
+
+
+def run_invoice_payee_check(rows, payment_rows, builder) -> List[str]:
+    """v0.2.20：**开票方 ↔ 实际收款方** 比对（`--payments`，替票嫌疑）。
+
+    来自真实车辆维修审计：发票抬头是甲维修厂，但钱实际付给了丙公司（9 单 ¥11.1 万）。
+    **本技能不联网**——支付/收款记录由使用者从支付流水/银行回单整理后提供。
+    """
+    notes: List[str] = []
+    if not payment_rows:
+        return notes
+    by_id: Dict[str, Dict[str, str]] = {}
+    for item in payment_rows:
+        key = norm_text(item.get("expense_id"))
+        if key:
+            by_id.setdefault(key, item)
+    mismatches: List[Tuple[Dict[str, Any], Dict[str, str]]] = []
+    for row in rows:
+        eid = norm_text(row.get("expense_id"))
+        item = by_id.get(eid)
+        if item is None:
+            continue
+        seller = match_key(norm_text(item.get("invoice_issuer")) or norm_text(row.get("vendor_name")))
+        payee = match_key(item.get("payee"))
+        if not seller or not payee:
+            continue
+        if seller != payee:
+            mismatches.append((row, item))
+    for row, item in mismatches:
+        seller_display = norm_text(item.get("invoice_issuer")) or norm_text(row.get("vendor_name"))
+        builder.add("invoice-payee-mismatch", "开票方与实际收款方不一致（替票/虚开嫌疑）", 4, "strong", (row,),
+                    ("expense_id", "employee_id", "vendor_name", "amount", "invoice_number"),
+                    ["开票方为「%s」，但实际收款方为「%s」" % (seller_display, norm_text(item.get("payee")))],
+                    ["**发票抬头与实际收款方分裂**，是替票/虚开的典型信号——**即使发票本身为真**"],
+                    ["是否为集团内代收、第三方代付、平台收单，或开票方与收款方本就不同？"],
+                    ["核对支付流水、收款方资质与实际施工/消费凭证"],
+                    [{"factor": "invoice_payee_mismatch", "points": 4}])
+    unverified = sum(1 for r in rows
+                     if norm_text(r.get("expense_id")) and norm_text(r.get("expense_id")) not in by_id)
+    if unverified:
+        notes.append("invoice-payee：%d 条报销单未提供支付/收款记录，未做「开票方↔收款方」比对" % unverified)
+    return notes
+
+
+def _parse_weekday(value: Any) -> Optional[int]:
+    """把「周一 / 星期一 / 礼拜一 / 1 / Monday / Thu」解析为 weekday()（周一=0）。无法判断返回 None。"""
+    text = norm_text(value).lower().strip()
+    if not text:
+        return None
+    prefix = ""
+    for p in ("星期", "礼拜", "周", "week"):
+        if text.startswith(p):
+            prefix, text = p, text[len(p):].strip()
+            break
+    zh = {"一": 0, "二": 1, "三": 2, "四": 3, "五": 4, "六": 5, "日": 6, "天": 6}
+    if text in zh:
+        return zh[text]
+    en = {"mon": 0, "monday": 0, "tue": 1, "tues": 1, "tuesday": 1, "wed": 2, "wednesday": 2,
+          "thu": 3, "thur": 3, "thurs": 3, "thursday": 3, "fri": 4, "friday": 4,
+          "sat": 5, "saturday": 5, "sun": 6, "sunday": 6}
+    if text in en:
+        return en[text]
+    for key, val in en.items():
+        if text.startswith(key):
+            return val
+    if prefix and text.isdigit() and 1 <= int(text) <= 7:
+        return int(text) - 1
+    return None
+
+
+def _rule_weekday_check(rows, policy, builder) -> List[str]:
+    """v0.2.20（可选，默认关闭，**完全离线**）：日期 ↔ 周几 一致性。
+
+    篡改/编造日期时，"周几"常常会与真实日期对不上——这是原件级的防伪线索。
+    台账**不含**「周几」列时完全不参与。
+    """
+    notes: List[str] = []
+    if not any(norm_text(r.get("weekday")) for r in rows):
+        return notes
+    if not policy.get("weekday_check", False):
+        notes.append("weekday-mismatch：台账含「周几」列但未启用 weekday_check（开启可核对日期与周几是否一致）")
+        return notes
+    names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    for row in rows:
+        declared = _parse_weekday(row.get("weekday"))
+        day = row.get("expense_date")
+        if declared is None or not day:
+            continue
+        try:
+            actual = date.fromisoformat(day).weekday()
+        except ValueError:
+            continue
+        if declared != actual:
+            builder.add("weekday-mismatch", "日期与「周几」不一致（疑似日期被改）", 3, "moderate", (row,),
+                        ("expense_id", "employee_id", "expense_date", "weekday"),
+                        ["凭证写「%s」，但 %s 实际是「%s」" % (norm_text(row.get("weekday")), day, names[actual])],
+                        ["篡改/编造日期时，「周几」常常与真实日期对不上——原件级防伪线索"],
+                        ["是否为手工填写笔误、跨时区，或导出工具生成错误？"],
+                        ["核对原始凭证上的日期与星期"],
+                        [{"factor": "weekday_mismatch", "points": 3}])
     return notes
 
 
@@ -1745,6 +1863,8 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     _rule_voucher_consistency(rows, policy, builder)
     # v0.2.18（**可选，默认关闭，完全离线**）：住宿凭证交叉核验
     _rule_lodging_cross_check(rows, policy, builder)
+    # v0.2.20（**可选，默认关闭，完全离线**）：日期 ↔ 周几一致性
+    skipped.extend(_rule_weekday_check(rows, policy, builder))
 
     return skipped, {
         "near_duplicate_window_days": near_days,
@@ -1803,6 +1923,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # v0.2.15：可选外部行程核验结果（本技能**不做联网查询**，由用户/宿主提供）
     parser.add_argument("--travel-verification", type=Path,
                         help="可选：外部行程核验结果 CSV（列：expense_id/flight_no/travel_date/depart_city/arrive_city/passenger/source）")
+    # v0.2.20：可选支付/收款记录（用于「开票方 ↔ 实际收款方」比对；本技能不就此事联网）
+    parser.add_argument("--payments", type=Path,
+                        help="可选：支付/收款记录 CSV（列：expense_id/payee/invoice_issuer/amount/payment_date）")
     parser.add_argument("--check-env", action="store_true")
     args = parser.parse_args(argv)
     if args.check_env:
@@ -1867,6 +1990,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         verification_rows, _vm = read_aux_table(args.travel_verification.resolve(), TRAVEL_VERIFICATION_ALIASES, args.sheet)
         warnings.append("已载入外部行程核验 %d 条（%s）；本技能不做联网查询，核验数据由使用者提供" % (len(verification_rows), args.travel_verification.name))
         skipped.extend(run_travel_verification(analyzable, verification_rows, builder))
+    # v0.2.20：支付/收款记录（可选）。不提供时一行也不产生，输出与旧版完全一致。
+    if args.payments:
+        payment_rows, _pm = read_aux_table(args.payments.resolve(), PAYMENT_ALIASES, args.sheet)
+        warnings.append("已载入支付/收款记录 %d 条（%s）；用于「开票方↔实际收款方」比对" % (len(payment_rows), args.payments.name))
+        skipped.extend(run_invoice_payee_check(analyzable, payment_rows, builder))
     validate(builder.findings, builder.evidence)
 
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
@@ -1997,6 +2125,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # v0.2.15：外部核验数据也登记哈希（可追溯；来源不在本技能，由使用者提供）
     if args.travel_verification and args.travel_verification.exists():
         input_files.append({"path": args.travel_verification.name, "sha256": sha256_file(args.travel_verification.resolve()), "role": "travel_verification"})
+    if args.payments and args.payments.exists():
+        input_files.append({"path": args.payments.name, "sha256": sha256_file(args.payments.resolve()), "role": "payments"})
     manifest = {
         "run_id": "EXP-%s-%s" % (started.strftime("%Y%m%dT%H%M%SZ"), source_hash[:8]),
         "skill": SKILL, "skill_version": VERSION, "started_at": started.isoformat(), "finished_at": finished.isoformat(),

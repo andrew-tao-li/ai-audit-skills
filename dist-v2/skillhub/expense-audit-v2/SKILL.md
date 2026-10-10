@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.19
+version: 0.2.20
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -271,6 +271,28 @@ E2025001,,,,,,上期已核实
 
 > 配套字段别名：`check_in` / `check_out`（入/离店日期）、`nights`（晚数）、`room_number`（房号）。
 > `lodging_types`（默认 住宿/酒店/宾馆/旅馆/民宿/住宿费/房费）可覆盖。默认关闭时**与旧版完全一致**。
+
+## v0.2.20 新增：替票比对 与 日期↔周几（**均为可选、默认不启用**）
+
+### 开票方 ↔ 实际收款方（`--payments <csv>`）
+
+把**支付/收款记录**喂进来，与报销单上的**开票方/发票抬头**比对：**不一致 → `invoice-payee-mismatch`（强）**——
+这是"替票/虚开"的典型信号（发票抬头与实际收款方分裂，**即使发票本身为真**）。
+
+```csv
+expense_id,payee,invoice_issuer,amount
+R1,丙公司,甲维修厂,12000
+```
+
+> `invoice_issuer` 可省略，缺省用报销单上的 `vendor_name`。**本技能不联网**，记录由使用者从支付流水/银行回单整理。
+> **不提供 `--payments` 时完全不参与**（与旧版逐字节一致）。
+
+### 日期 ↔ 周几一致性（`weekday_check`，默认关闭）
+
+篡改/编造日期时，"周几"常常与真实日期对不上（原件级防伪线索）。
+台账含 `weekday`（周几 / 星期几）列**且**开关打开时 → `weekday-mismatch`。
+
+> 台账**不含**该列 → 完全不参与；**含该列但未开启** → 只在 `data_quality.md` 里给一条提示（不产生 finding）。
 
 ## Output contract
 
