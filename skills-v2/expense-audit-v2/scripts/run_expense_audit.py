@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.17"
+VERSION = "0.2.18"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -43,6 +43,10 @@ FINDING_TYPE_ZH = {
     "ticket-number-reused": "同一票号重复出现",
     "ticket-issue-after-flight": "出票日期晚于行程日期",
     "itinerary-segment-conflict": "同一订座号同日航段矛盾",
+    # v0.2.18：住宿凭证交叉核验（**离线**，默认关闭）
+    "consecutive-nightly-invoicing": "连续逐晚开票",
+    "same-amount-no-invoice": "同商户同额且无发票号",
+    "lodging-night-mismatch": "住宿晚数与入离店日期不符",
     # v0.2.9：出差交叉核验（需提供 --travel-requests / --attendance）
     "expense-without-travel-request": "差旅报销无对应出差申请",
     "office-swipe-on-offsite-claim": "报销称外地但当天有公司打卡",
@@ -70,6 +74,11 @@ ALIASES = {
     # v0.2.16：凭证内部一致性用的字段（票号 / 出票日期）
     "ticket_number": ["ticket_number", "ticket_no", "eticket", "电子客票号", "票号", "客票号"],
     "issue_date": ["issue_date", "ticketing_date", "date_of_issue", "出票日期"],
+    # v0.2.18：住宿凭证交叉核验（入离店日期 / 晚数 / 房号）
+    "check_in": ["check_in", "checkin", "check_in_date", "arrival_date", "入住日期", "入住"],
+    "check_out": ["check_out", "checkout", "check_out_date", "departure_date", "离店日期", "退房日期"],
+    "nights": ["nights", "night_count", "room_nights", "晚数", "住宿晚数", "间夜"],
+    "room_number": ["room_number", "room_no", "room", "房号", "房间号"],
     "project_code": ["project_code", "project", "项目编号", "项目代码"],
     "approver": ["approver", "approved_by", "审批人"],
     "payment_date": ["payment_date", "付款日期", "支付日期"],
@@ -83,6 +92,8 @@ CORE_FIELDS = ("expense_id", "employee_id", "amount", "expense_date")
 OUTPUT_FIELDS = tuple(ALIASES.keys())
 # v0.2.13：白名单可匹配的字段（CSV 列名）；空列 = 通配。另支持 amount_max（金额上限）。
 ALLOWLIST_FIELDS = ("expense_id", "employee_id", "employee_name", "vendor_name", "invoice_number", "expense_type")
+# v0.2.18：住宿类费用类型的默认关键词（住宿凭证交叉核验用；可在 policy.lodging_types 覆盖）
+LODGING_DEFAULT_TYPES = ("住宿", "酒店", "宾馆", "旅馆", "民宿", "住宿费", "房费", "hotel", "lodging")
 
 
 def norm_text(value: Any) -> str:
@@ -212,6 +223,10 @@ POLICY_KEYS = frozenset({
     "shared_voucher_check",            # 同一凭证（PNR/订座号）被多人各报
     "voucher_completeness_check",      # 凭证要素完备性（缺发票号/缺发票日期）
     "voucher_consistency_check",       # v0.2.16：凭证内部一致性（票号重复/出票晚于行程/订座号同日矛盾）
+    "lodging_cross_check",             # v0.2.18：住宿凭证交叉核验（连续逐晚开票 / 同额无发票 / 晚数不符）
+    "lodging_min_nights",              # 连续逐晚开票：最少连续天数，默认 3
+    "lodging_types",                   # 住宿类费用类型关键词，默认见 LODGING_DEFAULT_TYPES
+    "lodging_same_amount_min_count",   # 同商户同额无发票：最少笔数，默认 3
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -1028,6 +1043,105 @@ def _rule_voucher_consistency(rows, policy, builder) -> None:
                         [{"factor": "itinerary_segment_conflict", "points": 3}])
 
 
+def _rule_lodging_cross_check(rows, policy, builder) -> None:
+    """v0.2.18（可选，默认关闭）：**住宿凭证交叉核验**（完全离线）。
+
+    来自真实国际差旅审计的三个模式：
+      ① `consecutive-nightly-invoicing`：同一员工"连续逐晚单独开票"（≥ N 晚），疑规避单笔审批阈值
+      ② `same-amount-no-invoice`：同一员工 + 同一商户、金额完全相同、且**均无发票号**（≥ N 笔）
+      ③ `lodging-night-mismatch`：凭证写的**晚数**与**入离店日期**算出的晚数不符
+    """
+    if not policy.get("lodging_cross_check", False):
+        return
+    types = [str(x) for x in (policy.get("lodging_types") or LODGING_DEFAULT_TYPES)]
+
+    def is_lodging(row) -> bool:
+        text = norm_text(row.get("expense_type")).lower()
+        return bool(text) and any(k.lower() in text for k in types)
+
+    lodging = [r for r in rows if is_lodging(r)]
+
+    # ① 连续逐晚开票
+    min_nights = int(policy.get("lodging_min_nights", 3))
+    by_emp: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for row in lodging:
+        if row.get("expense_date"):
+            by_emp[row["employee_id"]].append(row)
+    for emp, recs in by_emp.items():
+        by_date: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        for row in recs:
+            by_date[row["expense_date"]].append(row)
+        dates = sorted(d for d in by_date if d)
+        run: List[str] = []
+        runs: List[List[str]] = []
+        for day in dates:
+            if run:
+                try:
+                    gap = (date.fromisoformat(day) - date.fromisoformat(run[-1])).days
+                except ValueError:
+                    gap = 99
+                if gap == 1:
+                    run.append(day)
+                    continue
+            if run:
+                runs.append(run)
+            run = [day]
+        if run:
+            runs.append(run)
+        for seq in runs:
+            if len(seq) < min_nights:
+                continue
+            day_rows = [r for d in seq for r in by_date[d]]
+            builder.add("consecutive-nightly-invoicing", "同一员工连续逐晚单独开票", 3, "moderate", day_rows,
+                        ("expense_id", "employee_id", "expense_date", "vendor_name", "amount"),
+                        ["%s 从 %s 到 %s 连续 %d 天各有一张住宿凭证" % (emp, seq[0], seq[-1], len(seq))],
+                        ["连续逐晚单独开票，可能用于规避「单笔不超过审批阈值」的制度"],
+                        ["是否为酒店按晚开票、不同酒店接力住宿，或分期结算？"],
+                        ["核对入住/离店记录与单笔审批阈值"],
+                        [{"factor": "consecutive_nightly_invoicing", "points": 3, "nights": len(seq)}])
+
+    # ② 同商户同额且无发票号
+    min_count = int(policy.get("lodging_same_amount_min_count", 3))
+    idx: Dict[Tuple[str, str, str], List[Dict[str, Any]]] = defaultdict(list)
+    for row in lodging:
+        amount = parse_amount(row.get("amount"))
+        vendor = match_key(row.get("vendor_name"))
+        if amount is None or not vendor:
+            continue
+        idx[(row["employee_id"], vendor, "%.2f" % amount)].append(row)
+    for (_emp, _vendor, _amt), group in idx.items():
+        if len(group) < min_count:
+            continue
+        if any(norm_text(r.get("invoice_number")) for r in group):
+            continue   # 有发票号就不算"同房同额无票"这类
+        builder.add("same-amount-no-invoice", "同商户同额多笔且均无发票号", 3, "moderate", group,
+                    ("expense_id", "employee_id", "vendor_name", "amount", "expense_date", "room_number"),
+                    ["同一商户、金额均为 %s 的 %d 笔住宿凭证，且都没有发票号" % (group[0].get("amount"), len(group))],
+                    ["同额多笔且无发票号，可能是同一次住宿重复计费或凭证重复入账"],
+                    ["是否为连住多晚、分房结算，或同一笔被重复入账？"],
+                    ["核对入住/离店记录、房号与原始收据"],
+                    [{"factor": "same_amount_no_invoice", "points": 3, "count": len(group)}])
+
+    # ③ 住宿晚数与入离店日期不符
+    for row in lodging:
+        ci, co = parse_date(row.get("check_in")), parse_date(row.get("check_out"))
+        declared = parse_amount(row.get("nights"))
+        if not (ci and co and declared is not None):
+            continue
+        try:
+            actual = (date.fromisoformat(co) - date.fromisoformat(ci)).days
+        except ValueError:
+            continue
+        if actual > 0 and int(declared) != actual:
+            builder.add("lodging-night-mismatch", "住宿晚数与入离店日期不符", 3, "moderate", (row,),
+                        ("expense_id", "employee_id", "vendor_name", "check_in", "check_out", "nights", "amount"),
+                        ["凭证写 %d 晚，但入店 %s、离店 %s（应为 %d 晚）" % (int(declared), ci, co, actual)],
+                        ["按晚数计价与按入离店日期计算不一致，可能多计了房费"],
+                        ["是否为跨夜计费口径、时区或手写笔误？"],
+                        ["核对原始房单与入住/离店记录"],
+                        [{"factor": "lodging_night_mismatch", "points": 3}])
+
+
 def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: ResultBuilder,
               status_excluded: Optional[List[Dict[str, Any]]] = None) -> Tuple[List[str], Dict[str, Any]]:
     skipped: List[str] = []
@@ -1615,6 +1729,8 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     _rule_voucher_completeness(rows, policy, builder)
     # v0.2.16（**可选，默认关闭，完全离线**）：凭证内部一致性
     _rule_voucher_consistency(rows, policy, builder)
+    # v0.2.18（**可选，默认关闭，完全离线**）：住宿凭证交叉核验
+    _rule_lodging_cross_check(rows, policy, builder)
 
     return skipped, {
         "near_duplicate_window_days": near_days,

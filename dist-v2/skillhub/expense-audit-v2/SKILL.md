@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.17
+version: 0.2.18
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -258,6 +258,19 @@ E2025001,,,,,,上期已核实
 > 配套字段别名：`ticket_number`（票号/电子客票号）、`issue_date`（出票日期）、`pnr`、`flight_no`。
 > 表里没有这些列时自动跳过；默认关闭时**与旧版完全一致**。
 > 这一块是"**假票很难自洽**"的直接应用——**比外部核验更划算**（零成本、零联网）。
+
+## v0.2.18 新增：住宿凭证交叉核验（**完全离线、可选、默认关闭**）
+
+`policy.json` → `"lodging_cross_check": true` 时启用——来自真实国际差旅审计的三个模式：
+
+| 规则 | 检查 |
+|---|---|
+| `consecutive-nightly-invoicing` | 同一员工**连续逐晚单独开票**（≥ `lodging_min_nights`，默认 3），疑规避单笔审批阈值 |
+| `same-amount-no-invoice` | 同一员工 + 同一商户、金额完全相同、且**均无发票号**（≥ `lodging_same_amount_min_count`，默认 3） |
+| `lodging-night-mismatch` | 凭证写的**晚数**与**入离店日期**算出的晚数不符 |
+
+> 配套字段别名：`check_in` / `check_out`（入/离店日期）、`nights`（晚数）、`room_number`（房号）。
+> `lodging_types`（默认 住宿/酒店/宾馆/旅馆/民宿/住宿费/房费）可覆盖。默认关闭时**与旧版完全一致**。
 
 ## Output contract
 

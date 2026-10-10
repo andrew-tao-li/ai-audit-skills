@@ -158,4 +158,17 @@
 > 与「外部行程核验」互补：**内部一致性（离线）+ 外部存在性（由使用者取数）** 一起用，证据更稳。
 > 需要字段别名 `ticket_number` / `issue_date` / `pnr` / `flight_no`；缺列自动跳过。
 
+## 住宿凭证交叉核验（v0.2.18，可选，默认关闭，**完全离线**）
+
+`lodging_cross_check: true` 时启用——来自真实国际差旅审计的三个模式：
+
+| 规则 | 触发 | 强度 |
+|---|---|---|
+| `consecutive-nightly-invoicing` | 同一员工**连续逐晚单独开票**（≥ `lodging_min_nights`，默认 3） | 中 |
+| `same-amount-no-invoice` | 同一员工 + 同一商户、**金额完全相同且均无发票号**（≥ `lodging_same_amount_min_count`，默认 3） | 中 |
+| `lodging-night-mismatch` | 凭证写的**晚数** ≠ 入离店日期算出的晚数 | 中 |
+
+> 典型用途：识别"把一笔住宿拆成很多晚、每笔都低于审批阈值"，以及"同一次住宿被重复计费"。
+> 字段别名：`check_in` / `check_out` / `nights` / `room_number`；`lodging_types` 可覆盖住宿类关键词。
+
 

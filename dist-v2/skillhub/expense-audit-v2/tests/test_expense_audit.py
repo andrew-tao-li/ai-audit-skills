@@ -413,6 +413,36 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
         self.assertNotIn("行程/单据真实性", summary_of(
             withflight, "expense_id,flight_no,travel_date,source\nB1,CA1234,2026-10-09,航司官网\n", base / "o3"))
 
+    def test_lodging_cross_check_is_offline_and_opt_in(self):
+        """v0.2.18：住宿凭证交叉核验（**完全离线**）——默认关闭，开启后三条规则生效。"""
+        rows = ["单据号,工号,费用类型,发生日期,金额,商户,房号,入住日期,离店日期,晚数"]
+        for i in range(1, 6):   # ① 连续逐晚开票（E1，10-01..10-05）
+            rows.append("N%d,E1,住宿,2026-10-0%d,800,酒店A,101,2026-10-0%d,2026-10-0%d,1" % (i, i, i, i + 1))
+        for i in (7, 8, 9):     # ② 同商户同额且无发票号（E2，酒店B，同额 500）
+            rows.append("M%d,E2,住宿,2026-10-0%d,500,酒店B,202,2026-10-0%d,2026-10-0%d,1" % (i, i, i, i + 1))
+        rows.append("Q1,E3,住宿,2026-09-03,1500,酒店C,303,2026-09-03,2026-09-05,3")  # ③ 写 3 晚、实际 2 晚
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            data = base / "d.csv"; data.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+            def types(cmd):
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                out = Path(cmd[cmd.index("--output") + 1])
+                return {json.loads(l)["finding_type"]
+                        for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()}
+
+            ids = ("consecutive-nightly-invoicing", "same-amount-no-invoice", "lodging-night-mismatch")
+            off = types([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(base / "off")])
+            for rid in ids:
+                self.assertNotIn(rid, off)
+            pol = base / "p.json"
+            pol.write_text(json.dumps({"policy_version": "T", "default_currency": "CNY", "lodging_cross_check": True}), encoding="utf-8")
+            on = types([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(base / "on"), "--policy", str(pol)])
+            for rid in ids:
+                self.assertIn(rid, on)
+
 
 if __name__ == "__main__":
     unittest.main()
