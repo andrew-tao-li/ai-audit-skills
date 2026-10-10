@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.15"
+VERSION = "0.2.16"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -39,6 +39,10 @@ FINDING_TYPE_ZH = {
     "travel-verification-not-found": "行程核验未找到",
     "shared-voucher-multiple-employees": "同一凭证多人各报",
     "voucher-incomplete": "凭证要素不全",
+    # v0.2.16：凭证内部一致性（**离线**，默认关闭）
+    "ticket-number-reused": "同一票号重复出现",
+    "ticket-issue-after-flight": "出票日期晚于行程日期",
+    "itinerary-segment-conflict": "同一订座号同日航段矛盾",
     # v0.2.9：出差交叉核验（需提供 --travel-requests / --attendance）
     "expense-without-travel-request": "差旅报销无对应出差申请",
     "office-swipe-on-offsite-claim": "报销称外地但当天有公司打卡",
@@ -63,6 +67,9 @@ ALIASES = {
     # v0.2.15：机票/订座标识（真实国际差旅台账几乎都有；不配置时完全不影响）
     "flight_no": ["flight_no", "flight_number", "flight", "航班号", "航班"],
     "pnr": ["pnr", "booking_ref", "record_locator", "pnr_code", "订座记录", "订座号", "PNR"],
+    # v0.2.16：凭证内部一致性用的字段（票号 / 出票日期）
+    "ticket_number": ["ticket_number", "ticket_no", "eticket", "电子客票号", "票号", "客票号"],
+    "issue_date": ["issue_date", "ticketing_date", "date_of_issue", "出票日期"],
     "project_code": ["project_code", "project", "项目编号", "项目代码"],
     "approver": ["approver", "approved_by", "审批人"],
     "payment_date": ["payment_date", "付款日期", "支付日期"],
@@ -204,6 +211,7 @@ POLICY_KEYS = frozenset({
     # v0.2.15 新增（**均为可选、默认关闭**）
     "shared_voucher_check",            # 同一凭证（PNR/订座号）被多人各报
     "voucher_completeness_check",      # 凭证要素完备性（缺发票号/缺发票日期）
+    "voucher_consistency_check",       # v0.2.16：凭证内部一致性（票号重复/出票晚于行程/订座号同日矛盾）
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -952,6 +960,74 @@ def _rule_voucher_completeness(rows, policy, builder) -> None:
                 [{"factor": "voucher_incomplete", "points": 2}])
 
 
+def _rule_voucher_consistency(rows, policy, builder) -> None:
+    """v0.2.16（可选，默认关闭）：凭证**内部一致性**——假票/伪行程单常见的"自相矛盾"。
+
+    **完全离线**，不依赖任何外部数据。三条：
+      ① `ticket-number-reused`：同一票号在台账里重复出现（同票多报 / 多人共用一票）
+      ② `ticket-issue-after-flight`：出票日期**晚于**行程/费用日期（先飞后出票，逻辑倒挂）
+      ③ `itinerary-segment-conflict`：同一订座号（PNR）**同一天**出现多个不同航段
+    """
+    if not policy.get("voucher_consistency_check", False):
+        return
+
+    # ① 票号重复
+    ticket_index: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        tno = match_key(row.get("ticket_number"))
+        if tno:
+            ticket_index[tno].append(row)
+    for group in ticket_index.values():
+        if len(group) < 2:
+            continue
+        builder.add("ticket-number-reused", "同一票号在台账里重复出现", 4, "strong", group,
+                    ("expense_id", "employee_id", "ticket_number", "expense_date", "amount"),
+                    ["票号 %s 在 %d 条记录中重复出现" % (norm_text(group[0].get("ticket_number")), len(group))],
+                    ["同一张客票被重复报销，或多人共用一张票"],
+                    ["是同一张票被多次入账，还是票号被复制？"],
+                    ["调取该票号在航司/航信官方「客票验真」的结果核对"],
+                    [{"factor": "ticket_number_reused", "points": 4}])
+
+    # ② 出票日期晚于行程/费用日期
+    late = []
+    for row in rows:
+        issue = parse_date(row.get("issue_date"))
+        exp = row.get("expense_date")
+        if issue and exp and issue > exp:
+            late.append(row)
+    if late:
+        builder.add("ticket-issue-after-flight", "出票日期晚于行程/费用日期（逻辑倒挂）", 3, "moderate", late,
+                    ("expense_id", "employee_id", "ticket_number", "issue_date", "expense_date"),
+                    ["%d 条记录的出票日期晚于费用/航班日期" % len(late)],
+                    ["正常应先出票、后乘机；出票日期晚于行程日期不合常理"],
+                    ["是否为改签/补开票、行程单后出，或日期列映射有误？"],
+                    ["核对出票记录、原始行程单与改签记录"],
+                    [{"factor": "ticket_issue_after_flight", "points": 3}])
+
+    # ③ 同一订座号同一天出现多个不同航段
+    pnr_day: Dict[str, Dict[str, set]] = defaultdict(lambda: defaultdict(set))
+    for row in rows:
+        pnr = match_key(row.get("pnr"))
+        if not pnr or not row.get("expense_date"):
+            continue
+        seg = (match_key(row.get("origin_city")), match_key(row.get("dest_city")))
+        if seg != ("", ""):
+            pnr_day[pnr][row["expense_date"]].add(seg)
+    for pnr, days in pnr_day.items():
+        for day, segs in days.items():
+            if len(segs) < 2:
+                continue
+            recs = [r for r in rows if match_key(r.get("pnr")) == pnr and r.get("expense_date") == day]
+            segs_text = "；".join("%s→%s" % (s[0], s[1]) for s in sorted(segs))
+            builder.add("itinerary-segment-conflict", "同一订座号同一天出现多个不同航段（行程自相矛盾）", 3, "moderate", recs,
+                        ("expense_id", "employee_id", "pnr", "expense_date", "origin_city", "dest_city"),
+                        ["同一订座号 %s 在 %s 出现 %d 个不同航段：%s" % (norm_text(recs[0].get("pnr")), day, len(segs), segs_text)],
+                        ["同一订座记录下同一天不该有多个互相矛盾的航段"],
+                        ["是否为多段联程、代码共享、中转分票或录入错误？"],
+                        ["核对原始行程单与航段顺序"],
+                        [{"factor": "itinerary_segment_conflict", "points": 3}])
+
+
 def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: ResultBuilder,
               status_excluded: Optional[List[Dict[str, Any]]] = None) -> Tuple[List[str], Dict[str, Any]]:
     skipped: List[str] = []
@@ -1537,6 +1613,8 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     # v0.2.15（**可选，默认关闭**）：同一凭证多人各报 / 凭证要素完备性
     _rule_shared_voucher(rows, policy, builder)
     _rule_voucher_completeness(rows, policy, builder)
+    # v0.2.16（**可选，默认关闭，完全离线**）：凭证内部一致性
+    _rule_voucher_consistency(rows, policy, builder)
 
     return skipped, {
         "near_duplicate_window_days": near_days,

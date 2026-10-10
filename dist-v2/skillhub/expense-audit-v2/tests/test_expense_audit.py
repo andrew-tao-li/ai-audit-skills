@@ -362,6 +362,35 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             self.assertIn("voucher-incomplete",
                           [x["finding_type"] for x in run([sys.executable, str(SCRIPT), "--input", str(sh), "--output", str(base / "o6"), "--policy", str(pol2)])])
 
+    def test_voucher_consistency_is_offline_and_opt_in(self):
+        """v0.2.16：凭证内部一致性（**完全离线**）——默认关闭，开启后三条规则生效。"""
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            data = base / "d.csv"
+            data.write_text("单据号,工号,费用类型,发生日期,金额,票号,出票日期,订座号,出发城市,目的城市\n"
+                            "T1,EMP1,机票,2026-09-10,3000,9991234567890,2026-09-12,PXA,北京,上海\n"
+                            "T2,EMP2,机票,2026-09-11,3000,9991234567890,2026-09-01,PXB,广州,成都\n"
+                            "T3,EMP1,机票,2026-09-20,2000,9999999999999,2026-09-01,PYC,北京,上海\n"
+                            "T4,EMP1,机票,2026-09-20,2100,9998888888888,2026-09-02,PYC,上海,北京\n", encoding="utf-8")
+
+            def types(cmd):
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                out = Path(cmd[cmd.index("--output") + 1])
+                return {json.loads(l)["finding_type"]
+                        for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()}
+
+            rule_ids = ("ticket-number-reused", "ticket-issue-after-flight", "itinerary-segment-conflict")
+            off = types([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(base / "off")])
+            for rid in rule_ids:
+                self.assertNotIn(rid, off)
+            pol = base / "p.json"
+            pol.write_text(json.dumps({"policy_version": "T", "default_currency": "CNY", "voucher_consistency_check": True}), encoding="utf-8")
+            on = types([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(base / "on"), "--policy", str(pol)])
+            for rid in rule_ids:
+                self.assertIn(rid, on)
+
 
 if __name__ == "__main__":
     unittest.main()

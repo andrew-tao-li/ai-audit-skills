@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.15
+version: 0.2.16
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -240,6 +240,20 @@ E2025001,,,,,,上期已核实
 | `voucher_completeness_check` | 凭证要素完备性（缺发票号 / 发票日期）→ `voucher-incomplete` | `false` |
 
 > 新增字段别名 `flight_no`（航班号）与 `pnr`（订座号）已支持；表里没有这些列时，相关规则自动跳过。
+
+## v0.2.16 新增：凭证内部一致性（**完全离线、可选、默认关闭**）
+
+`policy.json` → `"voucher_consistency_check": true` 时启用——**不需要联网**，专门抓"假票/伪行程单常见的自相矛盾"：
+
+| 规则 | 检查 |
+|---|---|
+| `ticket-number-reused` | 同一**票号**在台账里重复出现（同票多报 / 多人共用一票） |
+| `ticket-issue-after-flight` | **出票日期晚于**行程/费用日期（先飞后出票） |
+| `itinerary-segment-conflict` | 同一**订座号（PNR）**同一天出现**多个不同航段** |
+
+> 配套字段别名：`ticket_number`（票号/电子客票号）、`issue_date`（出票日期）、`pnr`、`flight_no`。
+> 表里没有这些列时自动跳过；默认关闭时**与旧版完全一致**。
+> 这一块是"**假票很难自洽**"的直接应用——**比外部核验更划算**（零成本、零联网）。
 
 ## Output contract
 
