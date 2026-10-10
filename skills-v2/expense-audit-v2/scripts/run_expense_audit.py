@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.23"
+VERSION = "0.2.24"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2305,13 +2305,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "input_files": input_files, "parameters": parameters, "field_mapping": mapping,
         "scripts": {script_path.name: "sha256:" + sha256_file(script_path)},
         "warnings": warnings, "skipped_rules": skipped, "network_access": False,
-        "allowlist": ({"entries": len(allowlist.entries), "suppressed_findings": len(builder.suppressed)} if allowlist is not None else None),
         "outputs": ["clean_expenses.csv", "bad_rows.csv"]
         + (["excluded_by_status.csv"] if status_excluded else [])
         + (["suppressed_findings.csv"] if builder.suppressed else [])
         + ["findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", "dashboard.html"],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
+    # v0.2.24：只有**真的用了**白名单时才写这个字段——普通场景的 manifest 与旧版一致（帕累托）
+    if allowlist is not None:
+        manifest["allowlist"] = {"entries": len(allowlist.entries), "suppressed_findings": len(builder.suppressed)}
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     build_dashboard_html(manifest, builder.findings, len(clean), len(bad), output)
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
