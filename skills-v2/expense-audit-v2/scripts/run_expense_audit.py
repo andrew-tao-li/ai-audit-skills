@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.21"
+VERSION = "0.2.22"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -53,6 +53,8 @@ FINDING_TYPE_ZH = {
     "weekday-mismatch": "日期与周几不符",
     # v0.2.21：单价明显高于参考市场价（需使用者提供价格参考）
     "unit-price-above-market": "单价高于参考市场价",
+    # v0.2.22：超过按行给出的差标/限额
+    "row-limit-exceeded": "超过适用差标/限额",
     # v0.2.9：出差交叉核验（需提供 --travel-requests / --attendance）
     "expense-without-travel-request": "差旅报销无对应出差申请",
     "office-swipe-on-offsite-claim": "报销称外地但当天有公司打卡",
@@ -92,6 +94,8 @@ ALIASES = {
     "unit": ["unit", "uom", "单位", "计量单位"],
     "unit_price": ["unit_price", "price", "单价", "含税单价"],
     "quantity": ["quantity", "qty", "数量", "工时"],
+    # v0.2.22：行级差标/限额（逐行给出的标准，如"酒店差标"按城市分档）
+    "row_limit": ["row_limit", "standard", "standard_amount", "limit", "差标", "标准", "限额", "标准金额", "报销标准"],
     "project_code": ["project_code", "project", "项目编号", "项目代码"],
     "approver": ["approver", "approved_by", "审批人"],
     "payment_date": ["payment_date", "付款日期", "支付日期"],
@@ -254,6 +258,8 @@ POLICY_KEYS = frozenset({
     "lodging_same_amount_min_count",   # 同商户同额无发票：最少笔数，默认 3
     "weekday_check",                   # v0.2.20：日期 ↔ 周几一致性（识别篡改；默认关闭）
     "price_tolerance",                 # v0.2.21：单价高于参考市场价的容差（默认 0.30）
+    "row_limit_check",                 # v0.2.22：按行差标核对（台账含「差标/限额」列时；默认关闭）
+    "row_limit_tolerance",             # 行差标容差（默认 0.0，即严格按差标）
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -316,8 +322,9 @@ PRICE_REFERENCE_ALIASES = {
 
 
 def validate_policy(policy: Dict[str, Any]) -> None:
-    """v0.2.0: 拒绝未知 policy 键，避免静默忽略用户配置"""
-    unknown = set(policy.keys()) - POLICY_KEYS
+    """v0.2.0: 拒绝未知 policy 键，避免静默忽略用户配置。
+    v0.2.22: 以 `_` 开头的键视为**注释**（如 `_note`），不再报错——避免一句备注就让整个运行失败。"""
+    unknown = {k for k in policy.keys() if not str(k).startswith("_")} - POLICY_KEYS
     if unknown:
         suggestions = []
         for key in unknown:
@@ -393,6 +400,13 @@ def normalize_rows(
         # v0.2.13：只有姓名、没有工号时，用姓名充当 employee_id（保证下游按人分组的规则仍正确）
         if not row.get("employee_id") and row.get("employee_name"):
             row["employee_id"] = row["employee_name"]
+        # v0.2.22：间夜单价派生——有 `nights` 但没 `unit_price` 时，unit_price = amount / nights。
+        # 目的：多晚订单（如 3 晚 885 元）**按间夜单价**比对差标/参考价，而不是拿总额去比。
+        if not norm_text(row.get("unit_price")):
+            _nights = parse_amount(row.get("nights"))
+            _amount = parse_amount(row.get("amount"))
+            if _nights and _nights > 0 and _amount is not None:
+                row["unit_price"] = repr(round(_amount / _nights, 6))
         # v0.2.8：多列金额求和——仅当配置了 amount_columns 且该行没有单一金额列时生效
         if amount_columns and not norm_text(row.get("amount")):
             _total, _found = 0.0, False
@@ -1137,6 +1151,40 @@ def _rule_weekday_check(rows, policy, builder) -> List[str]:
                         ["是否为手工填写笔误、跨时区，或导出工具生成错误？"],
                         ["核对原始凭证上的日期与星期"],
                         [{"factor": "weekday_mismatch", "points": 3}])
+    return notes
+
+
+def _rule_row_limit(rows, policy, builder) -> List[str]:
+    """v0.2.22（可选，默认关闭，**完全离线**）：**按行差标/限额**核对。
+
+    真实场景：酒店差标**按城市分档**（300/350/400），逐行给出——不能塞进单一全局 `limits`。
+    台账含 `row_limit`（差标/限额）列且开关打开时启用；**多晚订单按间夜单价比对**（见 v0.2.22 派生）。
+    """
+    notes: List[str] = []
+    if not any(norm_text(r.get("row_limit")) for r in rows):
+        return notes
+    if not policy.get("row_limit_check", False):
+        notes.append("row-limit：台账含「差标/限额」列但未启用 row_limit_check（开启可按行核对）")
+        return notes
+    tolerance = float(policy.get("row_limit_tolerance", 0.0))
+    for row in rows:
+        limit = parse_amount(row.get("row_limit"))
+        if limit is None or limit <= 0:
+            continue
+        value = parse_amount(row.get("unit_price"))
+        basis = "间夜单价" if value is not None else "金额"
+        if value is None:
+            value = parse_amount(row.get("amount"))
+        if value is None:
+            continue
+        if value > limit * (1 + tolerance):
+            builder.add("row-limit-exceeded", "超过适用差标/限额", 3, "strong", (row,),
+                        ("expense_id", "employee_id", "expense_type", "expense_date", "amount", "unit_price", "row_limit"),
+                        ["%s %.2f 超过适用差标/限额 %.2f" % (basis, value, limit)],
+                        ["该记录超过**按行给出**的差标/限额"],
+                        ["是否为制度内例外（陪同领导/客户、临时预订）并已在审批环节披露？"],
+                        ["核对制度版本、例外审批记录与接待佐证"],
+                        [{"factor": "row_limit_exceeded", "points": 3}])
     return notes
 
 
@@ -1942,6 +1990,8 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     _rule_lodging_cross_check(rows, policy, builder)
     # v0.2.20（**可选，默认关闭，完全离线**）：日期 ↔ 周几一致性
     skipped.extend(_rule_weekday_check(rows, policy, builder))
+    # v0.2.22（**可选，默认关闭，完全离线**）：按行差标/限额
+    skipped.extend(_rule_row_limit(rows, policy, builder))
 
     return skipped, {
         "near_duplicate_window_days": near_days,

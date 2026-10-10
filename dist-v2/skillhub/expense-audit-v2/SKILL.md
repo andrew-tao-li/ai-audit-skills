@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.21
+version: 0.2.22
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -315,6 +315,27 @@ R1,丙公司,甲维修厂,12000
 **能力**：`--price-reference <csv>` → `unit-price-above-market`（单价超过参考上限 × (1 + `price_tolerance`，默认 0.30）时提示）。
 价格参考列：`item` / `unit` / `max_price`（或 `unit_price`）/ `source`；报销单可含 `item` / `unit` / `unit_price`。
 **不提供该文件时完全不参与**（与旧版逐字节一致）。
+
+## v0.2.22 新增：按行差标 + 间夜单价派生（**可选、默认关闭**）
+
+### 间夜单价派生（**自动，无需开关**）
+
+台账有 `nights`（晚数）但没 `unit_price` 时，**自动**算 `unit_price = amount / nights`。
+用途：多晚订单（如 3 晚 885 元）**按间夜单价比对**，而不是拿总额去比。
+
+### 按行差标/限额（`row_limit_check`，默认关闭）
+
+真实场景：酒店差标**按城市分档**（300/350/400），**逐行给出**——不能塞进单一全局 `limits`。
+
+台账含 `row_limit`（差标 / 限额 / 标准）列且开关打开时 → `row-limit-exceeded`（强）。
+比对口径：有 `unit_price`（或由 `amount`/`nights` 派生）就用**间夜单价**，否则用金额。
+`row_limit_tolerance` 默认 `0.0`（严格按差标）。
+
+> 台账**不含**该列 → 完全不参与；**含列但未开启** → 只在 `data_quality.md` 给一条提示。
+
+### `policy.json` 注释键
+
+`_` 开头的键（如 `_note`）视为**注释**，不再报错；其它未知键**仍会报错**（防静默忽略配置）。
 
 ## Output contract
 
