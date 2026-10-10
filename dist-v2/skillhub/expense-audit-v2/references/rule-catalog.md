@@ -224,4 +224,18 @@
 - 跳过量写入 `data_quality.md`（不静默丢弃）。
 - 黄金集 `26_field_sales_precision` 守住这组精度（开/关旋钮各 1 条对照断言）。
 
+## 运单台账勾稽（v0.2.25，可选输入 `--shipments`，**离线**）
+
+把运单台账与报销单比对：
+
+| 规则 | 触发 | 强度 |
+|---|---|---|
+| `shipment-amount-mismatch` | 运单台账合计 ≠ 报销金额（超容差） | 中 |
+| `shipment-without-tracking` | 运单**缺运单号** | 弱 |
+| `shipment-from-private-address` | **仅当 `private_address_check: true`**：地址疑似私宅 | 弱 |
+
+- 输入列：`expense_id` / `tracking_no` / `amount` / `courier` / `from_addr` / `to_addr` / `ship_date`。
+- `shipment_types`（默认 快递/快递费/courier/物流/运费）用于"缺运单记录"的覆盖提示。
+- **不提供 `--shipments` → 完全不参与**。
+
 

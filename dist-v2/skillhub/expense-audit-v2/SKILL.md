@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.24
+version: 0.2.25
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -358,6 +358,25 @@ R1,丙公司,甲维修厂,12000
 
 > 跳过的量会在 `data_quality.md` 的「警告与跳过规则」里写明（**不静默**）。
 > 黑盒黄金集新增 `26_field_sales_precision`（外勤销售分布 + 1 条真线索），用于守住这组精度。
+
+## v0.2.25 新增：运单台账勾稽（`--shipments`，**可选输入、默认不参与**）
+
+把**运单台账**（从快递公司账单/寄件记录整理）喂进来，与报销单比对：
+
+| 规则 | 检查 |
+|---|---|
+| `shipment-amount-mismatch` | 同一单据的**运单台账合计**与**报销金额**不一致（超 `shipment_amount_tolerance`，默认 0.01） |
+| `shipment-without-tracking` | 运单**缺少运单号**（无法向快递公司验证真实性——补证线索，不是认定） |
+| `shipment-from-private-address` | **仅在 `private_address_check: true` 时**：寄件/收件地址疑似私人住址 |
+
+```csv
+expense_id,tracking_no,amount,from_addr,to_addr
+K1,SF1001,100.00,上海XX小区3号楼,公司园区A
+K2,,50.00,公司园区A,客户C
+```
+
+> **不提供 `--shipments` 时完全不参与**（与旧版逐字节一致）。
+> `private_address_keywords` 可覆盖默认私址关键词；快递类报销在运单台账里没有记录时，只在 `data_quality.md` 给一条覆盖提示。
 
 ## Output contract
 

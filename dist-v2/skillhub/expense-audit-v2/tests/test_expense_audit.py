@@ -541,6 +541,42 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
                            "multi_occurrence_types": ["路桥费", "停车费", "的士"]})
             self.assertEqual(tuned, {"cross-employee-invoice"})
 
+    def test_shipment_check_is_opt_in(self):
+        """v0.2.25：运单↔报销勾稽 / 缺运单号 / 私址——不提供运单台账时零回归。"""
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            led = base / "l.csv"
+            led.write_text("单据号,工号,费用类型,发生日期,金额,商户\n"
+                           "K1,E1,快递费,2024-05-01,111.00,快递A\n"
+                           "K2,E1,快递费,2024-05-02,50.00,快递A\n", encoding="utf-8")
+
+            def types(cmd):
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                out = Path(cmd[cmd.index("--output") + 1])
+                return {json.loads(l)["finding_type"]
+                        for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()}
+
+            self.assertNotIn("shipment-amount-mismatch",
+                             types([sys.executable, str(SCRIPT), "--input", str(led), "--output", str(base / "o1")]))
+            ship = base / "s.csv"
+            ship.write_text("expense_id,tracking_no,amount,from_addr,to_addr\n"
+                            "K1,SF1001,100.00,上海XX小区3号楼,公司园区A\n"
+                            "K1,SF1002,20.00,公司园区A,客户B\n"
+                            "K2,,50.00,公司园区A,客户C\n", encoding="utf-8")
+            got = types([sys.executable, str(SCRIPT), "--input", str(led), "--output", str(base / "o2"),
+                         "--shipments", str(ship)])
+            self.assertIn("shipment-amount-mismatch", got)        # K1: 111 vs 100+20
+            self.assertIn("shipment-without-tracking", got)       # K2 无运单号
+            self.assertNotIn("shipment-from-private-address", got)  # 未开 private_address_check
+            pol = base / "p.json"
+            pol.write_text(json.dumps({"policy_version": "T", "default_currency": "CNY",
+                                       "private_address_check": True}), encoding="utf-8")
+            got2 = types([sys.executable, str(SCRIPT), "--input", str(led), "--output", str(base / "o3"),
+                          "--shipments", str(ship), "--policy", str(pol)])
+            self.assertIn("shipment-from-private-address", got2)
+
 
 if __name__ == "__main__":
     unittest.main()

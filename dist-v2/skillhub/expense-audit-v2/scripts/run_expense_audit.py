@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.24"
+VERSION = "0.2.25"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -44,6 +44,10 @@ FINDING_TYPE_ZH = {
     "ticket-number-reused": "同一票号重复出现",
     "ticket-issue-after-flight": "出票日期晚于行程日期",
     "itinerary-segment-conflict": "同一订座号同日航段矛盾",
+    # v0.2.25：运单台账相关（需 --shipments；默认不参与）
+    "shipment-amount-mismatch": "运单台账与报销金额不一致",
+    "shipment-without-tracking": "运单缺少运单号",
+    "shipment-from-private-address": "运单涉及疑似私人地址",
     # v0.2.18：住宿凭证交叉核验（**离线**，默认关闭）
     "consecutive-nightly-invoicing": "连续逐晚开票",
     "same-amount-no-invoice": "同商户同额且无发票号",
@@ -264,6 +268,11 @@ POLICY_KEYS = frozenset({
     "outlier_min_amount",              # 低于此金额不报「异常高额」（默认 0）
     "fixed_amount_types",              # 固定标准值费用类型（如 餐费补贴）→ 不参与「异常高额」
     "multi_occurrence_types",          # 天然可多次发生的类型（路桥费/停车费/的士）→ 同日同额不报
+    # v0.2.25 运单台账（**可选输入** --shipments）
+    "shipment_types",                  # 快递类费用类型关键词（用于"缺运单记录"的覆盖提示）
+    "shipment_amount_tolerance",       # 运单合计与报销金额的容差（默认 0.01）
+    "private_address_check",           # 是否检查"疑似私人地址"（默认关闭）
+    "private_address_keywords",        # 私址关键词（默认见 DEFAULT_PRIVATE_ADDRESS_KEYWORDS）
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -323,6 +332,21 @@ PRICE_REFERENCE_ALIASES = {
     "source": ["source", "来源", "价格来源", "供应商"],
     "as_of": ["as_of", "date", "日期", "价格日期"],
 }
+
+# v0.2.25：运单台账（`--shipments`）字段别名——用于「运单↔报销勾稽」「缺运单号」「私址」。
+# 这份台账由使用者从快递公司账单/寄件记录整理而来，本技能**不联网**。
+SHIPMENT_ALIASES = {
+    "expense_id": ["expense_id", "id", "claim_id", "单据号", "报销单号"],
+    "tracking_no": ["tracking_no", "waybill", "waybill_no", "运单号", "快递单号", "物流单号"],
+    "amount": ["amount", "金额", "运单金额", "运费", "快递费"],
+    "courier": ["courier", "carrier", "快递公司", "承运商", "物流公司"],
+    "from_addr": ["from_addr", "from", "sender", "寄件地", "寄件地址", "发件地", "始发地"],
+    "to_addr": ["to_addr", "to", "receiver", "收件地", "收件地址", "到件地", "目的地"],
+    "ship_date": ["ship_date", "date", "寄件日期", "发货日期", "寄件时间"],
+}
+
+# v0.2.25：疑似私人地址的默认关键词（仅当 private_address_check 打开时使用；可覆盖）
+DEFAULT_PRIVATE_ADDRESS_KEYWORDS = ["小区", "花园", "公寓", "号院", "号楼", "幢", "单元"]
 
 
 def validate_policy(policy: Dict[str, Any]) -> None:
@@ -1096,6 +1120,91 @@ def run_price_reference_check(rows, ref_rows, policy, builder) -> List[str]:
                     [{"factor": "unit_price_above_market", "points": 3}])
     if unmatched:
         notes.append("unit-price：%d 条报销单在市场价格参考里没有匹配项，未做单价比对" % unmatched)
+    return notes
+
+
+def run_shipment_check(rows, shipment_rows, policy, builder) -> List[str]:
+    """v0.2.25：**运单台账 ↔ 报销**（`--shipments`，可选输入）。
+
+    来自真实快递费审计：① 运单台账合计与报销金额对不上；② 运单缺运单号（无法验证真实性）；
+    ③ 寄件/收件地址疑似私人住址。**技能不联网**，运单台账由使用者整理提供。
+    """
+    notes: List[str] = []
+    if not shipment_rows:
+        return notes
+    by_id: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+    for item in shipment_rows:
+        key = norm_text(item.get("expense_id"))
+        if key:
+            by_id[key].append(item)
+
+    # ① 运单台账合计 ↔ 报销金额
+    tolerance = float(policy.get("shipment_amount_tolerance", 0.01))
+    for row in rows:
+        items = by_id.get(norm_text(row.get("expense_id")))
+        if not items:
+            continue
+        amounts = [a for a in (parse_amount(s.get("amount")) for s in items) if a is not None]
+        row_amount = parse_amount(row.get("amount"))
+        if not amounts or row_amount is None:
+            continue
+        total = sum(amounts)
+        if abs(total - row_amount) > tolerance:
+            builder.add("shipment-amount-mismatch", "运单台账合计与报销金额不一致", 3, "moderate", (row,),
+                        ("expense_id", "employee_id", "amount", "vendor_name"),
+                        ["该单据运单台账合计 %.2f，与报销金额 %.2f 不一致（差额 %.2f）"
+                         % (total, row_amount, total - row_amount)],
+                        ["运单金额与报销金额对不上：可能是台账覆盖不全，也可能是金额不符"],
+                        ["是否为未录入的运单，或同一单据含多类费用？"],
+                        ["核对运单台账与报销原始凭证、快递公司明细账单"],
+                        [{"factor": "shipment_amount_mismatch", "points": 3}])
+
+    # ② 缺运单号
+    missing = [row for row in rows
+               if any(not norm_text(s.get("tracking_no"))
+                      for s in by_id.get(norm_text(row.get("expense_id")), []))]
+    if missing:
+        builder.add("shipment-without-tracking", "运单缺少运单号（无法验证真实性）", 2, "weak", missing,
+                    ("expense_id", "employee_id", "amount", "vendor_name"),
+                    ["%d 条报销单关联的运单**缺少运单号**" % len(missing)],
+                    ["无运单号即无法向快递公司核验该运单是否真实存在（不是认定，是补证线索）"],
+                    ["是否可从快递公司明细账单或寄件记录补齐运单号？"],
+                    ["要求补充运单号或快递公司明细账单"],
+                    [{"factor": "shipment_without_tracking", "points": 2}])
+
+    # ③ 疑似私人地址（**仅在 private_address_check 打开时**）
+    if policy.get("private_address_check", False):
+        keywords = [norm_text(k) for k in (policy.get("private_address_keywords") or DEFAULT_PRIVATE_ADDRESS_KEYWORDS)
+                    if norm_text(k)]
+        for row in rows:
+            hit_addr = ""
+            for item in by_id.get(norm_text(row.get("expense_id")), []):
+                for field in ("from_addr", "to_addr"):
+                    addr = norm_text(item.get(field))
+                    if addr and keywords and any(k in addr for k in keywords):
+                        hit_addr = addr
+                        break
+                if hit_addr:
+                    break
+            if hit_addr:
+                builder.add("shipment-from-private-address", "运单涉及疑似私人地址", 2, "weak", (row,),
+                            ("expense_id", "employee_id", "amount", "vendor_name"),
+                            ["运单地址疑似私人住址：%s" % hit_addr],
+                            ["寄件/收件地址疑似私人住址，公务关联性需要业务解释（**不等于违规**）"],
+                            ["是否为员工住所、客户住址、或园区内的地址？"],
+                            ["核对业务用途与原始运单"],
+                            [{"factor": "shipment_from_private_address", "points": 2}])
+
+    # 覆盖提示：快递类报销在运单台账里没有记录
+    ship_types = [norm_text(k) for k in (policy.get("shipment_types") or ["快递", "快递费", "courier", "物流", "运费"])]
+    unmatched = 0
+    for row in rows:
+        text = norm_text(row.get("expense_type")).lower()
+        if text and any(k.lower() in text for k in ship_types):
+            if not by_id.get(norm_text(row.get("expense_id"))):
+                unmatched += 1
+    if unmatched:
+        notes.append("shipment：%d 条快递类报销在运单台账里没有记录，未做勾稽" % unmatched)
     return notes
 
 
@@ -2091,6 +2200,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # v0.2.21：可选市场价格参考（用于「单价合理性」；本技能不就此事联网）
     parser.add_argument("--price-reference", type=Path,
                         help="可选：市场价格参考 CSV（列：item/unit/unit_price 或 min_price/max_price/source）")
+    # v0.2.25：可选运单台账（用于「运单↔报销勾稽」「缺运单号」「私址」；本技能不就此事联网）
+    parser.add_argument("--shipments", type=Path,
+                        help="可选：运单台账 CSV（列：expense_id/tracking_no/amount/courier/from_addr/to_addr）")
     parser.add_argument("--check-env", action="store_true")
     args = parser.parse_args(argv)
     if args.check_env:
@@ -2165,6 +2277,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         price_rows, _prm = read_aux_table(args.price_reference.resolve(), PRICE_REFERENCE_ALIASES, args.sheet)
         warnings.append("已载入市场价格参考 %d 条（%s）；用于单价合理性比对" % (len(price_rows), args.price_reference.name))
         skipped.extend(run_price_reference_check(analyzable, price_rows, policy, builder))
+    # v0.2.25：运单台账（可选）。不提供时一行也不产生，输出与旧版完全一致。
+    if args.shipments:
+        shipment_rows, _sm = read_aux_table(args.shipments.resolve(), SHIPMENT_ALIASES, args.sheet)
+        warnings.append("已载入运单台账 %d 条（%s）；用于「运单↔报销勾稽」" % (len(shipment_rows), args.shipments.name))
+        skipped.extend(run_shipment_check(analyzable, shipment_rows, policy, builder))
     validate(builder.findings, builder.evidence)
 
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
@@ -2299,6 +2416,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         input_files.append({"path": args.payments.name, "sha256": sha256_file(args.payments.resolve()), "role": "payments"})
     if args.price_reference and args.price_reference.exists():
         input_files.append({"path": args.price_reference.name, "sha256": sha256_file(args.price_reference.resolve()), "role": "price_reference"})
+    if args.shipments and args.shipments.exists():
+        input_files.append({"path": args.shipments.name, "sha256": sha256_file(args.shipments.resolve()), "role": "shipments"})
     manifest = {
         "run_id": "EXP-%s-%s" % (started.strftime("%Y%m%dT%H%M%SZ"), source_hash[:8]),
         "skill": SKILL, "skill_version": VERSION, "started_at": started.isoformat(), "finished_at": finished.isoformat(),
