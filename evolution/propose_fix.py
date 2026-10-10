@@ -20,6 +20,7 @@
 """
 import argparse
 import json
+import sys
 import os
 import subprocess
 import sys
@@ -27,6 +28,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_classify import split_acceptance  # noqa: E402
+
 STATE_FILE = ROOT / "evolution" / "state.json"
 ACCEPT_DIR = ROOT / "evals" / "cross-agent" / "results"
 REPO = "andrew-tao-li/ai-audit-skills"
@@ -38,8 +42,12 @@ def run(cmd, **kw):
 
 
 def collect_failures():
-    """汇总失败：F1 的 open_failures + 最近一次验收的失败用例。"""
-    failures = {"blackbox": [], "acceptance": []}
+    """汇总失败：F1 的 open_failures + 最近一次验收的**真实**失败用例。
+
+    v2026-10-10：网络类错误与"检测未完成"归入 not_run，**不计入失败、不触发提案**
+    （此前把当晚的 GitHub TLS 抖动当成代码缺陷，误开了 PR #6）。
+    """
+    failures = {"blackbox": [], "acceptance": [], "not_run": []}
     if STATE_FILE.exists():
         state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
         failures["blackbox"] = state.get("open_failures", [])
@@ -48,11 +56,16 @@ def collect_failures():
         jsons = sorted(ACCEPT_DIR.glob("*.json"))
         if jsons:
             latest = json.loads(jsons[-1].read_text(encoding="utf-8"))
+            split = split_acceptance(latest.get("results", []))
             failures["acceptance"] = [
                 {"id": r["id"], "prompt": r.get("prompt", ""),
                  "failed_checks": [c["name"] for c in r.get("checks", []) if not c.get("ok")],
                  "error": r.get("error")}
-                for r in latest.get("results", []) if not r.get("passed")
+                for r in split["real"]
+            ]
+            failures["not_run"] = [
+                {"id": r["id"], "reason": "网络抖动 / 检测未完成（不判为代码缺陷）"}
+                for r in split["not_run"]
             ]
     return failures
 
@@ -137,7 +150,7 @@ def main() -> int:
     token = os.environ.get("GITHUB_TOKEN", "")
     failures = collect_failures()
     n = total(failures)
-    print("失败汇总：F1=%d，验收=%d，合计=%d" % (len(failures["blackbox"]), len(failures["acceptance"]), n))
+    print("失败汇总：F1=%d，验收=%d（另有 %d 条未执行，不计入），合计=%d" % (len(failures["blackbox"]), len(failures["acceptance"]), len(failures.get("not_run", [])), n))
     if n == 0:
         print("无失败，无需提案。")
         return 0

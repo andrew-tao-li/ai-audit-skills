@@ -151,8 +151,21 @@ if [ "$SKIP_ACCEPTANCE" = "0" ]; then
         if [ -n "$ACCEPT_LOG" ] && [ -f "$ACCEPT_LOG" ]; then
             ACCEPT_MARK=$(grep -m1 "结果：" "$ACCEPT_LOG" | sed 's/.*结果：//;s/\*\*//g')
             ACCEPT_FAILED=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('failed','?'))" "${ACCEPT_LOG%.md}.json" 2>/dev/null || echo "?")
+            # v2026-10-10：区分「真实回归」与「网络/检测未完成」——后者不计入失败、不触发提案
+            ACCEPT_SPLIT=$(python3 -c "
+import json, sys
+sys.path.insert(0, 'evolution')
+from check_classify import split_acceptance
+d = json.load(open(sys.argv[1]))
+s = split_acceptance(d.get('results', []))
+print('%d %d' % (len(s['real']), len(s['not_run'])))
+" "${ACCEPT_LOG%.md}.json" 2>/dev/null || echo "? ?")
+            ACCEPT_REAL=${ACCEPT_SPLIT%% *}
             if [ "$ACCEPT_FAILED" = "0" ]; then
                 ACCEPTANCE_LINE="✅ $ACCEPT_MARK"
+            elif [ "$ACCEPT_REAL" = "0" ]; then
+                ACCEPTANCE_LINE="⚠️ 未执行（网络抖动 / 检测未完成，不计入失败）"
+                NOT_RUN="$NOT_RUN OpenCode验收"
             else
                 ACCEPTANCE_LINE="⚠️ $ACCEPT_MARK"
                 NOT_RUN="$NOT_RUN OpenCode验收"
