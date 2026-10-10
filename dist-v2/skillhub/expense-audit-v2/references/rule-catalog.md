@@ -187,4 +187,15 @@
 - 支持 `周一 / 星期一 / 礼拜一 / 周1 / Monday / Thu`；无法判断的值自动跳过。
 - 台账不含该列 → 完全不参与；含该列但未开启 → 只在 `data_quality.md` 给一条提示。
 
+## 单价合理性（v0.2.21，可选输入 `--price-reference`，**离线**）
+
+把报销单的**单价**与**使用者提供的市场价格参考**比对：超过参考上限 × (1 + `price_tolerance`，默认 0.30）
+→ `unit-price-above-market`（中）。
+
+- 价格参考列：`item` / `unit` / `max_price`（或 `unit_price`）/ `source`；报销单可含 `item` / `unit` / `unit_price`
+  （缺 `unit_price` 时用 `amount`）。
+- **需要外部数据**：**只在用户/提示词提到"单价合理性 / 市场价"时才提示用户提供**（见 SKILL.md「Operating principles」第 7 条）；
+  **没提到就一个字都不提**。
+- **不提供该文件 → 完全不参与**（与旧版逐字节一致）。
+
 

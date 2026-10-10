@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.20"
+VERSION = "0.2.21"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -51,6 +51,8 @@ FINDING_TYPE_ZH = {
     # v0.2.20：开票方↔实际收款方（替票）/ 日期↔周几
     "invoice-payee-mismatch": "开票方与实际收款方不一致",
     "weekday-mismatch": "日期与周几不符",
+    # v0.2.21：单价明显高于参考市场价（需使用者提供价格参考）
+    "unit-price-above-market": "单价高于参考市场价",
     # v0.2.9：出差交叉核验（需提供 --travel-requests / --attendance）
     "expense-without-travel-request": "差旅报销无对应出差申请",
     "office-swipe-on-offsite-claim": "报销称外地但当天有公司打卡",
@@ -85,6 +87,11 @@ ALIASES = {
     "room_number": ["room_number", "room_no", "room", "房号", "房间号"],
     # v0.2.20：日期↔周几一致性（篡改日期时"周几"往往对不上）
     "weekday": ["weekday", "day_of_week", "week_day", "周几", "星期几", "星期", "礼拜"],
+    # v0.2.21：单价合理性（项目/单位/单价/数量）
+    "item": ["item", "spec", "item_name", "项目", "规格", "品名", "材料", "配件"],
+    "unit": ["unit", "uom", "单位", "计量单位"],
+    "unit_price": ["unit_price", "price", "单价", "含税单价"],
+    "quantity": ["quantity", "qty", "数量", "工时"],
     "project_code": ["project_code", "project", "项目编号", "项目代码"],
     "approver": ["approver", "approved_by", "审批人"],
     "payment_date": ["payment_date", "付款日期", "支付日期"],
@@ -246,6 +253,7 @@ POLICY_KEYS = frozenset({
     "lodging_types",                   # 住宿类费用类型关键词，默认见 LODGING_DEFAULT_TYPES
     "lodging_same_amount_min_count",   # 同商户同额无发票：最少笔数，默认 3
     "weekday_check",                   # v0.2.20：日期 ↔ 周几一致性（识别篡改；默认关闭）
+    "price_tolerance",                 # v0.2.21：单价高于参考市场价的容差（默认 0.30）
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -292,6 +300,18 @@ PAYMENT_ALIASES = {
     "invoice_issuer": ["invoice_issuer", "issuer", "开票方", "销方名称", "销售方", "开票单位", "发票抬头"],
     "amount": ["amount", "金额", "付款金额", "支付金额"],
     "payment_date": ["payment_date", "付款日期", "支付日期", "收款日期"],
+}
+
+# v0.2.21：市场价格参考（`--price-reference`）字段别名——用于「单价合理性」比对。
+# 这份参考由使用者提供（自己的采购价、行业报价、第三方比价），本技能**不联网**。
+PRICE_REFERENCE_ALIASES = {
+    "item": ["item", "spec", "item_name", "项目", "规格", "品名", "材料", "配件"],
+    "unit": ["unit", "uom", "单位", "计量单位"],
+    "unit_price": ["unit_price", "price", "参考单价", "单价"],
+    "min_price": ["min_price", "min", "最低价", "价格下限"],
+    "max_price": ["max_price", "max", "最高价", "价格上限"],
+    "source": ["source", "来源", "价格来源", "供应商"],
+    "as_of": ["as_of", "date", "日期", "价格日期"],
 }
 
 
@@ -1001,6 +1021,63 @@ def run_invoice_payee_check(rows, payment_rows, builder) -> List[str]:
                      if norm_text(r.get("expense_id")) and norm_text(r.get("expense_id")) not in by_id)
     if unverified:
         notes.append("invoice-payee：%d 条报销单未提供支付/收款记录，未做「开票方↔收款方」比对" % unverified)
+    return notes
+
+
+def run_price_reference_check(rows, ref_rows, policy, builder) -> List[str]:
+    """v0.2.21：**单价合理性**（`--price-reference`）——把报销单单价与**使用者提供的市场价格参考**比对。
+
+    来自真实车辆维修审计里"单价明显高于市场价"的一类问题。
+    **本技能不联网**：价格参考由使用者提供（自己的采购价、行业报价、第三方比价）。
+    """
+    notes: List[str] = []
+    if not ref_rows:
+        return notes
+    tolerance = float(policy.get("price_tolerance", 0.30))
+    by_item: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+    for ref in ref_rows:
+        key = match_key(ref.get("item"))
+        if key:
+            by_item[key].append(ref)
+    flagged: List[Tuple[Dict[str, Any], Dict[str, str], float, float]] = []
+    unmatched = 0
+    for row in rows:
+        key = match_key(row.get("item")) or match_key(row.get("expense_type"))
+        if not key:
+            continue
+        refs = by_item.get(key)
+        if not refs:
+            unmatched += 1
+            continue
+        value = parse_amount(row.get("unit_price"))
+        if value is None:
+            value = parse_amount(row.get("amount"))
+        if value is None:
+            continue
+        for ref in refs:
+            unit_led, unit_ref = match_key(row.get("unit")), match_key(ref.get("unit"))
+            if unit_led and unit_ref and unit_led != unit_ref:
+                continue   # 单位不同，不可直接比较
+            ceiling = parse_amount(ref.get("max_price"))
+            if ceiling is None:
+                ceiling = parse_amount(ref.get("unit_price"))
+            if ceiling is None or ceiling <= 0:
+                continue
+            if value > ceiling * (1 + tolerance):
+                flagged.append((row, ref, value, ceiling))
+                break
+    for row, ref, value, ceiling in flagged:
+        builder.add("unit-price-above-market", "单价明显高于参考市场价", 3, "moderate", (row,),
+                    ("expense_id", "employee_id", "vendor_name", "item", "unit", "unit_price", "amount"),
+                    ["「%s」单价约 %.2f，参考上限 %.2f（来源：%s）"
+                     % (norm_text(row.get("item")) or norm_text(row.get("expense_type")), value, ceiling,
+                        norm_text(ref.get("source")) or "未注明")],
+                    ["单价明显高于参考市场水平，建议核实是否含额外服务或规格差异"],
+                    ["是否为不同规格、含税/不含税、含安装或质保？参考价是否为同期同规格？"],
+                    ["索取报价单与结算清单，核对材料与工时明细"],
+                    [{"factor": "unit_price_above_market", "points": 3}])
+    if unmatched:
+        notes.append("unit-price：%d 条报销单在市场价格参考里没有匹配项，未做单价比对" % unmatched)
     return notes
 
 
@@ -1926,6 +2003,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # v0.2.20：可选支付/收款记录（用于「开票方 ↔ 实际收款方」比对；本技能不就此事联网）
     parser.add_argument("--payments", type=Path,
                         help="可选：支付/收款记录 CSV（列：expense_id/payee/invoice_issuer/amount/payment_date）")
+    # v0.2.21：可选市场价格参考（用于「单价合理性」；本技能不就此事联网）
+    parser.add_argument("--price-reference", type=Path,
+                        help="可选：市场价格参考 CSV（列：item/unit/unit_price 或 min_price/max_price/source）")
     parser.add_argument("--check-env", action="store_true")
     args = parser.parse_args(argv)
     if args.check_env:
@@ -1995,6 +2075,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         payment_rows, _pm = read_aux_table(args.payments.resolve(), PAYMENT_ALIASES, args.sheet)
         warnings.append("已载入支付/收款记录 %d 条（%s）；用于「开票方↔实际收款方」比对" % (len(payment_rows), args.payments.name))
         skipped.extend(run_invoice_payee_check(analyzable, payment_rows, builder))
+    # v0.2.21：市场价格参考（可选）。不提供时一行也不产生，输出与旧版完全一致。
+    if args.price_reference:
+        price_rows, _prm = read_aux_table(args.price_reference.resolve(), PRICE_REFERENCE_ALIASES, args.sheet)
+        warnings.append("已载入市场价格参考 %d 条（%s）；用于单价合理性比对" % (len(price_rows), args.price_reference.name))
+        skipped.extend(run_price_reference_check(analyzable, price_rows, policy, builder))
     validate(builder.findings, builder.evidence)
 
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
@@ -2127,6 +2212,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         input_files.append({"path": args.travel_verification.name, "sha256": sha256_file(args.travel_verification.resolve()), "role": "travel_verification"})
     if args.payments and args.payments.exists():
         input_files.append({"path": args.payments.name, "sha256": sha256_file(args.payments.resolve()), "role": "payments"})
+    if args.price_reference and args.price_reference.exists():
+        input_files.append({"path": args.price_reference.name, "sha256": sha256_file(args.price_reference.resolve()), "role": "price_reference"})
     manifest = {
         "run_id": "EXP-%s-%s" % (started.strftime("%Y%m%dT%H%M%SZ"), source_hash[:8]),
         "skill": SKILL, "skill_version": VERSION, "started_at": started.isoformat(), "finished_at": finished.isoformat(),

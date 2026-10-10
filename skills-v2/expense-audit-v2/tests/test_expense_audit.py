@@ -476,6 +476,31 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             self.assertIn("weekday-mismatch",
                           run(ledger, policy={"policy_version": "T", "default_currency": "CNY", "weekday_check": True}, name="wd"))
 
+    def test_price_reference_is_opt_in(self):
+        """v0.2.21：单价合理性——不提供价格参考时零回归；提供后按参考上限比对。"""
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            data = base / "d.csv"
+            data.write_text("单据号,工号,费用类型,发生日期,金额,商户,项目,单位,单价\n"
+                            "S1,E1,维修,2024-05-01,1850,甲厂,起动机,个,1850\n"
+                            "S2,E1,维修,2024-05-02,300,甲厂,冷媒,瓶,120\n", encoding="utf-8")
+
+            def types(cmd):
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                out = Path(cmd[cmd.index("--output") + 1])
+                return {json.loads(l)["finding_type"]
+                        for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()}
+
+            self.assertNotIn("unit-price-above-market",
+                             types([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(base / "o1")]))
+            ref = base / "ref.csv"
+            ref.write_text("item,unit,max_price,source\n起动机,个,1200,市场比价\n冷媒,瓶,60,市场比价\n", encoding="utf-8")
+            self.assertIn("unit-price-above-market",
+                          types([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(base / "o2"),
+                                 "--price-reference", str(ref)]))
+
 
 if __name__ == "__main__":
     unittest.main()

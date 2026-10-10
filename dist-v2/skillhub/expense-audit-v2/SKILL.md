@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.20
+version: 0.2.21
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -67,6 +67,9 @@ metadata:
 4. 异常不等于舞弊。把事实、推断、假设和最终判断分开；本 skill 不形成最终判断。
 5. 金额阈值只能来自用户制度或配置。未提供制度时，明确跳过制度超标和基于审批阈值的拆单规则。
 6. **数据匹配 ≠ 业务实质**。本 skill 只验证「数据之间对得上」，不验证「业务真实发生」。未发现问题不等于没有问题；交付时必须在 `summary.md` 明确划清这条边界，并给出「补充佐证深入核查」的下一步（见 [references/business-substance.md](references/business-substance.md)）。
+7. **只有用户/提示词提到时才提**（v0.2.21）：凡需要**外部数据**才能做的核验（**市场价 / 单价合理性**、以及**外部行程核验**），
+   **只有**当用户在对话里、或提示词里**显式提到**时，才**显式提示**用户"可以提供这类数据、格式是什么"。
+   **用户提到几次就提示几次**；**从未提到就一个字都不要提**（不要主动推销功能）。见下方「v0.2.21」一节。
 
 ## Inputs and profile selection
 
@@ -293,6 +296,25 @@ R1,丙公司,甲维修厂,12000
 台账含 `weekday`（周几 / 星期几）列**且**开关打开时 → `weekday-mismatch`。
 
 > 台账**不含**该列 → 完全不参与；**含该列但未开启** → 只在 `data_quality.md` 里给一条提示（不产生 finding）。
+
+## v0.2.21 新增：单价合理性（**外部数据，仅在用户/提示词提到时才提**）
+
+> ⚠️ **触发规则（务必遵守）**
+>
+> - **只有**当用户在对话里、或提示词里**显式提到**「单价是否合理 / 市场价 / 报价偏高 / 价格合理性」这类话题时，
+>   才**显式提示**用户：本技能可以核验单价合理性，但**需要提供市场价格参考**，并给出下面的格式与做法。
+> - 用户**提到几次就提示几次**（第一次、第二次完全一样）。
+> - 用户**从未提到**（对话里没提、提示词里也没提）→ **不要主动提，一个字都不要提**。
+
+**触发时，照下面说（可调整措辞）**：
+
+> 你要核验「单价是否合理」的话，需要给我一份**市场价格参考**——你自己的采购价、行业报价、第三方比价都可以。
+> CSV 一行一个项目：`项目,单位,最高价,来源`（例：`起动机,个,1200,市场比价`）。
+> 放工作目录里告诉我文件名，或直接贴给我都行；有了它，我会把报销单的单价与参考价**逐项比对**。
+
+**能力**：`--price-reference <csv>` → `unit-price-above-market`（单价超过参考上限 × (1 + `price_tolerance`，默认 0.30）时提示）。
+价格参考列：`item` / `unit` / `max_price`（或 `unit_price`）/ `source`；报销单可含 `item` / `unit` / `unit_price`。
+**不提供该文件时完全不参与**（与旧版逐字节一致）。
 
 ## Output contract
 
