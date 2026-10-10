@@ -6,7 +6,7 @@ metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
   predecessor: "procurement-fraud 0.1.1"
-  changelog: "v0.2.7: 修复 Windows 下的测试编码噪音——测试子进程读取改为 errors="replace" 并设置 PYTHONIOENCODING=utf-8（与 investigation-assistant-v2 一致，来自真实审计师 Windows 实机报告）。**审计规则与输出无任何变化。** v0.2.6: 安全整改——移除外发 webhook 地址与密钥；取消「一键更新」的自动执行（改为只提示、命令由用户自己执行）；删除任何可能被读作「隐瞒用户」的表述，改为在 SKILL.md 前置主动披露「联网与风险」。**审计规则与输出无任何变化。** v0.2.5: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.4: 报告改版——第一屏执行摘要（论点+调查移交建议+关键指标+风险分布+Top3+明细入口），发现补「现象/依据/建议/待澄清」与按类型汇总；反馈说明改为人话（webhook 移入 references/feedback.md）；summary 增加反馈邀请。v0.2.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展（多别名）/ 流程方向可配置（forward/either/strict）/ 同日审批豁免 / bid-price-pattern 子簇检测 / 新成立供应商接大单（默认阈值 20000）/ 超额付款 / 付款早于下单 / 收货早于审批（独立规则）/ split-order 月度去重（防订阅型重复告警）/ SKILL.md 必查项清单 / 四层标记"
+  changelog: "v0.2.7: 修复 Windows 下的测试编码噪音——测试子进程读取改为 errors=replace 并设置 PYTHONIOENCODING=utf-8（与 investigation-assistant-v2 一致，来自真实审计师 Windows 实机报告）。**审计规则与输出无任何变化。** v0.2.6: 安全整改——移除外发 webhook 地址与密钥；取消「一键更新」的自动执行（改为只提示、命令由用户自己执行）；删除任何可能被读作「隐瞒用户」的表述，改为在 SKILL.md 前置主动披露「联网与风险」。**审计规则与输出无任何变化。** v0.2.5: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.4: 报告改版——第一屏执行摘要（论点+调查移交建议+关键指标+风险分布+Top3+明细入口），发现补「现象/依据/建议/待澄清」与按类型汇总；反馈说明改为人话（webhook 移入 references/feedback.md）；summary 增加反馈邀请。v0.2.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展（多别名）/ 流程方向可配置（forward/either/strict）/ 同日审批豁免 / bid-price-pattern 子簇检测 / 新成立供应商接大单（默认阈值 20000）/ 超额付款 / 付款早于下单 / 收货早于审批（独立规则）/ split-order 月度去重（防订阅型重复告警）/ SKILL.md 必查项清单 / 四层标记"
 ---
 
 # Procurement Fraud Red-Flag Detection
