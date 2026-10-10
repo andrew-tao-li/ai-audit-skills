@@ -312,6 +312,56 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             supp = (o2 / "suppressed_findings.csv").read_text(encoding="utf-8")
             self.assertIn("园区餐厅工作餐", supp)
 
+    def test_travel_verification_and_vouchers_are_opt_in(self):
+        """v0.2.15：外部行程核验（不联网、文件驱动）与两条可选凭证规则的默认零回归 + 红线。"""
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+
+            def run(cmd):
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                out = Path(cmd[cmd.index("--output") + 1])
+                findings = [json.loads(l) for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+                return findings
+
+            ledger = base / "m.csv"
+            ledger.write_text("单据号,工号,费用类型,发生日期,金额,出发城市,目的城市,航班号\n"
+                              "F1,EMP1,机票,2026-10-09,3000,北京,上海,CA1234\n", encoding="utf-8")
+            # ① 不提供核验文件 → 零 travel-verification（默认零回归）
+            f = run([sys.executable, str(SCRIPT), "--input", str(ledger), "--output", str(base / "o0")])
+            self.assertFalse([x for x in f if x["finding_type"].startswith("travel-verification")])
+            # ② 方向相反 → mismatch
+            rev = base / "v.csv"
+            rev.write_text("expense_id,depart_city,arrive_city,source\nF1,上海,北京,航司官网\n", encoding="utf-8")
+            f = run([sys.executable, str(SCRIPT), "--input", str(ledger), "--output", str(base / "o1"),
+                     "--travel-verification", str(rev)])
+            self.assertTrue(any(x["finding_type"] == "travel-verification-mismatch" for x in f))
+            # ③ 查不到 → 只报弱信号，且**写明不等于虚构**（红线）
+            nf = base / "nf.csv"
+            nf.write_text("expense_id,source\nF1,航旅纵横\n", encoding="utf-8")
+            f = run([sys.executable, str(SCRIPT), "--input", str(ledger), "--output", str(base / "o2"),
+                     "--travel-verification", str(nf)])
+            nf_findings = [x for x in f if x["finding_type"] == "travel-verification-not-found"]
+            self.assertEqual(len(nf_findings), 1)
+            self.assertEqual(nf_findings[0]["evidence_strength"], "weak")
+            self.assertIn("不等于", json.dumps(nf_findings[0], ensure_ascii=False))
+            # ④ 同一凭证多人：默认关，开启生效
+            sh = base / "sh.csv"
+            sh.write_text("单据号,工号,费用类型,发生日期,金额,订座号\n"
+                          "P1,EMP1,机票,2026-10-09,3000,PNRAAA\nP2,EMP2,机票,2026-10-09,3000,PNRAAA\n", encoding="utf-8")
+            self.assertNotIn("shared-voucher-multiple-employees",
+                             [x["finding_type"] for x in run([sys.executable, str(SCRIPT), "--input", str(sh), "--output", str(base / "o3")])])
+            pol = base / "p.json"; pol.write_text(json.dumps({"policy_version": "T", "default_currency": "CNY", "shared_voucher_check": True}), encoding="utf-8")
+            self.assertIn("shared-voucher-multiple-employees",
+                          [x["finding_type"] for x in run([sys.executable, str(SCRIPT), "--input", str(sh), "--output", str(base / "o4"), "--policy", str(pol)])])
+            # ⑤ 凭证完备性：默认关，开启生效
+            self.assertNotIn("voucher-incomplete",
+                             [x["finding_type"] for x in run([sys.executable, str(SCRIPT), "--input", str(sh), "--output", str(base / "o5")])])
+            pol2 = base / "p2.json"; pol2.write_text(json.dumps({"policy_version": "T", "default_currency": "CNY", "voucher_completeness_check": True}), encoding="utf-8")
+            self.assertIn("voucher-incomplete",
+                          [x["finding_type"] for x in run([sys.executable, str(SCRIPT), "--input", str(sh), "--output", str(base / "o6"), "--policy", str(pol2)])])
+
 
 if __name__ == "__main__":
     unittest.main()

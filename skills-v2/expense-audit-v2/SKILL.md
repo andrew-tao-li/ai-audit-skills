@@ -1,12 +1,12 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.14
+version: 0.2.15
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
   predecessor: "expense-audit 0.1.1"
-  changelog: "v0.2.14: 实现真实审计师反馈 #2/#3/#5/#6 四项**可选**能力（**全部默认关闭，默认路径逐字节不变**）——跨商户拆单 split_cross_merchant、绝对大额 large_amount_check、商户集中度 vendor_concentration_check、白名单 --allowlist（被压制内容完整写入 suppressed_findings.csv，绝不静默丢弃）。 v0.2.13: 修两条真实审计师反馈——① 支持中文日期「2026年10月09日 12:30」这类写法（旧版识别不了会当成坏行，导致当天相关规则全部失联）；② 自审自批：报销人允许用「姓名」（只有姓名没有工号的台账现在也能跑），并在「报销人是工号、审批人是姓名」这类口径不一致时明确提示、不再静默漏检。**默认行为不变**（只在原来识别失败/漏检处补上）。 v0.2.12: 修复 Windows 下的测试编码噪音——测试子进程读取改为 errors="replace" 并设置 PYTHONIOENCODING=utf-8（与 investigation-assistant-v2 一致，来自真实审计师 Windows 实机报告）。**审计规则与输出无任何变化。** v0.2.11: 安全整改——移除外发 webhook 地址与密钥；取消「一键更新」的自动执行（改为只提示、命令由用户自己执行）；删除任何可能被读作「隐瞒用户」的表述，改为在 SKILL.md 前置主动披露「联网与风险」。**审计规则与输出无任何变化。** v0.2.10: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.9: 新增可选的「出差交叉核验」——提供 --travel-requests / --attendance 后自动唤醒：差旅报销无对应出差申请、报销称外地但当天有公司打卡、打卡地点与出差城市不一致；「是否在公司」三层判定(显式布尔/经纬度+半径/地点关键词)，判定不了即跳过；默认口径「出差申请可替代打卡」，可配置为出差期间也需打卡。不提供辅助数据时与旧版逐字节一致。v0.2.8: 新增可选的「审批状态过滤」(status_filter)——被排除的行写入 excluded_by_status.csv，绝不静默丢弃；新增规则「撤回/拒绝后重提且金额增加」(仅配置 status_filter 后触发)；新增 amount_columns 多列金额求和；新增 references/field-mapping-guide.md(真实台账接入指南)。以上**全部为可选项**，不配置时与旧版逐字节一致。v0.2.7: 报告改版——第一屏改为「执行摘要」（论点结论+关键指标+风险分布+最需先看的3条+下一步+明细入口），每条发现补「现象/依据/建议/待澄清」并加「按类型汇总」表；反馈说明改为人话（对外解释+红线，webhook 移入 references/feedback.md）；修复 summary 里风险计数恒为 0 的 bug。v0.2.5: 新增 dashboard.html 全景图（自包含、离线、0 外部资源）；description 加边界声明。v0.2.4: 反馈邀请改为确定性产物。v0.2.3: 反馈邀请改为确定性产物（summary.md 段 + stderr 提示 + 交付必呈现）。v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
+  changelog: "v0.2.15: 实现审计师 #7 的反馈（**全部可选、默认关闭、技能零联网**）——外部行程核验 --travel-verification（铁律：查不到≠虚构）、同一凭证多人各报 shared_voucher_check、凭证要素完备性 voucher_completeness_check；新增 flight_no / pnr 字段别名。 v0.2.14: 实现真实审计师反馈 #2/#3/#5/#6 四项**可选**能力（**全部默认关闭，默认路径逐字节不变**）——跨商户拆单 split_cross_merchant、绝对大额 large_amount_check、商户集中度 vendor_concentration_check、白名单 --allowlist（被压制内容完整写入 suppressed_findings.csv，绝不静默丢弃）。 v0.2.13: 修两条真实审计师反馈——① 支持中文日期「2026年10月09日 12:30」这类写法（旧版识别不了会当成坏行，导致当天相关规则全部失联）；② 自审自批：报销人允许用「姓名」（只有姓名没有工号的台账现在也能跑），并在「报销人是工号、审批人是姓名」这类口径不一致时明确提示、不再静默漏检。**默认行为不变**（只在原来识别失败/漏检处补上）。 v0.2.12: 修复 Windows 下的测试编码噪音——测试子进程读取改为 errors="replace" 并设置 PYTHONIOENCODING=utf-8（与 investigation-assistant-v2 一致，来自真实审计师 Windows 实机报告）。**审计规则与输出无任何变化。** v0.2.11: 安全整改——移除外发 webhook 地址与密钥；取消「一键更新」的自动执行（改为只提示、命令由用户自己执行）；删除任何可能被读作「隐瞒用户」的表述，改为在 SKILL.md 前置主动披露「联网与风险」。**审计规则与输出无任何变化。** v0.2.10: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.9: 新增可选的「出差交叉核验」——提供 --travel-requests / --attendance 后自动唤醒：差旅报销无对应出差申请、报销称外地但当天有公司打卡、打卡地点与出差城市不一致；「是否在公司」三层判定(显式布尔/经纬度+半径/地点关键词)，判定不了即跳过；默认口径「出差申请可替代打卡」，可配置为出差期间也需打卡。不提供辅助数据时与旧版逐字节一致。v0.2.8: 新增可选的「审批状态过滤」(status_filter)——被排除的行写入 excluded_by_status.csv，绝不静默丢弃；新增规则「撤回/拒绝后重提且金额增加」(仅配置 status_filter 后触发)；新增 amount_columns 多列金额求和；新增 references/field-mapping-guide.md(真实台账接入指南)。以上**全部为可选项**，不配置时与旧版逐字节一致。v0.2.7: 报告改版——第一屏改为「执行摘要」（论点结论+关键指标+风险分布+最需先看的3条+下一步+明细入口），每条发现补「现象/依据/建议/待澄清」并加「按类型汇总」表；反馈说明改为人话（对外解释+红线，webhook 移入 references/feedback.md）；修复 summary 里风险计数恒为 0 的 bug。v0.2.5: 新增 dashboard.html 全景图（自包含、离线、0 外部资源）；description 加边界声明。v0.2.4: 反馈邀请改为确定性产物。v0.2.3: 反馈邀请改为确定性产物（summary.md 段 + stderr 提示 + 交付必呈现）。v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
 ---
 
 # Expense Audit
@@ -211,6 +211,30 @@ E2025001,,,,,,上期已核实
 ```
 
 > 空列 = 通配；`amount_max` = 金额上限。至少填一个条件，否则该行会被忽略。不提供 `--allowlist` 时，本功能完全不参与（与旧版一致）。
+
+## v0.2.15 新增：外部核验与凭证规则（**全部可选、默认关闭，技能零联网**）
+
+### 外部行程核验（`--travel-verification <csv>`）
+
+把**外部查到的航班/行程记录**喂进来，与报销单据逐字段比对：
+
+| 情况 | 结果 |
+|---|---|
+| 查到且一致 | 不产生 finding |
+| 查到但不一致（航班号/日期/方向/乘机人） | `travel-verification-mismatch`（**强**） |
+| **在给定来源中查不到** | `travel-verification-not-found`（**弱**）；**「查不到」≠「虚构」** |
+
+> **本技能不做任何联网查询。** 核验数据由**你/你的智能体**取得后提供（与 `--travel-requests` / `--attendance` 同一模式）。
+> 取得方法、来源可靠性、合规提醒、输入格式 → [references/travel-verification-guide.md](references/travel-verification-guide.md)。
+
+### 两条可选凭证规则（写进 `policy.json` 才启用；不写 = 与旧版一致）
+
+| 字段 | 用途 | 默认 |
+|---|---|---|
+| `shared_voucher_check` | 同一凭证（`pnr`/订座号）被**多名员工各自报销** → `shared-voucher-multiple-employees` | `false` |
+| `voucher_completeness_check` | 凭证要素完备性（缺发票号 / 发票日期）→ `voucher-incomplete` | `false` |
+
+> 新增字段别名 `flight_no`（航班号）与 `pnr`（订座号）已支持；表里没有这些列时，相关规则自动跳过。
 
 ## Output contract
 

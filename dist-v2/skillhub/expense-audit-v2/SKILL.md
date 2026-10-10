@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.14
+version: 0.2.15
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -216,6 +216,30 @@ E2025001,,,,,,上期已核实
 ```
 
 > 空列 = 通配；`amount_max` = 金额上限。至少填一个条件，否则该行会被忽略。不提供 `--allowlist` 时，本功能完全不参与（与旧版一致）。
+
+## v0.2.15 新增：外部核验与凭证规则（**全部可选、默认关闭，技能零联网**）
+
+### 外部行程核验（`--travel-verification <csv>`）
+
+把**外部查到的航班/行程记录**喂进来，与报销单据逐字段比对：
+
+| 情况 | 结果 |
+|---|---|
+| 查到且一致 | 不产生 finding |
+| 查到但不一致（航班号/日期/方向/乘机人） | `travel-verification-mismatch`（**强**） |
+| **在给定来源中查不到** | `travel-verification-not-found`（**弱**）；**「查不到」≠「虚构」** |
+
+> **本技能不做任何联网查询。** 核验数据由**你/你的智能体**取得后提供（与 `--travel-requests` / `--attendance` 同一模式）。
+> 取得方法、来源可靠性、合规提醒、输入格式 → [references/travel-verification-guide.md](references/travel-verification-guide.md)。
+
+### 两条可选凭证规则（写进 `policy.json` 才启用；不写 = 与旧版一致）
+
+| 字段 | 用途 | 默认 |
+|---|---|---|
+| `shared_voucher_check` | 同一凭证（`pnr`/订座号）被**多名员工各自报销** → `shared-voucher-multiple-employees` | `false` |
+| `voucher_completeness_check` | 凭证要素完备性（缺发票号 / 发票日期）→ `voucher-incomplete` | `false` |
+
+> 新增字段别名 `flight_no`（航班号）与 `pnr`（订座号）已支持；表里没有这些列时，相关规则自动跳过。
 
 ## Output contract
 

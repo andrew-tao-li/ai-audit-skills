@@ -121,4 +121,28 @@
 
 见 SKILL.md「可选白名单」。要点：**只压制"整条告警的每一行都命中"**；被压制内容写入 `suppressed_findings.csv`，**绝不静默丢弃**。
 
+## 外部行程核验（v0.2.15，可选输入 `--travel-verification`）
+
+把**外部查到的航班记录**与报销单比对。**技能本身不联网**，核验数据由使用者/宿主提供。
+
+| 规则 | 触发 |
+|---|---|
+| `travel-verification-mismatch` | 外部记录与报销单的**航班号/日期/方向/乘机人**任一不符（强） |
+| `travel-verification-not-found` | 在**给定来源中**查不到该行程（**弱**，且明文声明"不等于虚构"） |
+
+> 取得方式、来源可靠性与合规提醒见 [travel-verification-guide.md](travel-verification-guide.md)。
+
+## 同一凭证多人各报（v0.2.15，可选，默认关闭）
+
+`shared_voucher_check: true` → `shared-voucher-multiple-employees`（强）：
+
+同一 `pnr`（订座号）被**多名员工**各自报销。典型场景：国际机票同行合并开票、却各自按全额报销。
+表里没有 `pnr` 列时自动跳过。
+
+## 凭证要素完备性（v0.2.15，可选，默认关闭）
+
+`voucher_completeness_check: true` → `voucher-incomplete`（弱）：
+
+统计并列出**缺发票号 / 缺发票日期**的记录。定位是**合规/入账效力**问题，**不直接等于虚假**，仅提示补凭证。
+
 

@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.14"
+VERSION = "0.2.15"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -34,6 +34,11 @@ FINDING_TYPE_ZH = {
     "split-expense-cross-merchant": "跨商户拆单",
     "large-amount": "绝对大额",
     "vendor-concentration": "商户集中度",
+    # v0.2.15：外部核验与凭证完备性（**均为可选**）
+    "travel-verification-mismatch": "行程核验不符",
+    "travel-verification-not-found": "行程核验未找到",
+    "shared-voucher-multiple-employees": "同一凭证多人各报",
+    "voucher-incomplete": "凭证要素不全",
     # v0.2.9：出差交叉核验（需提供 --travel-requests / --attendance）
     "expense-without-travel-request": "差旅报销无对应出差申请",
     "office-swipe-on-offsite-claim": "报销称外地但当天有公司打卡",
@@ -55,6 +60,9 @@ ALIASES = {
     "vendor_name": ["vendor_name", "vendor", "merchant", "supplier", "商户", "商家", "供应商"],
     "invoice_number": ["invoice_number", "invoice_no", "invoice", "发票号", "发票号码"],
     "invoice_date": ["invoice_date", "发票日期"],
+    # v0.2.15：机票/订座标识（真实国际差旅台账几乎都有；不配置时完全不影响）
+    "flight_no": ["flight_no", "flight_number", "flight", "航班号", "航班"],
+    "pnr": ["pnr", "booking_ref", "record_locator", "pnr_code", "订座记录", "订座号", "PNR"],
     "project_code": ["project_code", "project", "项目编号", "项目代码"],
     "approver": ["approver", "approved_by", "审批人"],
     "payment_date": ["payment_date", "付款日期", "支付日期"],
@@ -193,6 +201,9 @@ POLICY_KEYS = frozenset({
     "vendor_concentration_min_count",  # 商户集中度：最少笔数，默认 5
     "vendor_concentration_share",      # 商户集中度：占比阈值，默认 0.6
     "vendor_concentration_scope",      # 商户集中度：employee（默认）或 department
+    # v0.2.15 新增（**均为可选、默认关闭**）
+    "shared_voucher_check",            # 同一凭证（PNR/订座号）被多人各报
+    "voucher_completeness_check",      # 凭证要素完备性（缺发票号/缺发票日期）
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -213,6 +224,21 @@ ATTENDANCE_ALIASES = {
     "is_office": ["is_office", "in_office", "office_flag", "是否在公司", "在公司", "打卡类型", "考勤类型", "外勤"],
     "lat": ["lat", "latitude", "纬度", "纬度(lat)"],
     "lon": ["lon", "lng", "longitude", "经度", "经度(lon)"],
+}
+
+# v0.2.15：外部行程核验结果（`--travel-verification`）字段别名。
+# **本技能不做任何联网查询**——这张表由用户/宿主 Agent 用他们自己的方式取得后提供。
+# 「查不到」只表示"在给定来源里没匹配到"，**绝不等于单据虚构**。
+TRAVEL_VERIFICATION_ALIASES = {
+    "expense_id": ["expense_id", "id", "claim_id", "单据号", "报销单号", "凭证号"],
+    "flight_no": ["flight_no", "flight_number", "航班号", "航班"],
+    "travel_date": ["travel_date", "date", "flight_date", "航班日期", "行程日期", "日期"],
+    "depart_city": ["depart_city", "departure", "from_city", "from", "出发城市", "出发地", "起飞城市"],
+    "arrive_city": ["arrive_city", "arrival", "to_city", "to", "到达城市", "目的地", "降落城市"],
+    "passenger": ["passenger", "traveler", "name", "乘客", "乘机人", "旅客", "姓名"],
+    "pnr": ["pnr", "booking_ref", "record_locator", "订座记录", "订座号"],
+    "source": ["source", "来源", "数据来源", "核验来源"],
+    "source_reliability": ["source_reliability", "reliability", "来源可靠性", "可靠性"],
 }
 
 
@@ -815,6 +841,117 @@ def run_travel_cross_check(analyzable, travel_rows, attendance_rows, policy, bui
     return notes
 
 
+def run_travel_verification(rows, verification_rows, builder) -> List[str]:
+    """v0.2.15：把**外部核验结果**与报销单比对（`--travel-verification`）。
+
+    **本技能不做任何联网查询**——这张核验表由用户/宿主 Agent 用他们自己的方式取得后提供，
+    与 v0.2.9 的 `--travel-requests` / `--attendance` 是同一个模式（外部事实当输入，技能只做确定性判断）。
+
+    红线：**「在给定来源中查不到」≠「单据虚构」**。未匹配到只报**弱**信号，并在结论里写明这一点。
+    """
+    notes: List[str] = []
+    if not verification_rows:
+        return notes
+    by_id: Dict[str, Dict[str, str]] = {}
+    for item in verification_rows:
+        key = norm_text(item.get("expense_id"))
+        if key:
+            by_id[key] = item
+    mismatches: List[Tuple[Dict[str, Any], str, List[str]]] = []
+    not_found: List[Tuple[Dict[str, Any], str]] = []
+    for row in rows:
+        eid = norm_text(row.get("expense_id"))
+        item = by_id.get(eid)
+        if item is None:
+            continue
+        source = norm_text(item.get("source")) or "未注明来源"
+        if not any(norm_text(item.get(f)) for f in ("flight_no", "travel_date", "depart_city", "arrive_city", "passenger")):
+            not_found.append((row, source))
+            continue
+        diffs: List[str] = []
+        v_flight = norm_text(item.get("flight_no"))
+        if v_flight and norm_text(row.get("flight_no")) and match_key(v_flight) != match_key(row.get("flight_no")):
+            diffs.append("航班号：报销=%s / 核验=%s" % (norm_text(row.get("flight_no")), v_flight))
+        v_date = parse_date(item.get("travel_date"))
+        if v_date and row.get("expense_date") and v_date != row.get("expense_date"):
+            diffs.append("日期：报销=%s / 核验=%s" % (row.get("expense_date"), v_date))
+        v_from, v_to = norm_text(item.get("depart_city")), norm_text(item.get("arrive_city"))
+        r_from, r_to = norm_text(row.get("origin_city")), norm_text(row.get("dest_city"))
+        if v_from and v_to and r_from and r_to:
+            if match_key(v_from) == match_key(r_to) and match_key(v_to) == match_key(r_from):
+                diffs.append("方向相反：报销=%s→%s / 核验=%s→%s" % (r_from, r_to, v_from, v_to))
+            elif match_key(v_from) != match_key(r_from) or match_key(v_to) != match_key(r_to):
+                diffs.append("航段不符：报销=%s→%s / 核验=%s→%s" % (r_from, r_to, v_from, v_to))
+        v_pax = norm_text(item.get("passenger"))
+        if v_pax and match_key(v_pax) not in {match_key(row.get("employee_id")), match_key(row.get("employee_name"))}:
+            diffs.append("乘机人：报销=%s / 核验=%s" % (norm_text(row.get("employee_id")) or norm_text(row.get("employee_name")), v_pax))
+        if diffs:
+            mismatches.append((row, source, diffs))
+    for row, source, diffs in mismatches:
+        builder.add("travel-verification-mismatch", "报销行程与外部核验记录不一致", 4, "strong", (row,),
+                    ("expense_id", "employee_id", "expense_date", "origin_city", "dest_city", "flight_no"),
+                    ["外部核验来源「%s」显示：%s" % (source, "；".join(diffs))],
+                    ["在给定来源中，该行程与报销单据不一致"],
+                    ["是否为改签/中转/代码共享，或来源数据缺失、录入错误？"],
+                    ["调取原始登机牌/行程单/航司记录复核"],
+                    [{"factor": "travel_verification_mismatch", "points": 4, "source": source}])
+    for row, source in not_found:
+        builder.add("travel-verification-not-found", "在给定的外部核验来源中未找到对应行程", 1, "weak", (row,),
+                    ("expense_id", "employee_id", "expense_date", "flight_no"),
+                    ["来源「%s」中未匹配到该行程" % source],
+                    ["**在给定来源中查不到，不等于该单据虚构**——来源可能覆盖不全、字段不全或查询范围有限"],
+                    ["换更权威的来源重查；核对原始登机牌/行程单"],
+                    ["记录查询来源与时间，便于复核"],
+                    [{"factor": "travel_verification_not_found", "points": 1, "source": source}])
+    unverified = sum(1 for r in rows if norm_text(r.get("expense_id")) and norm_text(r.get("expense_id")) not in by_id)
+    if unverified:
+        notes.append("travel-verification：%d 条报销单未提供外部核验记录，未做真实性核验" % unverified)
+    return notes
+
+
+def _rule_shared_voucher(rows, policy, builder) -> None:
+    """v0.2.15（可选，默认关闭）：同一凭证（订座号/PNR）被多名员工各自报销。"""
+    if not policy.get("shared_voucher_check", False):
+        return
+    index: Dict[str, set] = defaultdict(set)
+    for row in rows:
+        key = match_key(row.get("pnr"))
+        if not key:
+            continue
+        who = norm_text(row.get("employee_id")) or norm_text(row.get("employee_name"))
+        if who:
+            index[key].add(who)
+    for key, employees in index.items():
+        if len(employees) < 2:
+            continue
+        recs = [r for r in rows if match_key(r.get("pnr")) == key]
+        builder.add("shared-voucher-multiple-employees", "同一凭证（订座号）被多名员工各自报销", 4, "strong", recs,
+                    ("expense_id", "employee_id", "pnr", "amount", "expense_date"),
+                    ["同一订座号被 %d 名员工各自报销：%s" % (len(employees), "、".join(sorted(employees)))],
+                    ["若为同行合并开票而各自全额报销，存在重复报销敞口"],
+                    ["是同行各付各的，还是同一笔被重复报销？"],
+                    ["调取该订座号下全部报销单与原始票据核对"],
+                    [{"factor": "shared_voucher", "points": 4, "employees": len(employees)}])
+
+
+def _rule_voucher_completeness(rows, policy, builder) -> None:
+    """v0.2.15（可选，默认关闭）：凭证要素完备性（缺发票号 / 缺发票日期）。"""
+    if not policy.get("voucher_completeness_check", False):
+        return
+    missing_invoice = [r for r in rows if not norm_text(r.get("invoice_number"))]
+    missing_date = [r for r in rows if not norm_text(r.get("invoice_date"))]
+    if not missing_invoice and not missing_date:
+        return
+    recs = missing_invoice or missing_date
+    builder.add("voucher-incomplete", "凭证要素不全（缺发票号/发票日期）", 2, "weak", recs,
+                ("expense_id", "employee_id", "amount", "invoice_number", "invoice_date"),
+                ["%d 条缺发票号；%d 条缺发票日期（共 %d 条有效行）" % (len(missing_invoice), len(missing_date), len(rows))],
+                ["凭证要素不全是**合规/入账效力**问题，不直接等于虚假；仅提示补充凭证"],
+                ["是否为自制收据、境外票据或系统未回填？"],
+                ["要求补充合规发票，或把相关费用标记为待补凭证"],
+                [{"factor": "voucher_incomplete", "points": 2}])
+
+
 def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: ResultBuilder,
               status_excluded: Optional[List[Dict[str, Any]]] = None) -> Tuple[List[str], Dict[str, Any]]:
     skipped: List[str] = []
@@ -1397,6 +1534,10 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     # v0.2.8：撤回/拒绝后重提且金额增加（仅在配置了 status_filter 时才有数据可判，默认不影响）
     _rule_resubmit_after_rejection(rows, status_excluded or [], policy, builder)
 
+    # v0.2.15（**可选，默认关闭**）：同一凭证多人各报 / 凭证要素完备性
+    _rule_shared_voucher(rows, policy, builder)
+    _rule_voucher_completeness(rows, policy, builder)
+
     return skipped, {
         "near_duplicate_window_days": near_days,
         "near_duplicate_amount_tolerance": near_tolerance,
@@ -1451,6 +1592,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # v0.2.13：可选白名单（显式豁免、可审计、不静默丢弃）
     parser.add_argument("--allowlist", type=Path,
                         help="可选：白名单 CSV（列：expense_id/employee_id/vendor_name/invoice_number/expense_type/amount_max/reason）")
+    # v0.2.15：可选外部行程核验结果（本技能**不做联网查询**，由用户/宿主提供）
+    parser.add_argument("--travel-verification", type=Path,
+                        help="可选：外部行程核验结果 CSV（列：expense_id/flight_no/travel_date/depart_city/arrive_city/passenger/source）")
     parser.add_argument("--check-env", action="store_true")
     args = parser.parse_args(argv)
     if args.check_env:
@@ -1504,6 +1648,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             skipped.append("travel_cross_check：未提供 --travel-requests（无法核对「有无出差申请」）")
         if not args.attendance:
             skipped.append("travel_cross_check：未提供 --attendance（无法核对打卡）")
+    # v0.2.15：外部行程核验（可选）。不提供核验文件时一行也不产生，输出与旧版完全一致。
+    if args.travel_verification:
+        verification_rows, _vm = read_aux_table(args.travel_verification.resolve(), TRAVEL_VERIFICATION_ALIASES, args.sheet)
+        warnings.append("已载入外部行程核验 %d 条（%s）；本技能不做联网查询，核验数据由使用者提供" % (len(verification_rows), args.travel_verification.name))
+        skipped.extend(run_travel_verification(analyzable, verification_rows, builder))
     validate(builder.findings, builder.evidence)
 
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
@@ -1613,6 +1762,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         input_files.append({"path": args.travel_requests.name, "sha256": sha256_file(args.travel_requests.resolve()), "role": "travel_requests"})
     if args.attendance and args.attendance.exists():
         input_files.append({"path": args.attendance.name, "sha256": sha256_file(args.attendance.resolve()), "role": "attendance"})
+    # v0.2.15：外部核验数据也登记哈希（可追溯；来源不在本技能，由使用者提供）
+    if args.travel_verification and args.travel_verification.exists():
+        input_files.append({"path": args.travel_verification.name, "sha256": sha256_file(args.travel_verification.resolve()), "role": "travel_verification"})
     manifest = {
         "run_id": "EXP-%s-%s" % (started.strftime("%Y%m%dT%H%M%SZ"), source_hash[:8]),
         "skill": SKILL, "skill_version": VERSION, "started_at": started.isoformat(), "finished_at": finished.isoformat(),
