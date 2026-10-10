@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.22"
+VERSION = "0.2.23"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -260,6 +260,10 @@ POLICY_KEYS = frozenset({
     "price_tolerance",                 # v0.2.21：单价高于参考市场价的容差（默认 0.30）
     "row_limit_check",                 # v0.2.22：按行差标核对（台账含「差标/限额」列时；默认关闭）
     "row_limit_tolerance",             # 行差标容差（默认 0.0，即严格按差标）
+    # v0.2.23 精度旋钮（**默认不改变行为**，用于真实外勤数据的降噪）
+    "outlier_min_amount",              # 低于此金额不报「异常高额」（默认 0）
+    "fixed_amount_types",              # 固定标准值费用类型（如 餐费补贴）→ 不参与「异常高额」
+    "multi_occurrence_types",          # 天然可多次发生的类型（路桥费/停车费/的士）→ 同日同额不报
 })
 
 # v0.2.9：出差申请单字段别名（辅助表，可选）
@@ -1412,7 +1416,23 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                     ["是否为冲销、退款、作废后重提或发票拆分？"],
                     ["核对发票影像、报销状态和付款流水"],
                     [{"factor": "same_invoice_and_amount", "points": 4}])
+    # v0.2.23：精度旋钮（默认不改变行为）——
+    #   multi_occurrence_types：天然可多次发生的类型（路桥费/停车费/的士），同日同额/金额近似的误报豁免；
+    #   fixed_amount_types：固定标准值类型（餐费补贴/里程补贴），不参与"异常高额"与"金额近似"；
+    #   outlier_min_amount：低于此金额不报"异常高额"。
+    multi_occ_types = [norm_text(k) for k in (policy.get("multi_occurrence_types") or []) if norm_text(k)]
+    fixed_types = [norm_text(k) for k in (policy.get("fixed_amount_types") or []) if norm_text(k)]
+    outlier_min_amount = float(policy.get("outlier_min_amount", 0))
+    multi_occ_skipped = 0
+
+    def _all_in_types(recs: Sequence[Dict[str, Any]], keywords: Sequence[str]) -> bool:
+        return bool(keywords) and all(
+            any(k in norm_text(r.get("expense_type")) for k in keywords) for r in recs)
+
     for group in group_records(rows, ("employee_id", "expense_date", "currency", "amount")):
+        if _all_in_types(group, multi_occ_types):
+            multi_occ_skipped += 1
+            continue
         ids = [r["expense_id"] for r in group]
         exact_pairs.update(frozenset((a, b)) for i, a in enumerate(ids) for b in ids[i + 1 :])
         builder.add("exact-duplicate-employee-date-amount", "同员工同日同金额记录重复", 3, "moderate", group,
@@ -1422,6 +1442,8 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                     ["商户、业务事由和原始凭证是否不同？"],
                     ["逐笔核对事由、商户、发票和审批流"],
                     [{"factor": "same_employee_date_amount", "points": 3}])
+    if multi_occ_skipped:
+        skipped.append("exact-duplicate-employee-date-amount：按 multi_occurrence_types 跳过 %d 组（该类型同日同额视为正常）" % multi_occ_skipped)
 
     near_days = int(policy.get("near_duplicate_window_days", 7))
     near_tolerance = float(policy.get("near_duplicate_amount_tolerance", 0.15))
@@ -1442,6 +1464,10 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
             if pair in exact_pairs or pair in near_seen:
                 continue
             if not match_key(left["vendor_name"]) or match_key(left["vendor_name"]) != match_key(right["vendor_name"]):
+                continue
+            # v0.2.23：固定标准值 / 天然可多次发生的费用类型，不参与"金额近似"（默认空 = 不改变行为）
+            if (_all_in_types((left, right), fixed_types)
+                    or _all_in_types((left, right), multi_occ_types)):
                 continue
             if left["currency"] != right["currency"]:
                 continue
@@ -1582,8 +1608,12 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     min_group = int(policy.get("outlier_min_group_size", 5))
     z_threshold = float(policy.get("outlier_robust_z", 3.5))
     large_threshold = float(policy.get("large_amount_threshold", 5000))
+    # v0.2.23：精度旋钮见上文（fixed_types / outlier_min_amount 已在上方统一定义）
+    outlier_low_skipped = 0
     peer_groups: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
     for row in rows:
+        if fixed_types and any(k in norm_text(row.get("expense_type")) for k in fixed_types):
+            continue
         peer_groups[(match_key(row["expense_type"]), row["currency"])].append(row)
     valid_groups = 0
     for key, group in peer_groups.items():
@@ -1600,6 +1630,9 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
             # 更具体的规则解释，robust-outlier 只负责"正常区间内的相对离群"，避免同一笔重复告警。
             if row["amount"] >= large_threshold:
                 continue
+            if outlier_min_amount and row["amount"] < outlier_min_amount:
+                outlier_low_skipped += 1
+                continue
             robust_z = 0.6745 * (row["amount"] - median) / mad
             if robust_z > z_threshold:
                 builder.add("robust-outlier", "同类费用中的异常高额", 2, "moderate", (row,),
@@ -1611,6 +1644,8 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                             [{"factor": "robust_outlier", "points": 2}])
     if valid_groups == 0:
         skipped.append("robust-outlier：同类样本不足或样本金额高度一致，无法判断离群")
+    if outlier_low_skipped:
+        skipped.append("robust-outlier：按 outlier_min_amount 跳过 %d 条（金额低于阈值，不视为「异常高额」）" % outlier_low_skipped)
 
     # ============ v0.2.0 新增规则 ============
 

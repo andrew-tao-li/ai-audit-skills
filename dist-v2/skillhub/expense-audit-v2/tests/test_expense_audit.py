@@ -501,6 +501,46 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
                           types([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(base / "o2"),
                                  "--price-reference", str(ref)]))
 
+    def test_field_sales_precision_knobs(self):
+        """v0.2.23：降噪旋钮——不开时会有结构性误报；开启后只剩真线索（帕累托：默认不变）。"""
+        ledger = ("单据号,工号,费用类型,发生日期,提交日期,金额,币种,商户,发票号,审批人\n"
+                  "FS01,SLS1,餐费补贴,2026-09-07,2026-09-07,100.00,CNY,补贴-餐,,MGR-1\n"
+                  "FS02,SLS1,餐费补贴,2026-09-08,2026-09-08,100.00,CNY,补贴-餐,,MGR-1\n"
+                  "FS03,SLS1,餐费补贴,2026-09-09,2026-09-09,100.00,CNY,补贴-餐,,MGR-1\n"
+                  "FS06,SLS1,停车费,2026-09-07,2026-09-07,20.00,CNY,V-P01,INV-331001,MGR-1\n"
+                  "FS07,SLS1,停车费,2026-09-08,2026-09-08,25.00,CNY,V-P02,INV-331002,MGR-1\n"
+                  "FS08,SLS1,停车费,2026-09-09,2026-09-09,30.00,CNY,V-P03,INV-331003,MGR-1\n"
+                  "FS09,SLS1,停车费,2026-09-10,2026-09-10,35.00,CNY,V-P04,INV-331004,MGR-1\n"
+                  "FS10,SLS1,停车费,2026-09-11,2026-09-11,40.00,CNY,V-P05,INV-331005,MGR-1\n"
+                  "FS11,SLS1,停车费,2026-09-14,2026-09-14,200.00,CNY,V-P06,INV-331006,MGR-1\n"
+                  "FS12,SLS1,路桥费,2026-09-15,2026-09-15,15.00,CNY,V-T01,INV-331101,MGR-1\n"
+                  "FS13,SLS1,路桥费,2026-09-15,2026-09-15,15.00,CNY,V-T02,INV-331102,MGR-1\n"
+                  "FS14,SLS2,差旅招待-餐饮,2026-09-09,2026-09-09,260.00,CNY,V-R1,INV-770012,MGR-1\n"
+                  "FS15,SLS3,差旅招待-餐饮,2026-09-16,2026-09-16,180.00,CNY,V-R2,INV-770012,MGR-1\n")
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            data = base / "fs.csv"; data.write_text(ledger, encoding="utf-8")
+
+            def types(policy):
+                pol = base / "p.json"; pol.write_text(json.dumps(policy), encoding="utf-8")
+                out = base / ("o_%d" % len(list(base.glob("o_*"))))
+                r = subprocess.run([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out), "--policy", str(pol)],
+                                   capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                return {json.loads(l)["finding_type"]
+                        for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()}
+
+            base_pol = {"policy_version": "T", "default_currency": "CNY", "as_of_date": "2026-12-31"}
+            noisy = types(base_pol)
+            self.assertIn("cross-employee-invoice", noisy)                 # 真线索
+            self.assertIn("robust-outlier", noisy)                         # 200 元停车费被叫“异常高额”
+            self.assertIn("exact-duplicate-employee-date-amount", noisy)   # 同日两段同价路桥费
+            tuned = types({**base_pol, "outlier_min_amount": 300,
+                           "fixed_amount_types": ["餐费补贴", "里程补贴"],
+                           "multi_occurrence_types": ["路桥费", "停车费", "的士"]})
+            self.assertEqual(tuned, {"cross-employee-invoice"})
+
 
 if __name__ == "__main__":
     unittest.main()

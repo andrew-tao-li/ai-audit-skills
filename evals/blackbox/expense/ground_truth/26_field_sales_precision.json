@@ -1,0 +1,14 @@
+{
+  "fixture_id": "26_field_sales_precision",
+  "description": "外勤销售真实分布：固定标准补贴 + 高频小额交通 + 1 条真线索（发票跨人复用）——用于验证降噪旋钮（v0.2.23）",
+  "expected_findings": [
+    "cross-employee-invoice"
+  ],
+  "policy_overrides": {
+    "as_of_date": "2026-12-31",
+    "outlier_min_amount": 300,
+    "fixed_amount_types": ["餐费补贴", "里程补贴"],
+    "multi_occurrence_types": ["路桥费", "停车费", "的士"]
+  },
+  "_note": "关闭降噪旋钮时，本 fixture 会多出 robust-outlier（200 元停车费被称异常高额）与 exact-duplicate-employee-date-amount（同日两段同价路桥费）——见 tests 里的对照断言。"
+}

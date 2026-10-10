@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.22
+version: 0.2.23
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -336,6 +336,28 @@ R1,丙公司,甲维修厂,12000
 ### `policy.json` 注释键
 
 `_` 开头的键（如 `_note`）视为**注释**，不再报错；其它未知键**仍会报错**（防静默忽略配置）。
+
+## v0.2.23 新增：精度旋钮（**默认不改变行为**，用于真实外勤数据降噪）
+
+真实企业台账（外勤销售）上，规则会命中大量**结构性噪声**：固定标准补贴、同日两段同价路桥费、200 元停车费被叫「异常高额」。
+下面三个旋钮**默认关闭 / 为 0**，**不配置时与旧版逐字节一致**：
+
+| 字段 | 作用 | 默认 |
+|---|---|---|
+| `outlier_min_amount` | 金额低于此值**不报**「异常高额」（"异常高额"应当是真的高） | `0` |
+| `fixed_amount_types` | **固定标准值**类型（如 餐费补贴/里程补贴）→ 不参与「异常高额」与「金额近似」 | `[]` |
+| `multi_occurrence_types` | **天然可多次发生**的类型（路桥费/停车费/的士）→ 同日同额 / 金额近似不报 | `[]` |
+
+```json
+{
+  "outlier_min_amount": 300,
+  "fixed_amount_types": ["餐费补贴", "里程补贴"],
+  "multi_occurrence_types": ["路桥费", "停车费", "的士"]
+}
+```
+
+> 跳过的量会在 `data_quality.md` 的「警告与跳过规则」里写明（**不静默**）。
+> 黑盒黄金集新增 `26_field_sales_precision`（外勤销售分布 + 1 条真线索），用于守住这组精度。
 
 ## Output contract
 
