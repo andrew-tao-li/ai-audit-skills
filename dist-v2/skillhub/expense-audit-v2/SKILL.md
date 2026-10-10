@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.16
+version: 0.2.17
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -231,6 +231,10 @@ E2025001,,,,,,上期已核实
 
 > **本技能不做任何联网查询。** 核验数据由**你/你的智能体**取得后提供（与 `--travel-requests` / `--attendance` 同一模式）。
 > 取得方法、来源可靠性、合规提醒、输入格式 → [references/travel-verification-guide.md](references/travel-verification-guide.md)。
+
+> **v0.2.17 起**：若台账里**含航班/订座号信息**但**未提供** `--travel-verification`，交付时 `summary.md` 会自动附一段
+> 「**去哪里查 + 怎么填**」的指引（`data_quality.md` 里也有一条）。**请把它一并转达给用户**——用户提供了航班信息，
+> 就说明他有这个期待。台账里没有航班信息时**不会**出现这段（不打扰）。
 
 ### 两条可选凭证规则（写进 `policy.json` 才启用；不写 = 与旧版一致）
 

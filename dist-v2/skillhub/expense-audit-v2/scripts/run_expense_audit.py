@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.16"
+VERSION = "0.2.17"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -1706,6 +1706,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     clean, bad, changes = normalize_rows(source_rows, mapping, str(policy.get("default_currency", "CNY")), policy.get("amount_columns"))
     # v0.2.8：按审批状态筛选（可选；不配置 status_filter 时与旧版行为完全一致）
     analyzable, status_excluded = apply_status_filter(clean, policy)
+    # v0.2.17：台账里含航班/订座号信息时，**主动提示**去哪查、怎么填（用户"提供了航班信息"= 有期待）；
+    # 不含航班信息则完全不提示（不打扰）。
+    flight_signal = any(norm_text(r.get("flight_no")) or norm_text(r.get("pnr")) for r in analyzable)
+    if flight_signal and not args.travel_verification:
+        warnings.append("检测到台账含航班/订座号信息，但未提供外部核验（--travel-verification）；"
+                        "若需核验「单据真实性」，查询渠道、表格格式与合规提醒见 references/travel-verification-guide.md")
     if status_excluded:
         warnings.append("已按 status_filter 排除 %d 行（见 excluded_by_status.csv），这些行不参与分析" % len(status_excluded))
     builder = ResultBuilder(input_path.name, source_hash, policy, allowlist=allowlist)
@@ -1798,6 +1804,23 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     feedback_stats_line = "本次运行已自动统计：Findings %d（高风险 %d / 中风险 %d / 低风险 %d），各类型、风险分布、耗时等统计见上。" % (
         len(builder.findings), feedback_high, feedback_medium, feedback_low
     )
+    # v0.2.17：只有"提供了航班信息但还没做外部核验"时，才在给人看的报告里展示"去哪查、怎么填"
+    travel_hint_block = []
+    if flight_signal and not args.travel_verification:
+        travel_hint_block = [
+            "## 关于「行程/单据真实性」核验（可选；你的台账里有航班信息）", "",
+            "你的台账里含**航班号/订座号**信息。若想进一步核验「这些机票单据是否真实」，本技能可以**比对外部航班记录**——",
+            "但**本技能不联网**：需要你（或你的智能体）先去查、再把结果喂进来（这也让被审计的包保持干净）。", "",
+            "**到哪里查（免费 / 公开）**", "",
+            "- 验「票是不是真的」：**中国航信信天游**（travelsky.com.cn）、**民航局官网 → 电子客票验真**、**各航司官网「客票验真」**（票号 + 姓名）",
+            "- 验「航班在不在 / 执不执飞」：**飞常准**（有面向 AI 的 MCP，官方支持 WorkBuddy）、**飞猪开放平台**（免费 API）、**机场官网 / 民航局抵离港信息**", "",
+            "**怎么填**（CSV，一行 = 一张报销单；查不到就留空，但保留单据号与来源）", "",
+            "```", "expense_id,flight_no,travel_date,depart_city,arrive_city,passenger,source", "```", "",
+            "**怎么用**：运行本技能时加参数 `--travel-verification 核验结果.csv`。",
+            "完整说明（来源可靠性 + 合规提醒）：`references/travel-verification-guide.md`。", "",
+            "> ⚠️ 「查不到」只表示「在给定来源里没匹配到」，**不等于单据虚构**。", "",
+        ]
+
     summary = [
         "# 费用审计确定性摘要", "", "- 分析有效记录：%d；排除坏行：%d。" % (len(clean), len(bad)),
         "- Findings：%d；Evidence：%d。" % (len(builder.findings), len(builder.evidence)),
@@ -1819,6 +1842,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "## 输出文件", "",
         "**审计结论（给人看）**：dashboard.html（全景图，给经理/管理层快速看）、summary.md（完整结论）、findings.csv、findings.jsonl", "",
         "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、clean_expenses.csv、bad_rows.csv、evidence.jsonl", "",
+        *travel_hint_block,
         "## 这个工具好用吗？（可选反馈，工具不会自动外发）", "",
         feedback_stats_line,
         "如果它对你有帮助，可以对 AI 说一句「**生成反馈内容**」——它会生成一段**不含任何敏感信息**的统计（发现了几类问题、耗时）并**展示给你**，由**你自己**决定是否复制走、发到作者的 GitHub Issue。", "",

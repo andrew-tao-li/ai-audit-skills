@@ -391,6 +391,28 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             for rid in rule_ids:
                 self.assertIn(rid, on)
 
+    def test_flight_hint_only_when_flight_data_present(self):
+        """v0.2.17：只有台账含航班/订座号信息时才在报告里提示「去哪查」；不含则不打扰。"""
+        def summary_of(csv_text, verif=None, out=None):
+            with tempfile.TemporaryDirectory() as td:
+                data = Path(td) / "e.csv"; data.write_text(csv_text, encoding="utf-8")
+                cmd = [sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)]
+                if verif:
+                    vp = Path(td) / "v.csv"; vp.write_text(verif, encoding="utf-8")
+                    cmd += ["--travel-verification", str(vp)]
+                r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                self.assertEqual(r.returncode, 0, r.stderr)
+                return (Path(out) / "summary.md").read_text(encoding="utf-8")
+
+        base = Path(tempfile.mkdtemp())
+        noflight = "单据号,工号,费用类型,发生日期,金额,商户\nA1,E1,餐饮,2026-10-09,100,餐厅\n"
+        withflight = "单据号,工号,费用类型,发生日期,金额,航班号,订座号\nB1,E1,机票,2026-10-09,3000,CA1234,PNRAAA\n"
+        self.assertNotIn("行程/单据真实性", summary_of(noflight, None, base / "o1"))
+        self.assertIn("行程/单据真实性", summary_of(withflight, None, base / "o2"))
+        self.assertNotIn("行程/单据真实性", summary_of(
+            withflight, "expense_id,flight_no,travel_date,source\nB1,CA1234,2026-10-09,航司官网\n", base / "o3"))
+
 
 if __name__ == "__main__":
     unittest.main()
