@@ -158,3 +158,43 @@
 {"skill": "cn-entity-relation-check", "expected_trigger": false, "prompt": "帮我查一下快递到哪了"}
 {"skill": "cn-entity-relation-check", "expected_trigger": false, "prompt": "这个软件怎么用"}
 {"skill": "cn-entity-relation-check", "expected_trigger": false, "prompt": "帮我做个 PPT"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "我们有套 ERP，怎么把报销数据导出来做审计？"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "帮我写一条 SQL 查重复报销"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "只知道系统名字，怎么拿到能分析的表格？"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "数据字典拿到了，帮我生成取数 SQL"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "帮我写查询语句，把费用台账从财务系统里捞出来"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "这套老系统的数据库是 Oracle，帮我写取数 SQL"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "怎么根据数据字典把审计需求翻译成 SQL？"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "我要查发票号重复，SQL 怎么写？"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "帮我从业务系统里把数据取出来"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "帮我把审计需求变成 SELECT 语句"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "我们系统是 SQL Server，帮我生成取数脚本"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "数据字典里只有表名和字段名，能帮我猜一下工号和金额列吗？"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "我要取数，先要一份数据字典模板"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "帮我写一条同员工同日同金额的查重 SQL"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "怎么把报销台账从用友系统里导出来？"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "给 DBA 用的取数 SQL，帮我生成一份"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "帮我生成 MySQL 的取数查询"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "我需要一份取数脚本，从费用系统里拿数据"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "数据字典在手，帮我生成审计取数 SQL"}
+{"skill": "audit-sql-builder", "expected_trigger": true, "prompt": "从系统里取数这一步怎么做？帮我出 SQL"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "帮我审计这份报销台账，找出异常"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "这份费用台账有没有重复报销？"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "帮我看下采购订单有没有围标嫌疑"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "把举报邮件整理成调查工作空间"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "查一下这两家公司有没有关联"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "这份费用台账帮我做个 dashboard"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "这份台账里帮我找出重复的发票"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "差旅报销有没有超标，帮我看看"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "帮我把这份采购数据做个红旗筛查"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "这两个供应商是不是同一个老板？"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "帮我整理一下这个举报线索"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "这份报销明细里有哪些异常？"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "评估一下这家供应商的风险"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "帮我统计这份台账里各费用类型的金额"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "查一下这两个自然人有没有共同任职"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "帮我看看这批报销有没有自审自批"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "把这份邮件记录整理成时间线"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "这批采购里有没有拆单？"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "帮我核对一下这批差旅报销和行程单是否一致"}
+{"skill": "audit-sql-builder", "expected_trigger": false, "prompt": "这份费用数据里有没有周末消费？"}

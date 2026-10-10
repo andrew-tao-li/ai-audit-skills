@@ -1,0 +1,13 @@
+{
+  "fixture_id": "schema_basic",
+  "description": "标准财务台账数据字典：4 条审计需求都应能生成 SQL",
+  "expected_generated": ["duplicate-claim", "duplicate-invoice", "self-approval", "weekend-expense"],
+  "expected_missing": [],
+  "expected_mapping": {
+    "employee_id": "FIN_CLAIM.EMP_NO",
+    "expense_date": "FIN_CLAIM.EXPENSE_DATE",
+    "amount": "FIN_CLAIM.CLAIM_AMOUNT",
+    "invoice_number": "FIN_CLAIM.INVOICE_NO",
+    "approver": "FIN_CLAIM.APPROVER"
+  }
+}

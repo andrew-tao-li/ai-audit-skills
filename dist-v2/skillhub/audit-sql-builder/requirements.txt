@@ -1,0 +1,1 @@
+audit-sql-builder requires: Python 3.10+; stdlib only (sqlite3 for self-tests); openpyxl optional (XLSX schema input)

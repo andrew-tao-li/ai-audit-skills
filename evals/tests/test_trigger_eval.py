@@ -23,7 +23,7 @@ class TriggerEvalHarnessTest(unittest.TestCase):
             self.assertEqual(completed.returncode, 0, completed.stderr)
             with output.open(encoding="utf-8-sig", newline="") as handle:
                 rows = list(csv.DictReader(handle))
-            self.assertEqual(len(rows), 160)  # 4 技能 × 40
+            self.assertEqual(len(rows), 200)  # 5 技能 × 40
             counts = Counter((row["skill"], row["expected_trigger"]) for row in rows)
             for skill in ("expense-audit-v2", "procurement-fraud-v2", "investigation-assistant-v2", "cn-entity-relation-check"):
                 self.assertEqual(counts[(skill, "true")], 20)

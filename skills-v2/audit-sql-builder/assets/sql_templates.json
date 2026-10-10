@@ -1,0 +1,61 @@
+{
+  "version": "0.1.0",
+  "needs": [
+    {
+      "id": "duplicate-claim",
+      "title": "重复报销（同员工 + 同日 + 同金额）",
+      "requires": ["employee_id", "expense_date", "amount"],
+      "single_table": true,
+      "note": "列出同一员工、同一天、同一金额的记录。金额为负（冲销）时请人工判断。",
+      "sql": {
+        "sqlite": "SELECT * FROM {{table}}\nWHERE ({{employee_id}}, {{expense_date}}, {{amount}}) IN (\n  SELECT {{employee_id}}, {{expense_date}}, {{amount}} FROM {{table}}\n  GROUP BY {{employee_id}}, {{expense_date}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{employee_id}}, {{expense_date}};",
+        "mysql": "SELECT * FROM {{table}}\nWHERE ({{employee_id}}, {{expense_date}}, {{amount}}) IN (\n  SELECT {{employee_id}}, {{expense_date}}, {{amount}} FROM {{table}}\n  GROUP BY {{employee_id}}, {{expense_date}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{employee_id}}, {{expense_date}};",
+        "postgres": "SELECT * FROM {{table}}\nWHERE ({{employee_id}}, {{expense_date}}, {{amount}}) IN (\n  SELECT {{employee_id}}, {{expense_date}}, {{amount}} FROM {{table}}\n  GROUP BY {{employee_id}}, {{expense_date}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{employee_id}}, {{expense_date}};",
+        "sqlserver": "SELECT * FROM {{table}}\nWHERE ({{employee_id}}, {{expense_date}}, {{amount}}) IN (\n  SELECT {{employee_id}}, {{expense_date}}, {{amount}} FROM {{table}}\n  GROUP BY {{employee_id}}, {{expense_date}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{employee_id}}, {{expense_date}};",
+        "oracle": "SELECT * FROM {{table}}\nWHERE ({{employee_id}}, {{expense_date}}, {{amount}}) IN (\n  SELECT {{employee_id}}, {{expense_date}}, {{amount}} FROM {{table}}\n  GROUP BY {{employee_id}}, {{expense_date}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{employee_id}}, {{expense_date}};"
+      }
+    },
+    {
+      "id": "duplicate-invoice",
+      "title": "同一发票号被重复使用（发票号 + 金额）",
+      "requires": ["invoice_number", "amount"],
+      "single_table": true,
+      "note": "同一发票号 + 同一金额出现多次。若同一发票用于多笔不同业务，请人工判断。",
+      "sql": {
+        "sqlite": "SELECT * FROM {{table}}\nWHERE ({{invoice_number}}, {{amount}}) IN (\n  SELECT {{invoice_number}}, {{amount}} FROM {{table}}\n  WHERE {{invoice_number}} IS NOT NULL\n  GROUP BY {{invoice_number}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{invoice_number}};",
+        "mysql": "SELECT * FROM {{table}}\nWHERE ({{invoice_number}}, {{amount}}) IN (\n  SELECT {{invoice_number}}, {{amount}} FROM {{table}}\n  WHERE {{invoice_number}} IS NOT NULL\n  GROUP BY {{invoice_number}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{invoice_number}};",
+        "postgres": "SELECT * FROM {{table}}\nWHERE ({{invoice_number}}, {{amount}}) IN (\n  SELECT {{invoice_number}}, {{amount}} FROM {{table}}\n  WHERE {{invoice_number}} IS NOT NULL\n  GROUP BY {{invoice_number}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{invoice_number}};",
+        "sqlserver": "SELECT * FROM {{table}}\nWHERE ({{invoice_number}}, {{amount}}) IN (\n  SELECT {{invoice_number}}, {{amount}} FROM {{table}}\n  WHERE {{invoice_number}} IS NOT NULL\n  GROUP BY {{invoice_number}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{invoice_number}};",
+        "oracle": "SELECT * FROM {{table}}\nWHERE ({{invoice_number}}, {{amount}}) IN (\n  SELECT {{invoice_number}}, {{amount}} FROM {{table}}\n  WHERE {{invoice_number}} IS NOT NULL\n  GROUP BY {{invoice_number}}, {{amount}}\n  HAVING COUNT(*) > 1\n)\nORDER BY {{invoice_number}};"
+      }
+    },
+    {
+      "id": "self-approval",
+      "title": "自审自批（审批人与报销人相同）",
+      "requires": ["employee_id", "approver"],
+      "single_table": true,
+      "note": "同时覆盖「审批人 = 报销人」与「审批人是多人分号列表、其中包含报销人」两种口径。",
+      "sql": {
+        "sqlite": "SELECT * FROM {{table}}\nWHERE {{employee_id}} IS NOT NULL\n  AND ({{approver}} = {{employee_id}} OR {{approver_contains_employee}})\nORDER BY {{employee_id}};",
+        "mysql": "SELECT * FROM {{table}}\nWHERE {{employee_id}} IS NOT NULL\n  AND ({{approver}} = {{employee_id}} OR {{approver_contains_employee}})\nORDER BY {{employee_id}};",
+        "postgres": "SELECT * FROM {{table}}\nWHERE {{employee_id}} IS NOT NULL\n  AND ({{approver}} = {{employee_id}} OR {{approver_contains_employee}})\nORDER BY {{employee_id}};",
+        "sqlserver": "SELECT * FROM {{table}}\nWHERE {{employee_id}} IS NOT NULL\n  AND ({{approver}} = {{employee_id}} OR {{approver_contains_employee}})\nORDER BY {{employee_id}};",
+        "oracle": "SELECT * FROM {{table}}\nWHERE {{employee_id}} IS NOT NULL\n  AND ({{approver}} = {{employee_id}} OR {{approver_contains_employee}})\nORDER BY {{employee_id}};"
+      }
+    },
+    {
+      "id": "weekend-expense",
+      "title": "周末发生的费用（弱信号）",
+      "requires": ["expense_date"],
+      "single_table": true,
+      "note": "周末消费只是弱信号；外勤/值班岗位常见，导出后请结合排班与出差判断。",
+      "sql": {
+        "sqlite": "SELECT * FROM {{table}}\nWHERE {{weekend:expense_date}}\nORDER BY {{expense_date}};",
+        "mysql": "SELECT * FROM {{table}}\nWHERE {{weekend:expense_date}}\nORDER BY {{expense_date}};",
+        "postgres": "SELECT * FROM {{table}}\nWHERE {{weekend:expense_date}}\nORDER BY {{expense_date}};",
+        "sqlserver": "SELECT * FROM {{table}}\nWHERE {{weekend:expense_date}}\nORDER BY {{expense_date}};",
+        "oracle": "SELECT * FROM {{table}}\nWHERE {{weekend:expense_date}}\nORDER BY {{expense_date}};"
+      }
+    }
+  ]
+}

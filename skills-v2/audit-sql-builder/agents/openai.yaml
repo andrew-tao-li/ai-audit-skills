@@ -1,0 +1,6 @@
+interface:
+  display_name: "审计取数 SQL 生成器"
+  short_description: "把审计需求翻译成多方言取数 SQL，建议字段映射，缺字段不硬凑"
+  default_prompt: "Use $audit-sql-builder to turn my audit needs into SQL against our data dictionary."
+policy:
+  allow_implicit_invocation: true

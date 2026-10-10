@@ -1,0 +1,15 @@
+{
+  "id": "audit-sql-builder",
+  "name": "审计取数 SQL 生成器",
+  "name_en": "Audit SQL Builder",
+  "version": "0.1.0",
+  "description": "把审计需求翻译成 SQL：读数据字典、建议字段映射（带候选与置信度）、按需渲染多方言 SQL，缺字段时明确报错。只取数，不做审计结论。辅助工具，不替代专业判断；不含敏感数据。",
+  "author": "andrew-tao-li",
+  "homepage": "https://github.com/andrew-tao-li/ai-audit-skills",
+  "type": "script",
+  "runtime": "python",
+  "triggers": ["取数", "写 SQL", "SQL 查询", "数据字典", "取数脚本", "从系统导数据", "audit sql"],
+  "tags": ["审计", "取数", "SQL", "数据字典"],
+  "license": "MIT-0",
+  "offline": true
+}
