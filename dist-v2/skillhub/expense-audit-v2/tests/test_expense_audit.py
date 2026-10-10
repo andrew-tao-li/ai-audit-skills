@@ -577,6 +577,59 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
                           "--shipments", str(ship), "--policy", str(pol)])
             self.assertIn("shipment-from-private-address", got2)
 
+    def test_self_approval_multi_approver_list(self):
+        """v0.2.26：审批人是多人列表（分号/顿号/逗号）时也要能识别出自审自批。"""
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            data = base / "e.csv"
+            data.write_text("单据号,工号,费用类型,发生日期,金额,商户,审批人\n"
+                            "A1,E1,餐饮,2024-05-02,100,X,经理A;E1\n"
+                            "A2,E2,餐饮,2024-05-03,100,X,经理A\n", encoding="utf-8")
+            out = base / "out"
+            r = subprocess.run([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)],
+                               capture_output=True, text=True, encoding="utf-8", errors="replace",
+                               env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            findings = [json.loads(l) for l in (out / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+            self_approval = [f for f in findings if f["finding_type"] == "self-approval"]
+            self.assertEqual(len(self_approval), 1, findings)
+            blob = json.dumps(self_approval[0], ensure_ascii=False)
+            self.assertIn("E1", blob)   # 命中的是「经理A;E1」那条
+
+    def test_csv_formula_injection_and_outlier_degenerate(self):
+        """v0.2.26：① 导出 CSV 防公式注入（纯数字不动）；② 缺费用类型时不判离群。"""
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            data = base / "e.csv"
+            data.write_text("单据号,工号,费用类型,发生日期,金额,商户,审批人\n"
+                            "B1,E1,餐饮,2024-05-02,-100,=cmd|'/C calc'!A0,M1\n"
+                            "B2,E1,餐饮,2024-05-03,50,+8613800138000,M1\n", encoding="utf-8")
+            out = base / "o1"
+            r = subprocess.run([sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)],
+                               capture_output=True, text=True, encoding="utf-8", errors="replace",
+                               env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            rows = list(csv.DictReader((out / "clean_expenses.csv").open(encoding="utf-8")))
+            self.assertEqual(rows[0]["amount"], "-100.0")                 # 纯数字：不动
+            self.assertEqual(rows[0]["vendor_name"], "'=cmd|'/C calc'!A0")  # 危险文本：加前导单引号
+            self.assertEqual(rows[1]["vendor_name"], "+8613800138000")     # 电话型：不动
+
+            # ② 没有费用类型列 → 不判离群（避免把整张表当成一个同侪组）
+            thin = base / "thin.csv"
+            thin.write_text("单据号,工号,发生日期,金额,商户\n" + "".join(
+                "C%d,E1,2024-05-%02d,%d,X\n" % (i, i + 1, 100 + i) for i in range(1, 6)) + "C6,E1,2024-05-06,99999,X\n",
+                encoding="utf-8")
+            out2 = base / "o2"
+            r = subprocess.run([sys.executable, str(SCRIPT), "--input", str(thin), "--output", str(out2)],
+                               capture_output=True, text=True, encoding="utf-8", errors="replace",
+                               env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            types = {json.loads(l)["finding_type"]
+                     for l in (out2 / "findings.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()}
+            self.assertNotIn("robust-outlier", types)
+            manifest = json.loads((out2 / "run_manifest.json").read_text(encoding="utf-8"))
+            self.assertTrue(any("费用类型" in s for s in manifest["skipped_rules"]))
+
 
 if __name__ == "__main__":
     unittest.main()

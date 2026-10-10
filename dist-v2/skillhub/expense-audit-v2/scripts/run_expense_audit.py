@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.25"
+VERSION = "0.2.26"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -1725,7 +1725,12 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
             continue
         peer_groups[(match_key(row["expense_type"]), row["currency"])].append(row)
     valid_groups = 0
+    degenerate_skipped = 0
     for key, group in peer_groups.items():
+        # v0.2.26：同侪组退化成"仅币种"（台账没有费用类型）→ 这根本不是"同类"，不判离群
+        if not key[0]:
+            degenerate_skipped += 1
+            continue
         if len(group) < min_group:
             continue
         values = [r["amount"] for r in group]
@@ -1753,6 +1758,8 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
                             [{"factor": "robust_outlier", "points": 2}])
     if valid_groups == 0:
         skipped.append("robust-outlier：同类样本不足或样本金额高度一致，无法判断离群")
+    if degenerate_skipped:
+        skipped.append("robust-outlier：台账缺少「费用类型」维度，未做同类离群（避免把整张表当成同一个同侪组）")
     if outlier_low_skipped:
         skipped.append("robust-outlier：按 outlier_min_amount 跳过 %d 条（金额低于阈值，不视为「异常高额」）" % outlier_low_skipped)
 
@@ -1888,12 +1895,15 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
 
     # 规则：自审自批（审批人与报销人是同一人）—— 高信号
     # v0.2.13：报销人可以是 employee_id 或 employee_name；审批人命中其一即算自审自批。
+    # v0.2.26：审批人可能是**多人列表**（真实台账常见「张三;李四」），按分隔符拆开逐一比对——
+    #          单人值的行为完全不变；只有确实是列表且含报销人时才会新增命中（帕累托）。
     self_approval_pairs = []
     for row in rows:
-        approver = norm_text(row.get("approver"))
         identities = {norm_text(row.get("employee_id")), norm_text(row.get("employee_name"))}
         identities.discard("")
-        if approver and approver in identities:
+        approver_raw = norm_text(row.get("approver"))
+        approvers = [p.strip() for p in re.split(r"[;；,，、]", approver_raw) if p.strip()]
+        if approver_raw and any(a in identities for a in approvers):
             self_approval_pairs.append(row)
     if self_approval_pairs:
         builder.add("self-approval", "审批人与报销人为同一人（自审自批）", 4, "strong",
@@ -2152,11 +2162,28 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
     }
 
 
+_CSV_FORMULA_PREFIX = ("=", "+", "-", "@", "\t", "\r")
+_CSV_PLAIN_NUMBER = re.compile(r"^[-+]?\d+(\.\d+)?$")
+
+
+def sanitize_csv_cell(value: Any) -> str:
+    """v0.2.26：防 CSV 公式注入——以 = + - @ 制表 回车 开头的**文本**单元格加前导单引号；
+    **纯数字（含负数/带 + 号）原样保留**（-100、+8613800138000 这类不动），避免误伤正常数据。
+    """
+    text = "" if value is None else str(value)
+    if not text or text[0] not in _CSV_FORMULA_PREFIX:
+        return text
+    if _CSV_PLAIN_NUMBER.match(text):
+        return text
+    return "'" + text
+
+
 def write_csv(path: Path, rows: Sequence[Dict[str, Any]], fields: Sequence[str]) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(fields), extrasaction="ignore")
         writer.writeheader()
-        writer.writerows(rows)
+        for row in rows:
+            writer.writerow({k: sanitize_csv_cell(v) for k, v in row.items()})
 
 
 def write_jsonl(path: Path, rows: Sequence[Dict[str, Any]]) -> None:
