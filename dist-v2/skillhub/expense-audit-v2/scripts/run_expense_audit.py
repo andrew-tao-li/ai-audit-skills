@@ -13,11 +13,12 @@ import statistics
 import sys
 import unicodedata
 from collections import defaultdict
+from functools import lru_cache
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.18"
+VERSION = "0.2.19"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -99,7 +100,13 @@ LODGING_DEFAULT_TYPES = ("住宿", "酒店", "宾馆", "旅馆", "民宿", "住�
 def norm_text(value: Any) -> str:
     if value is None:
         return ""
-    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", str(value))).strip()
+    # v0.2.19：加缓存——字段值（商户/类型/日期等）重复度很高，能省下大量正则开销；行为完全不变
+    return _norm_str(value if isinstance(value, str) else str(value))
+
+
+@lru_cache(maxsize=131072)
+def _norm_str(text: str) -> str:
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", text)).strip()
 
 
 def norm_header(value: Any) -> str:
@@ -148,6 +155,12 @@ def parse_date(value: Any) -> Optional[str]:
             return date(int(m.group(1)), int(m.group(2)), int(m.group(3))).isoformat()
         except ValueError:
             return None
+    # v0.2.19：快路径——"YYYY-MM-DD"（占绝大多数）直接解析，避免 strptime 每次编译正则的开销
+    if len(text) == 10 and text[4] == "-" and text[7] == "-":
+        try:
+            return date.fromisoformat(text).isoformat()
+        except ValueError:
+            pass
     for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y%m%d", "%d/%m/%Y", "%m/%d/%Y"):
         try:
             return datetime.strptime(text, fmt).date().isoformat()
@@ -1524,18 +1537,19 @@ def run_rules(rows: List[Dict[str, Any]], policy: Dict[str, Any], builder: Resul
 
     # 规则：发票跨人复用（同一发票号被不同员工使用）
     invoice_employee = defaultdict(set)
+    invoice_rows: Dict[str, List[Dict[str, Any]]] = defaultdict(list)   # v0.2.19：一次建索引，避免 O(交叉发票×行数)
     for row in rows:
         inv = norm_text(row.get("invoice_number"))
         emp = norm_text(row.get("employee_id"))
-        if inv and emp:
-            invoice_employee[inv].add(emp)
+        if inv:
+            invoice_rows[inv].append(row)
+            if emp:
+                invoice_employee[inv].add(emp)
     cross_employee_invoices = [(inv, emps) for inv, emps in invoice_employee.items() if len(emps) > 1]
     if cross_employee_invoices:
         cross_records = []
         for inv, _ in cross_employee_invoices:
-            for row in rows:
-                if norm_text(row.get("invoice_number")) == inv:
-                    cross_records.append(row)
+            cross_records.extend(invoice_rows.get(inv, []))
         builder.add("cross-employee-invoice", "同一发票号被多个员工报销（发票跨人复用）", 4, "strong",
                     cross_records,
                     ("expense_id", "invoice_number", "employee_id", "amount"),
