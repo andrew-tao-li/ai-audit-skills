@@ -16,10 +16,11 @@
 | 采购舞弊 / 采购审计 | `procurement-fraud-v2` | 采购舞弊红旗、供应商关系、价格、拆单、流程、投标相似度筛查 |
 | 调查助手 / 内部调查 | `investigation-assistant-v2` | 举报、邮件、消息和日志整理为可追溯调查工作空间 |
 | 关联排查 / 关联分析 | `cn-entity-relation-check` | 核查两个公司/自然人的中国公开工商关联，输出关联/不关联/待核查 |
+| 审计取数 / 写 SQL | `audit-sql-builder` | 把审计需求翻译成可在业务系统执行的 SQL（读数据字典 → 字段映射建议 → 多方言 SQL） |
 
-> **默认行为（开关 = 单装）**：表里列全部 4 个，**只是为了让 agent 把中文友好名映射到 skill-id**。**不要**因为表里有 4 个就主动推荐用户顺便把其他几个也装了。用户问装哪一个，就只装哪一个。
+> **默认行为（开关 = 单装）**：表里列全部 5 个，**只是为了让 agent 把中文友好名映射到 skill-id**。**不要**因为表里有 5 个就主动推荐用户顺便把其他几个也装了。用户问装哪一个，就只装哪一个。
 >
-> **全装开关（开关 = 装全部）**：**只有**用户明确说「全部 4 个」「全套」「full set」「all of them」「四个都装」等明显要全套的措辞时，才跑不带 `--skill-id` 的命令（即装全部 4 个）。其他情况默认走单装。
+> **全装开关（开关 = 装全部）**：**只有**用户明确说「全部 5 个」「全套」「full set」「all of them」「五个都装」等明显要全套的措辞时，才跑不带 `--skill-id` 的命令（即装全部 5 个）。其他情况默认走单装。
 
 ## Install 命令
 
@@ -28,7 +29,7 @@
 curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash -s -- <skill-id>
 ```
 
-**装全部 4 个**（不带参数就是全部）：
+**装全部 5 个**（不带参数就是全部）：
 ```
 curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash
 ```
@@ -257,11 +258,12 @@ rm -rf ~/.config/opencode/skills/expense-audit-v2
 - <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/procurement-fraud-v2.zip>
 - <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/investigation-assistant-v2.zip>
 - <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/cn-entity-relation-check.zip>
+- <https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/audit-sql-builder.zip>
 
 所有版本列表见 <https://github.com/andrew-tao-li/ai-audit-skills/releases>。
 
 ### 源码 & 自定义
-- 四个 skill 的源码：`skills-v2/<skill-name>/`
+- 五个 skill 的源码：`skills-v2/<skill-name>/`
 - 重新打包 release zip：跑 `./scripts/build-dist.sh`
 - 黑盒黄金测试：`python3 evals/blackbox/score_blackbox.py --version local-check`
 - 端到端校验：`python3 evals/validate_pack.py --run-tests`

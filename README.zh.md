@@ -103,6 +103,7 @@ output/
 | 采购红旗筛查 | **procurement-fraud-v2** | 供应商/订单/付款/投标目录 | findings + 关系图 + 移交包 |
 | 调查材料整理 | **investigation-assistant-v2** | 邮件/聊天/日志 + scope.json | 时间线 + 证据矩阵 + 备忘录 |
 | 工商关联排查 | **cn-entity-relation-check** | 两个主体名 + 证据 JSON | 三态判定 + 路径 |
+| 审计取数 | **audit-sql-builder** | 数据字典 CSV + 需求 | SQL 文本 + 字段映射建议 |
 
 ## 反馈与改进
 
@@ -114,11 +115,12 @@ output/
 
 ```
 ai-audit-skills/
-├── skills-v2/                  四个独立 skill
+├── skills-v2/                  五个独立 skill
 │   ├── expense-audit-v2/
 │   ├── procurement-fraud-v2/
 │   ├── investigation-assistant-v2/
-│   └── cn-entity-relation-check/
+│   ├── cn-entity-relation-check/
+│   └── audit-sql-builder/
 ├── docs/                       架构、方法论、安全模型
 ├── evals/                      黑盒黄金测试 + F1 评分
 ├── evolution/                  Auto-Research 框架 + 路线图
