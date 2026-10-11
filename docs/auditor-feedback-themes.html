@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>审计师反馈 · 5 大诉求 × 解决情况</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --bg:#f1f5f9; --card:#fff;
+    --done:#16a34a; --part:#d97706; --todo:#94a3b8;
+  }
+  *{box-sizing:border-box;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:480px;margin:0 auto;padding:16px 14px 56px}
+
+  header{text-align:center;padding:6px 0 12px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0}
+
+  .legend{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:12px 0 4px;font-size:12px;color:var(--muted)}
+  .legend span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0;
+        box-shadow:0 1px 2px rgba(15,23,42,.04);border-left:5px solid var(--todo)}
+  .card.done{border-left-color:var(--done)}
+  .card.part{border-left-color:var(--part)}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .rank{font-size:12px;color:var(--muted);margin-bottom:2px}
+  h2{font-size:16px;margin:0;line-height:1.4}
+  .badge{flex:0 0 auto;font-size:12px;font-weight:700;color:#fff;border-radius:999px;padding:3px 10px;white-space:nowrap}
+  .badge.done{background:var(--done)} .badge.part{background:var(--part)} .badge.todo{background:var(--todo)}
+
+  .quote{margin:8px 0 0;padding:8px 10px;background:#f8fafc;border-radius:8px;
+         font-size:13.5px;color:#475569;border:1px solid #eef2f7}
+  .quote b{color:#0f172a}
+  .who{font-size:12px;color:var(--muted);margin-top:4px}
+
+  h3{font-size:13px;color:var(--muted);margin:12px 0 4px;font-weight:600}
+  ul{margin:0;padding-left:20px}
+  li{font-size:14px;margin:3px 0}
+  li .v{color:var(--done);font-size:12px;white-space:nowrap}
+  li.warn .v{color:var(--part)}
+  .none{font-size:14px;color:var(--muted);margin:2px 0}
+
+  .foot{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:14px}
+  .foot b{color:#92400e}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:20px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>审计师反馈 · 5 大诉求</h1>
+  <p class="sub">来自 9 位真实审计师 · 按普遍程度排序</p>
+  <div class="legend">
+    <span>🟢 已解决</span><span>🟡 部分解决</span><span>⚪ 未做/搁置</span>
+  </div>
+</header>
+
+<!-- 1 -->
+<section class="card done">
+  <div class="top">
+    <div><div class="rank">第 1 普遍</div><h2>真实台账的"形状" ≠ 工具预期</h2></div>
+    <div class="badge done">🟢 基本解决</div>
+  </div>
+  <p class="quote">中文日期认不出 · 「预订日期」当成了提交日期 · 「凭证编号」当成了发票号 · 只有姓名没有工号 · 审批人是「张三;李四」</p>
+  <div class="who">几乎每一位都撞上，只是形式不同</div>
+  <h3>我们做了什么</h3>
+  <ul>
+    <li>支持中文日期「2026年10月09日」 <span class="v">v0.2.13</span></li>
+    <li>报销人可用「姓名」；工号/姓名口径不一致时明确提示 <span class="v">v0.2.13</span></li>
+    <li>自审自批支持「多人审批列表」 <span class="v">v0.2.26</span></li>
+    <li>多晚订单自动折「间夜单价」 <span class="v">v0.2.22</span></li>
+    <li>支持按行给出的「差标/限额」 <span class="v">v0.2.22</span></li>
+    <li>新增《字段映射·语义陷阱》指南 <span class="v">v0.2.22</span></li>
+  </ul>
+  <h3>还剩什么</h3>
+  <p class="none">行政区划市县归一、表头不在第一行（已列为已知边界）</p>
+</section>
+
+<!-- 2 -->
+<section class="card part">
+  <div class="top">
+    <div><div class="rank">第 2 普遍</div><h2>「报了一堆，真问题很少」——精度 / 信噪比</h2></div>
+    <div class="badge part">🟡 明显改善，需继续调</div>
+  </div>
+  <p class="quote">614 行 → <b>194 条线索，只有 2 条值得跟进</b> · 缺费用类型时离群规则产出 <b>303 条噪声</b> · 23 笔打车命中 1 条中风险、核实后无异常</p>
+  <div class="who">噪声来源高度一致：固定标准补贴、外勤高频小额、同日两段同价路桥费</div>
+  <h3>我们做了什么</h3>
+  <ul>
+    <li>新增三个降噪旋钮：最小金额 / 固定标准值类型 / 天然多次发生类型 <span class="v">v0.2.23</span></li>
+    <li>缺「费用类型」维度时不再判离群 <span class="v">v0.2.26</span></li>
+    <li>补「外勤销售」黄金集 fixture，守住精度 <span class="v">v0.2.23</span></li>
+  </ul>
+  <h3>还剩什么</h3>
+  <p class="none">调参要靠**更多真实数据**——目前样本还太少</p>
+</section>
+
+<!-- 3 -->
+<section class="card done">
+  <div class="top">
+    <div><div class="rank">第 3 普遍</div><h2>企业环境：要能装、能过审、能复现</h2></div>
+    <div class="badge done">🟢 基本解决</div>
+  </div>
+  <p class="quote">被安全部门<b>直接驳回</b>（外发通道 / 自动执行 / 隐瞒措辞） · 两位做了独立安全审计，要求封堵 socket、签名校验、字节级可复现 · 一位在 Windows + 豆包工作上装不上</p>
+  <h3>我们做了什么</h3>
+  <ul>
+    <li>安全整改：移除 webhook、取消自动执行、前置披露「联网与风险」 <span class="v">v0.3.11</span></li>
+    <li>认出「豆包工作」路径 + 新增 Windows 安装脚本 + 网络降级 <span class="v">install 层</span></li>
+    <li>离线 + 可复现：manifest 记录哈希、<b>结果字节级一致</b> <span class="v">一直如此</span></li>
+  </ul>
+  <h3>还剩什么</h3>
+  <p class="none">ClawHub 未上架（只差你登录）；平台签名不覆盖 <code>_meta.json</code>（平台侧问题）</p>
+</section>
+
+<!-- 4 -->
+<section class="card done">
+  <div class="top">
+    <div><div class="rank">第 4 普遍</div><h2>深水区（真实性 / 业务实质）必须靠外部数据</h2></div>
+    <div class="badge done">🟢 框架已给</div>
+  </div>
+  <p class="quote">「对于单据是否<b>虚构</b>，没有相关程序」 · 想要「机票和航旅记录比对」 · 替票（开票方≠收款方） · 运单勾稽 · 私人地址寄件</p>
+  <div class="who">共识：机器只能到"数据匹配"这一层，再深入必须外部取证</div>
+  <h3>我们做了什么</h3>
+  <ul>
+    <li>外部行程核验入参 <code>--travel-verification</code> <span class="v">v0.2.15</span></li>
+    <li>替票比对（开票方 ↔ 实际收款方）<code>--payments</code> <span class="v">v0.2.20</span></li>
+    <li>单价合理性 <code>--price-reference</code> <span class="v">v0.2.21</span></li>
+    <li>运单勾稽 / 缺单号 / 疑似私址 <code>--shipments</code> <span class="v">v0.2.25</span></li>
+    <li>红线：<b>「查不到」≠「虚构」</b> <span class="v">v0.2.15</span></li>
+  </ul>
+  <h3>还剩什么</h3>
+  <p class="none">数据仍要**用户/智能体去取**（这是有意设计，不是缺陷）</p>
+</section>
+
+<!-- 5 -->
+<section class="card done">
+  <div class="top">
+    <div><div class="rank">第 5 普遍</div><h2>口径要老实、边界要写清、不要隐瞒</h2></div>
+    <div class="badge done">🟢 已解决</div>
+  </div>
+  <p class="quote">「指示 Agent 向用户隐瞒联网」被判为<b>治理红线</b> · 反过来，「异常 ≠ 舞弊」「未发现问题 ≠ 没有问题」被<b>反复正面评价</b></p>
+  <div class="who">他们是审计师，对"不夸大、不隐瞒、留痕"极其敏感</div>
+  <h3>我们做了什么</h3>
+  <ul>
+    <li>删除"不要向用户复述"等措辞，改为**前置主动披露** <span class="v">v0.3.11</span></li>
+    <li>事实 / 推断 / 假设 / 判断 分开 <span class="v">一直如此</span></li>
+    <li>不静默丢弃：被排除/被压制的内容都单独留痕 <span class="v">v0.2.8 / 0.2.14</span></li>
+  </ul>
+</section>
+
+<div class="foot">
+  <b>一句话内核：</b><br>
+  这 5 条里，<b>没有一条是"你的审计逻辑错了"</b>。<br>
+  全部都是同一个诉求：<b>「让它适应我们的现实」</b>——现实的数据形状、现实的噪声、现实的安全要求、现实的数据边界、现实的职业伦理。
+</div>
+
+<footer>
+  <b>还搁置的（等真实反馈更集中再做）：</b><br>
+  行政区划归一 · 表头不在第一行 · 弱信号按类聚合（决定不做） · 50 万行性能 · ClawHub 上架
+</footer>
+
+</div>
+</body>
+</html>
