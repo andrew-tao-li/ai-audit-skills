@@ -59,6 +59,13 @@ $f="$env:TEMP\ai-audit-install.ps1"; iwr -UseBasicParsing https://raw.githubuser
 3. 右键「全部解压缩」
 4. 把解出来的整个文件夹，放进你的 Agent 技能目录（见文末表格，或 `install.ps1 -DetectOnly` 的输出）
 
+### 装完之后（四条小提醒）
+
+- **重启宿主**：技能通常要**重启智能体、或新开一个对话**才会出现在技能列表里。
+- **`~/.local/bin` 可能不在 PATH**：SkillHub CLI 装完后若提示 `command not found: skillhub`，用**全路径**调用，或把 `~/.local/bin` 加进 PATH。
+- **处理 XLSX 需要 `openpyxl`**：CSV 模式不需要。若 `--check-env` 显示 `xlsx_support: unavailable`，先 `pip install openpyxl`（或用带 openpyxl 的那个 Python 解释器）。
+- **SkillHub CLI 会自升级**：若你需要版本稳定，调用时加 `--no-self-upgrade`。
+
 ### 如果宿主提示「危险指令」怎么办
 
 安装技能本质上就两步：**从 GitHub 下载一个 zip、解压到技能目录**。宿主之所以提示，通常是因为
