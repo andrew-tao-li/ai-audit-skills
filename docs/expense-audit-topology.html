@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>费用审计技能 · 能力拓扑图（expense-audit-v2 0.2.26）</title>
+<style>
+  :root{
+    --bg:#0f172a; --card:#fff; --ink:#1e293b; --muted:#64748b; --line:#e2e8f0;
+    --in:#2563eb; --wash:#0ea5e9; --core:#16a34a; --ext:#d97706; --out:#7c3aed; --risk:#dc2626;
+    --chip:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f8fafc;color:var(--ink);font:15px/1.65 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 64px}
+  h1{font-size:24px;margin:0 0 4px}
+  h2{font-size:18px;margin:34px 0 10px;padding-left:10px;border-left:4px solid var(--core)}
+  h3{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .kpis{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 8px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:130px}
+  .kpi b{display:block;font-size:22px;color:var(--core)}
+  .kpi span{color:var(--muted);font-size:12px}
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:10px 0 6px}
+  .box{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:12px 14px;flex:1 1 190px;margin:6px 0}
+  .box h4{margin:0 0 6px;font-size:14px}
+  .box ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;color:#334155}
+  .arrow{align-self:center;color:var(--muted);font-size:22px;padding:0 8px}
+  .b-in{border-color:var(--in)}   .b-in h4{color:var(--in)}
+  .b-wash{border-color:var(--wash)} .b-wash h4{color:var(--wash)}
+  .b-core{border-color:var(--core)} .b-core h4{color:var(--core)}
+  .b-out{border-color:var(--out)}  .b-out h4{color:var(--out)}
+  .b-risk{border-color:var(--risk)} .b-risk h4{color:var(--risk)}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:8px 0 4px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+  th{background:#f1f5f9;font-weight:600;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:12.5px}
+  .fam td:first-child{white-space:nowrap;font-weight:600}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin:10px 0;font-size:13.5px}
+  .ok{background:#f0fdf4;border-color:#bbf7d0}
+  .pill{display:inline-block;background:var(--chip);border-radius:999px;padding:1px 9px;font-size:12px;margin:1px 3px 1px 0}
+  .ext{color:var(--ext);font-weight:600}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:30px;border-top:1px solid var(--line);padding-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>费用审计技能 · 能力拓扑图</h1>
+  <p class="sub"><code>expense-audit-v2</code> v0.2.26 · 离线确定性 · 只算事实，不下结论</p>
+
+  <div class="kpis">
+    <div class="kpi"><b>43</b><span>条审计规则</span></div>
+    <div class="kpi"><b>33</b><span>个标准字段（自动别名）</span></div>
+    <div class="kpi"><b>14</b><span>个命令行参数</span></div>
+    <div class="kpi"><b>46</b><span>个配置键</span></div>
+    <div class="kpi"><b>0</b><span>次联网（默认）</span></div>
+  </div>
+
+  <h2>一、主干流程</h2>
+  <div class="flow">
+    <div class="box b-in">
+      <h4>① 输入</h4>
+      <ul>
+        <li><b>主台账</b>：CSV / XLSX（或工作表）</li>
+        <li><b>制度</b>：<code>policy.json</code>（可选）</li>
+        <li><b>字段映射</b>：<code>--field-map</code>（可选）</li>
+        <li><b>6 类可选辅助</b>（见第三节）</li>
+      </ul>
+    </div>
+    <div class="arrow">→</div>
+    <div class="box b-wash">
+      <h4>② 洗涤与映射</h4>
+      <ul>
+        <li>33 个标准字段 <b>自动别名匹配</b></li>
+        <li>中文日期「2026年10月09日」等</li>
+        <li><b>坏行隔离</b> → <code>bad_rows.csv</code></li>
+        <li>按审批状态过滤（可选）</li>
+        <li>多列金额求和（可选）</li>
+      </ul>
+    </div>
+    <div class="arrow">→</div>
+    <div class="box b-core">
+      <h4>③ 规则引擎（10 个域）</h4>
+      <ul>
+        <li>A 重复与复用 · B 制度与阈值</li>
+        <li>C 时序与日期 · D 行为与集中度</li>
+        <li>E 统计离群 · F 凭证/票据真实性</li>
+        <li>G 外部核验 · H 差旅交叉</li>
+        <li>I 时空 · J 数据治理</li>
+      </ul>
+    </div>
+    <div class="arrow">→</div>
+    <div class="box b-out">
+      <h4>④ 输出</h4>
+      <ul>
+        <li><b>给人看</b>：dashboard.html / summary.md / findings.csv / findings.jsonl</li>
+        <li><b>可追溯</b>：evidence.jsonl / run_manifest.json</li>
+        <li><b>数据面</b>：clean_expenses.csv / bad_rows.csv / data_quality.md</li>
+        <li><b>可选</b>：excluded_by_status.csv / suppressed_findings.csv</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>二、规则族全景（43 条，按域分组）</h2>
+  <table class="fam">
+    <tr><th>域</th><th>规则（finding_type）</th><th>需要的关键字段</th></tr>
+    <tr>
+      <td>A 重复与复用<br><span class="pill">9 条</span></td>
+      <td>
+        <code>exact-duplicate-invoice</code> 发票号重复 ·
+        <code>exact-duplicate-employee-date-amount</code> 同员工同日同金额 ·
+        <code>near-duplicate</code> 金额近似 ·
+        <code>cross-employee-invoice</code> 发票跨人复用 ·
+        <code>shared-voucher-multiple-employees</code> 同一凭证多人各报 ·
+        <code>ticket-number-reused</code> 同一票号重复 ·
+        <code>same-amount-no-invoice</code> 同商户同额无发票 ·
+        <code>high-frequency-small-amount</code> 高频小额 ·
+        <code>resubmit-after-rejection-amount-increase</code> 撤回重提加码
+      </td>
+      <td>employee_id · expense_date · amount · invoice_number · pnr · ticket_number · vendor_name · status</td>
+    </tr>
+    <tr>
+      <td>B 制度与阈值<br><span class="pill">7 条</span></td>
+      <td>
+        <code>policy-threshold</code> 超制度上限 ·
+        <code>split-expense</code> 拆单报销 ·
+        <code>split-expense-cross-merchant</code> 跨商户拆单 ·
+        <code>large-amount-low-level-approval</code> 大额低层级审批 ·
+        <code>large-amount</code> 绝对大额 ·
+        <code>row-limit-exceeded</code> 超适用差标/限额 ·
+        <code>unit-price-above-market</code> 单价高于参考市场价
+      </td>
+      <td>amount · expense_type · approver · row_limit · nights · unit_price</td>
+    </tr>
+    <tr>
+      <td>C 时序与日期<br><span class="pill">8 条</span></td>
+      <td>
+        <code>submit-before-expense</code> 提交早于消费 ·
+        <code>future-date</code> 未来日期 ·
+        <code>cross-period</code> 跨期入账 ·
+        <code>ticket-issue-after-flight</code> 出票晚于行程 ·
+        <code>weekday-mismatch</code> 日期与周几不符 ·
+        <code>weekend-signal</code> 周末 ·
+        <code>holiday-signal</code> 节假日 ·
+        <code>lodging-night-mismatch</code> 住宿晚数与入离店不符
+      </td>
+      <td>expense_date · submit_date · issue_date · check_in · check_out · nights · weekday</td>
+    </tr>
+    <tr>
+      <td>D 行为与集中度<br><span class="pill">4 条</span></td>
+      <td>
+        <code>self-approval</code> 自审自批（<b>支持多人审批列表</b>）·
+        <code>vendor-concentration</code> 商户集中度 ·
+        <code>consecutive-nightly-invoicing</code> 连续逐晚开票 ·
+        <code>space-time-conflict</code> 时空冲突
+      </td>
+      <td>employee_id · approver · vendor_name · expense_date · origin/dest_city</td>
+    </tr>
+    <tr>
+      <td>E 统计离群<br><span class="pill">1 条</span></td>
+      <td><code>robust-outlier</code> 同类中的异常高额（相对，非绝对）</td>
+      <td>amount · expense_type · currency</td>
+    </tr>
+    <tr>
+      <td>F 凭证 / 票据真实性<br><span class="pill">9 条</span></td>
+      <td>
+        <code>voucher-incomplete</code> 凭证要素不全 ·
+        <code>sequential-invoice</code> 发票连号 ·
+        <code>invoice-format-anomaly</code> 发票格式异常 ·
+        <code>itinerary-segment-conflict</code> 订座号同日航段矛盾 ·
+        <code>missing-expense-type</code> 缺费用类型 ·
+        <code>voucher-*</code> …（含票号重复 / 出票倒挂，见 A、C）
+      </td>
+      <td>invoice_number · invoice_date · ticket_number · pnr · flight_no · expense_type</td>
+    </tr>
+    <tr>
+      <td>G 外部核验<br><span class="ext">需外部数据</span><br><span class="pill">6 条</span></td>
+      <td>
+        <code>travel-verification-mismatch</code> 行程核验不符 ·
+        <code>travel-verification-not-found</code> 行程核验未找到 ·
+        <code>invoice-payee-mismatch</code> 开票方≠实际收款方（替票） ·
+        <code>shipment-amount-mismatch</code> 运单勾稽不一致 ·
+        <code>shipment-without-tracking</code> 运单缺单号 ·
+        <code>shipment-from-private-address</code> 疑似私人地址
+      </td>
+      <td>flight_no · travel_date · pnr · payee · invoice_issuer · tracking_no · from/to_addr</td>
+    </tr>
+    <tr>
+      <td>H 差旅交叉<br><span class="ext">需辅助数据</span><br><span class="pill">3 条</span></td>
+      <td>
+        <code>expense-without-travel-request</code> 差旅无出差申请 ·
+        <code>office-swipe-on-offsite-claim</code> 称外地但当天公司打卡 ·
+        <code>attendance-city-mismatch</code> 打卡城市不符
+      </td>
+      <td>出差申请 / 打卡记录（辅助表）</td>
+    </tr>
+  </table>
+
+  <h2>三、可选输入 → 会"唤醒"哪些能力</h2>
+  <table>
+    <tr><th>参数</th><th>你提供什么</th><th>会新增的规则</th><th>不提供时</th></tr>
+    <tr><td><code>--policy</code></td><td>制度 JSON（限额/审批阈值/节假日…）</td><td>超制度上限 · 拆单 · 大额低层级审批 …</td><td>相关规则自动跳过并说明</td></tr>
+    <tr><td><code>--field-map</code></td><td>确认后的字段映射</td><td>（修正映射，减少误报）</td><td>自动猜别名</td></tr>
+    <tr><td><code>--travel-requests</code></td><td>出差申请单</td><td>差旅无出差申请</td><td>不参与</td></tr>
+    <tr><td><code>--attendance</code></td><td>打卡/考勤</td><td>称外地但当天公司打卡 · 打卡城市不符</td><td>不参与</td></tr>
+    <tr><td><code>--travel-verification</code></td><td>外部航班核验结果</td><td>行程核验不符 / 未找到</td><td>不参与（<b>查不到≠虚构</b>）</td></tr>
+    <tr><td><code>--payments</code></td><td>支付/收款记录</td><td>开票方≠实际收款方（替票）</td><td>不参与</td></tr>
+    <tr><td><code>--price-reference</code></td><td>市场价格参考</td><td>单价高于参考市场价</td><td>不参与</td></tr>
+    <tr><td><code>--shipments</code></td><td>运单台账</td><td>运单勾稽 / 缺单号 / 疑似私址</td><td>不参与</td></tr>
+    <tr><td><code>--allowlist</code></td><td>白名单（已知无风险）</td><td>（压制，写 <code>suppressed_findings.csv</code>）</td><td>不参与</td></tr>
+  </table>
+  <div class="note ok"><b>帕累托保证：</b>上面每一项都是<code>可选</code>。不给 → 完全等同于旧版；给了 → 才多出对应能力。</div>
+
+  <h2>四、输出物（9 件 + 2 可选）</h2>
+  <table>
+    <tr><th>文件</th><th>性质</th><th>给谁看</th></tr>
+    <tr><td><code>dashboard.html</code></td><td>自包含离线全景图，第一屏执行摘要</td><td>经理 / 管理层</td></tr>
+    <tr><td><code>summary.md</code></td><td>完整结论（含业务实质性声明、建议复核顺序）</td><td>审计师</td></tr>
+    <tr><td><code>findings.csv</code> / <code>findings.jsonl</code></td><td>逐条发现（结构化）</td><td>审计师 / 机器</td></tr>
+    <tr><td><code>evidence.jsonl</code></td><td>每条 finding 的证据（可回源到源行）</td><td>复核追溯</td></tr>
+    <tr><td><code>run_manifest.json</code></td><td>输入/脚本哈希、参数、<code>network_access:false</code></td><td>可复现性</td></tr>
+    <tr><td><code>data_quality.md</code></td><td>字段映射、空值率、警告与跳过规则</td><td>数据体检</td></tr>
+    <tr><td><code>clean_expenses.csv</code> / <code>bad_rows.csv</code></td><td>标准化结果 / 坏行隔离</td><td>数据面</td></tr>
+    <tr><td><code>excluded_by_status.csv</code> <span class="pill">可选</span></td><td>按审批状态排除的行</td><td>不静默丢弃</td></tr>
+    <tr><td><code>suppressed_findings.csv</code> <span class="pill">可选</span></td><td>被白名单压制的告警（留痕）</td><td>不静默丢弃</td></tr>
+  </table>
+
+  <h2>五、边界与红线（必须与上面一起看）</h2>
+  <div class="flow">
+    <div class="box b-risk">
+      <h4>它不能做</h4>
+      <ul>
+        <li><b>不判断业务实质</b>（费用是否真实发生）</li>
+        <li><b>不做舞弊/拒付认定</b>——异常 ≠ 舞弊</li>
+        <li><b>不联网</b>、不连银行流水；不做发票验真（需外部数据，见 G）</li>
+        <li>制度阈值只能来自<b>你给的制度</b></li>
+      </ul>
+    </div>
+    <div class="box b-risk">
+      <h4>人工必查（脚本不覆盖）</h4>
+      <ul>
+        <li>发票真伪 · 关联交易与利益冲突</li>
+        <li>票据原始凭证 · 报销业务实质</li>
+        <li>关联方资金往来 · 审批权限匹配 …</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">
+    <b>两句话记住它：</b>① 机器负责<u>全量找线索</u>，人负责<u>定性</u>；
+    ② <b>未发现问题 ≠ 没有问题</b>。
+  </div>
+
+  <h2>六、典型闭环（怎么用）</h2>
+  <div class="flow">
+    <div class="box b-in"><h4>1 拿台账</h4><ul><li>费用/报销明细 + 制度</li></ul></div>
+    <div class="arrow">→</div>
+    <div class="box b-core"><h4>2 跑技能</h4><ul><li>不给任何可选输入也行</li></ul></div>
+    <div class="arrow">→</div>
+    <div class="box b-out"><h4>3 看 dashboard + summary</h4><ul><li>先查高/中风险线索</li></ul></div>
+    <div class="arrow">→</div>
+    <div class="box b-core"><h4>4 需要更深？</h4><ul><li>加辅助数据（出差/打卡/运单/收款方…）</li></ul></div>
+    <div class="arrow">→</div>
+    <div class="box b-risk"><h4>5 人工核实 + 定性</h4><ul><li>回到 evidence 对应源行</li></ul></div>
+  </div>
+
+  <p class="foot">
+    数据来源：<code>skills-v2/expense-audit-v2/</code> 代码自动抽取（43 条规则、46 个配置键、33 个标准字段、14 个参数）。
+    本图只描述<u>事实</u>；不构成任何审计结论。<br>
+    <small>提示：导入数据后先看 <code>data_quality.md</code> 的「警告与跳过规则」——它会明确告诉你哪些规则因缺字段被跳过。</small>
+  </p>
+</div>
+</body>
+</html>
