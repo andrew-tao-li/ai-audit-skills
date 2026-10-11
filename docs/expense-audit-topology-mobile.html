@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>费用审计技能 · 手机版能力图</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --bg:#f1f5f9; --card:#fff;
+    --in:#2563eb; --wash:#0891b2; --core:#16a34a; --out:#7c3aed; --risk:#dc2626; --opt:#d97706;
+  }
+  *{box-sizing:border-box;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:480px;margin:0 auto;padding:16px 14px 56px}
+
+  header{text-align:center;padding:8px 0 14px}
+  h1{font-size:20px;margin:0 0 4px;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:13px;margin:0}
+  .nums{display:flex;gap:8px;justify-content:center;margin:12px 0 4px;flex-wrap:wrap}
+  .num{background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--muted)}
+  .num b{display:block;font-size:17px;color:var(--core);line-height:1.2}
+
+  /* 竖向主干 */
+  .rail{position:relative;padding-left:30px}
+  .rail::before{content:"";position:absolute;left:11px;top:8px;bottom:8px;width:3px;
+                background:linear-gradient(#2563eb,#0891b2,#16a34a,#7c3aed,#dc2626);border-radius:3px}
+  .step{position:relative;margin:0 0 14px}
+  .step::before{content:attr(data-n);position:absolute;left:-30px;top:0;width:24px;height:24px;
+                border-radius:50%;background:#fff;border:2px solid var(--line);
+                display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;
+        box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .step[data-c="in"] .card{border-left:5px solid var(--in)}
+  .step[data-c="in"]::before{color:var(--in);border-color:var(--in)}
+  .step[data-c="wash"] .card{border-left:5px solid var(--wash)}
+  .step[data-c="wash"]::before{color:var(--wash);border-color:var(--wash)}
+  .step[data-c="core"] .card{border-left:5px solid var(--core)}
+  .step[data-c="core"]::before{color:var(--core);border-color:var(--core)}
+  .step[data-c="out"] .card{border-left:5px solid var(--out)}
+  .step[data-c="out"]::before{color:var(--out);border-color:var(--out)}
+  .step[data-c="risk"] .card{border-left:5px solid var(--risk)}
+  .step[data-c="risk"]::before{color:var(--risk);border-color:var(--risk)}
+
+  h2{font-size:16px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+  h2 .tag{font-size:11px;font-weight:400;color:#fff;background:var(--core);border-radius:999px;padding:1px 8px}
+  .card p{margin:4px 0;font-size:14px;color:#334155}
+
+  /* 域 */
+  .domain{margin:12px 0 0;border-top:1px dashed var(--line);padding-top:10px}
+  .domain:first-of-type{border-top:0;padding-top:2px}
+  .dhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .dhead b{font-size:15px}
+  .dhead span{font-size:11px;color:var(--muted)}
+  .rules{margin:6px 0 0;padding:0;list-style:none}
+  .rules li{display:flex;gap:8px;padding:5px 0;border-bottom:1px dotted #eef2f7;font-size:14px}
+  .rules li:last-child{border-bottom:0}
+  .rules .nm{flex:0 0 44%;color:var(--ink)}
+  .rules .fn{flex:1;color:var(--muted);font-size:13px}
+  .ext{color:var(--opt);font-weight:700}
+
+  .files{list-style:none;margin:6px 0 0;padding:0}
+  .files li{padding:4px 0;font-size:14px;border-bottom:1px dotted #eef2f7}
+  .files li:last-child{border-bottom:0}
+  .files .t{color:var(--muted);font-size:12.5px}
+
+  .pill{display:inline-block;background:#f1f5f9;border-radius:999px;padding:0 8px;font-size:12px;margin:2px 4px 2px 0}
+  .hl{background:#fef9c3;border-radius:4px;padding:0 3px}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px 12px;font-size:13.5px;margin-top:10px}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:22px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>费用审计技能 · 能力图</h1>
+  <p class="sub">expense-audit-v2 · 离线 · 只找线索，不下结论</p>
+  <div class="nums">
+    <div class="num"><b>43</b>条规则</div>
+    <div class="num"><b>10</b>个域</div>
+    <div class="num"><b>0</b>次联网</div>
+  </div>
+</header>
+
+<div class="rail">
+
+  <!-- ① 输入 -->
+  <section class="step" data-n="1" data-c="in">
+    <div class="card">
+      <h2>输入：给它什么</h2>
+      <p>📄 <b>1 张主台账</b>（CSV / Excel）——费用或报销明细</p>
+      <p>📋 <b>制度</b>（可选）——限额、审批阈值、节假日</p>
+      <p>➕ <b>辅助数据</b>（可选，给了才生效）：出差申请 · 打卡 · 航班核验 · 支付流水 · 市场价 · 运单 · 白名单</p>
+    </div>
+  </section>
+
+  <!-- ② 洗涤 -->
+  <section class="step" data-n="2" data-c="wash">
+    <div class="card">
+      <h2>洗涤：先把数据弄干净</h2>
+      <p>识别中文字段与中文日期（如「2026年10月09日」）；金额、币种、表头错位都能认</p>
+      <p>🔎 <b>坏行隔离</b>——没用的行单独存，不参与分析、也不丢</p>
+      <p>🚦 按审批状态过滤（可选）</p>
+    </div>
+  </section>
+
+  <!-- ③ 规则引擎 -->
+  <section class="step" data-n="3" data-c="core">
+    <div class="card">
+      <h2>规则引擎：43 条 <span class="tag">10 个域</span></h2>
+      <p style="font-size:13px;color:var(--muted)">加<span class="hl">底色</span>的 = 近期真实审计师反馈驱动新增的</p>
+
+      <div class="domain">
+        <div class="dhead"><b>A 重复与复用</b><span>9 条</span></div>
+        <ul class="rules">
+          <li><span class="nm">发票号重复</span><span class="fn">同一发票号+金额出现多次</span></li>
+          <li><span class="nm">同员工同日同金额</span><span class="fn">同人同天同额两笔</span></li>
+          <li><span class="nm">金额近似</span><span class="fn">同商户短期金额很近</span></li>
+          <li><span class="nm">发票跨人复用</span><span class="fn">一张发票被多人报销</span></li>
+          <li><span class="nm hl">同一凭证多人各报</span><span class="fn">一个订座号多人各报全额</span></li>
+          <li><span class="nm hl">同一票号重复</span><span class="fn">同一张票号出现多次</span></li>
+          <li><span class="nm hl">同商户同额无发票</span><span class="fn">同商户同额且都没票</span></li>
+          <li><span class="nm">高频小额</span><span class="fn">短期很多笔小额（疑套现）</span></li>
+          <li><span class="nm">撤回重提加码</span><span class="fn">撤回后重提、金额变大</span></li>
+        </ul>
+      </div>
+
+      <div class="domain">
+        <div class="dhead"><b>B 制度与阈值</b><span>7 条</span></div>
+        <ul class="rules">
+          <li><span class="nm">超制度上限</span><span class="fn">超过制度限额</span></li>
+          <li><span class="nm">拆单报销</span><span class="fn">同商户多笔合计超阈值</span></li>
+          <li><span class="nm hl">跨商户拆单</span><span class="fn">跨商户多笔合计超阈值</span></li>
+          <li><span class="nm">大额低层级审批</span><span class="fn">大钱由小角色批</span></li>
+          <li><span class="nm hl">绝对大额</span><span class="fn">单笔金额达到设定线</span></li>
+          <li><span class="nm hl">超适用差标</span><span class="fn">超过按行给出的差标</span></li>
+          <li><span class="nm hl">单价高于市场价</span><span class="fn">单价高过参考价</span></li>
+        </ul>
+      </div>
+
+      <div class="domain">
+        <div class="dhead"><b>C 时序与日期</b><span>8 条</span></div>
+        <ul class="rules">
+          <li><span class="nm">提交早于消费</span><span class="fn">先报销、后消费</span></li>
+          <li><span class="nm">未来日期</span><span class="fn">日期在未来</span></li>
+          <li><span class="nm">跨期入账</span><span class="fn">提交距发生过久</span></li>
+          <li><span class="nm hl">出票晚于行程</span><span class="fn">先飞了才出票</span></li>
+          <li><span class="nm hl">日期与周几不符</span><span class="fn">日期和星期对不上</span></li>
+          <li><span class="nm">周末消费</span><span class="fn">周末发生（弱信号）</span></li>
+          <li><span class="nm">节假日消费</span><span class="fn">节假日发生（弱信号）</span></li>
+          <li><span class="nm hl">住宿晚数不符</span><span class="fn">晚数与入离店日期不符</span></li>
+        </ul>
+      </div>
+
+      <div class="domain">
+        <div class="dhead"><b>D 行为与集中度</b><span>4 条</span></div>
+        <ul class="rules">
+          <li><span class="nm">自审自批</span><span class="fn">审批人＝报销人（含多人列表）</span></li>
+          <li><span class="nm hl">商户集中度</span><span class="fn">支出过度集中在一家</span></li>
+          <li><span class="nm hl">连续逐晚开票</span><span class="fn">连续多晚各开一张</span></li>
+          <li><span class="nm">时空冲突</span><span class="fn">同一天出现在多个城市</span></li>
+        </ul>
+      </div>
+
+      <div class="domain">
+        <div class="dhead"><b>E 统计离群</b><span>1 条</span></div>
+        <ul class="rules">
+          <li><span class="nm">异常高额</span><span class="fn">同类里相对偏高（不是绝对高）</span></li>
+        </ul>
+      </div>
+
+      <div class="domain">
+        <div class="dhead"><b>F 凭证 / 票据真实性</b><span>9 条</span></div>
+        <ul class="rules">
+          <li><span class="nm hl">凭证要素不全</span><span class="fn">缺发票号 / 发票日期</span></li>
+          <li><span class="nm">发票连号</span><span class="fn">同商户短期连号发票</span></li>
+          <li><span class="nm">发票格式异常</span><span class="fn">发票号格式不正常</span></li>
+          <li><span class="nm hl">订座号同日多航段矛盾</span><span class="fn">同订座号同日多个航段</span></li>
+          <li><span class="nm">缺费用类型</span><span class="fn">没有填费用类型</span></li>
+          <li><span class="nm hl">票号重复 / 出票倒挂</span><span class="fn">见 A、C 两域</span></li>
+        </ul>
+      </div>
+
+      <div class="domain">
+        <div class="dhead"><b>G 外部核验</b><span>6 条 · <span class="ext">需外部数据</span></span></div>
+        <ul class="rules">
+          <li><span class="nm hl">行程核验不符</span><span class="fn">与外部航班记录不一致</span></li>
+          <li><span class="nm hl">行程核验未找到</span><span class="fn">外部来源查不到（<b>≠ 虚构</b>）</span></li>
+          <li><span class="nm hl">替票：开票方≠收款方</span><span class="fn">发票抬头与实际收款不一致</span></li>
+          <li><span class="nm hl">运单勾稽不一致</span><span class="fn">运单合计 ≠ 报销金额</span></li>
+          <li><span class="nm hl">运单缺单号</span><span class="fn">运单没有单号</span></li>
+          <li><span class="nm hl">疑似私人地址</span><span class="fn">寄/收件疑似私宅</span></li>
+        </ul>
+      </div>
+
+      <div class="domain">
+        <div class="dhead"><b>H 差旅交叉</b><span>3 条 · <span class="ext">需辅助数据</span></span></div>
+        <ul class="rules">
+          <li><span class="nm">差旅无出差申请</span><span class="fn">报销找不到对应申请</span></li>
+          <li><span class="nm">称外地但当天公司打卡</span><span class="fn">人却在公司打卡</span></li>
+          <li><span class="nm">打卡城市不符</span><span class="fn">打卡地与出差地不同城</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 输出 -->
+  <section class="step" data-n="4" data-c="out">
+    <div class="card">
+      <h2>输出：给你什么</h2>
+      <ul class="files">
+        <li>📊 <b>dashboard.html</b><div class="t">一页全景图，给经理看</div></li>
+        <li>📝 <b>summary.md</b><div class="t">完整结论 + 建议复核顺序</div></li>
+        <li>🧾 <b>findings</b> / <b>evidence</b><div class="t">每条线索 + 能回源到原始行</div></li>
+        <li>🔐 <b>run_manifest.json</b><div class="t">哈希与参数，可复现</div></li>
+        <li>🧪 <b>data_quality.md</b><div class="t">字段映射、坏行、哪些规则被跳过</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ⑤ 边界 -->
+  <section class="step" data-n="5" data-c="risk">
+    <div class="card">
+      <h2>边界：它不做什么</h2>
+      <p>❌ 不判断业务是否真实发生 · ❌ 不做舞弊/拒付认定（<b>异常 ≠ 舞弊</b>）</p>
+      <p>❌ 不联网、不连银行流水 · ❌ 不做发票真伪验真</p>
+      <p>✅ 机器负责<b>全量找线索</b>，人负责<b>定性</b>；<b>未发现问题 ≠ 没有问题</b></p>
+    </div>
+  </section>
+
+</div>
+
+<div class="note">
+  <b>怎么用（3 步）：</b><br>
+  1️⃣ 给它 1 张台账（什么都不配也能跑）<br>
+  2️⃣ 看 <b>dashboard + summary</b>，先查高危线索<br>
+  3️⃣ 需要更深 → 再补辅助数据（出差/打卡/运单/收款方…）
+</div>
+
+<footer>
+  所有可选部分都是「<b>给了才生效</b>」，不给就是原始版本。<br>
+  完整细节版：docs/expense-audit-topology.md
+</footer>
+
+</div>
+</body>
+</html>
