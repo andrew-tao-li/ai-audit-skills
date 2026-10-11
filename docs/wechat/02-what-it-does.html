@@ -1,0 +1,78 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact}
+html,body{width:750px;background:#eef2f8}
+body{font:30px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#0f172a}
+.card{width:750px;min-height:1000px;display:flex;flex-direction:column;background:#eef2f8}
+.hero{background:radial-gradient(600px 300px at 85% 0%,rgba(56,189,248,.45),transparent 62%),
+      linear-gradient(125deg,#070b18,#12203c 45%,#1d4ed8);color:#fff;padding:52px 46px 44px}
+.kicker{font-size:24px;letter-spacing:6px;color:#7dd3fc;font-weight:800}
+h1{font-size:76px;line-height:1.08;margin:16px 0 12px}
+h1 em{font-style:normal;color:#7dd3fc}
+.sub{font-size:32px;color:#c7d2fe;line-height:1.5}
+.chips{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
+.chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:10px 22px;font-size:28px;color:#e0e7ff}
+.body{padding:40px 46px 8px;flex:1}
+h2{font-size:46px;margin:0 0 24px;display:flex;align-items:center;gap:14px}
+h2 .bar{width:14px;height:44px;border-radius:7px;background:linear-gradient(#2563eb,#06b6d4)}
+.blk{background:#fff;border-radius:24px;padding:24px 26px;margin-bottom:22px;border:1px solid #e4eaf4;
+     box-shadow:0 8px 22px rgba(15,23,42,.06);border-left:14px solid var(--c,#2563eb)}
+.blk .t{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+.blk .nm{font-size:38px;font-weight:800;color:var(--c,#2563eb)}
+.blk .badge{font-size:24px;color:#64748b;background:#f1f5f9;border-radius:999px;padding:4px 16px;margin-left:auto;white-space:nowrap}
+.blk .say{font-size:27px;color:#94a3b8;margin:-4px 0 12px}
+.li{font-size:32px;color:#1e293b;margin:11px 0;padding-left:34px;position:relative}
+.li::before{content:"";position:absolute;left:6px;top:15px;width:14px;height:14px;border-radius:50%;background:var(--c,#2563eb)}
+.li b{font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.arrow{display:grid;place-items:center;font-size:56px;color:#94a3b8}
+.flow{display:flex;align-items:stretch;gap:10px;margin:10px 0 26px}
+.fbox{flex:1;border-radius:22px;padding:26px 20px;text-align:center;color:#fff}
+.fbox b{display:block;font-size:36px;margin-bottom:6px}
+.fbox span{font-size:26px;opacity:.9}
+.f-in{background:linear-gradient(135deg,#2563eb,#0ea5e9)}
+.f-mid{background:linear-gradient(135deg,#0f172a,#334155)}
+.f-out{background:linear-gradient(135deg,#16a34a,#059669)}
+.note{background:#fffbeb;border:1px solid #fde68a;border-radius:20px;padding:20px 24px;font-size:29px;color:#92400e;margin-top:6px}
+.cols3{display:grid;grid-template-columns:1fr;gap:20px}
+.g{border-radius:22px;padding:22px 24px;color:#fff}
+.g h3{font-size:34px;margin-bottom:10px}
+.g p{font-size:29px;color:rgba(255,255,255,.92);margin:8px 0;padding-left:26px;position:relative}
+.g p::before{content:"•";position:absolute;left:4px}
+.g.edge{background:linear-gradient(135deg,#b91c1c,#ef4444)}
+.g.risk{background:linear-gradient(135deg,#b45309,#f59e0b)}
+.g.safe{background:linear-gradient(135deg,#047857,#10b981)}
+.steps{counter-reset:s}
+.step{display:flex;gap:20px;align-items:flex-start;background:#fff;border-radius:22px;padding:24px 26px;margin-bottom:20px;
+      border:1px solid #e4eaf4;box-shadow:0 8px 22px rgba(15,23,42,.06)}
+.step .n{flex:0 0 66px;height:66px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#06b6d4);color:#fff;
+      display:grid;place-items:center;font-size:34px;font-weight:800}
+.step .txt{font-size:32px}
+.step .txt b{display:block;font-size:34px;margin-bottom:4px}
+.foot{margin-top:auto;padding:26px 46px 34px;display:flex;align-items:center;justify-content:space-between;
+      font-size:26px;color:#64748b}
+.dots{display:flex;gap:9px}
+.dots i{width:14px;height:14px;border-radius:50%;background:#cbd5e1;display:inline-block}
+.dots i.on{background:#2563eb;width:34px;border-radius:999px}
+.cta{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;border-radius:24px;padding:30px 32px;text-align:center;margin-top:8px}
+.cta b{font-size:40px;display:block;margin-bottom:8px;color:#7dd3fc}
+.cta span{font-size:30px;color:#dbeafe}
+</style></head><body>
+<div class="card">
+<div class="hero" style="padding:40px 46px 34px"><div class="kicker">01</div><h1 style="font-size:54px">它做什么</h1></div>
+<div class="body">
+  <div class="flow">
+    <div class="fbox f-in"><b>一张台账</b><span>费用 / 报销明细</span></div>
+    <div class="arrow">→</div>
+    <div class="fbox f-mid"><b>43 条规则</b><span>全量扫描</span></div>
+    <div class="arrow">→</div>
+    <div class="fbox f-out"><b>一页线索</b><span>每条都能回源</span></div>
+  </div>
+  <div class="blk" style="--c:#2563eb;border-left-color:#2563eb">
+    <div class="li" style="--c:#2563eb">它只做「<b>数据之间对得上</b>」的核对</div>
+    <div class="li" style="--c:#dc2626">不下结论、不做认定 —— <b>异常 ≠ 舞弊</b></div>
+  </div>
+</div>
+<div class="foot"><div>费用审计技能 · 第 2/8 张</div><div class="dots"><i class=""></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div></div>
+</div>
+<script>window.addEventListener('load',function(){document.documentElement.setAttribute('data-h',document.body.scrollHeight)});</script>
+</body></html>
