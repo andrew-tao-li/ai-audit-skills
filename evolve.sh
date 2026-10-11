@@ -511,6 +511,13 @@ fi
 # 7. Git auto-commit + push
 echo ""
 echo "▶ Step 7: Git auto-commit"
+# v2026-10-11：兜底守卫——巡检/提案若把工作区切到了别的分支，例行结束时必须回到 main。
+# 否则 Step 7 的 auto-commit 会把例行改动提交到 patrol/proposal 分支上（已真实发生一次）。
+CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+if [ "$CUR_BRANCH" != "main" ]; then
+    echo "  ⚠ 当前分支是 ${CUR_BRANCH}，切回 main 后再提交"
+    git checkout main 2>&1 | tail -1 || true
+fi
 if [ "$SKIP_PUSH" = "0" ]; then
     git add -A 2>&1 | tail -2
     if ! git diff --cached --quiet 2>/dev/null; then

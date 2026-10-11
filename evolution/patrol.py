@@ -133,6 +133,9 @@ def main() -> int:
         LAST_PATROL.write_text(ts, encoding="utf-8")
     except Exception as e:  # noqa: BLE001
         print("开 PR 失败：%s" % e, file=sys.stderr)
+        # v2026-10-11：失败路径也必须回到 main——否则工作区被留在巡检分支上，
+        # 之后（人或例行）的提交会不知不觉落到 patrol 分支（已真实发生一次）。
+        finish_proposal(stashed)
         return 1
     return 0
 

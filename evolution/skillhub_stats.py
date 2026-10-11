@@ -36,12 +36,13 @@ ENV_FILE = Path.home() / ".config" / "ai-audit-skills" / "env"
 SKILLHUB_API = "https://api.skillhub.cn"
 GH_REPO = "andrew-tao-li/ai-audit-skills"
 
-# 我们在 SkillHub 上的四个 skill（slug 全网唯一，带作者前缀）
+# 我们在 SkillHub 上的 skill（slug 全网唯一，带作者前缀）
 SKILLS = [
     ("andrew-tao-li-expense-audit", "费用报销审计"),
     ("andrew-tao-li-procurement-fraud", "采购舞弊红旗筛查"),
     ("andrew-tao-li-investigation-assistant", "授权内调查材料整理"),
     ("andrew-tao-li-cn-entity-relation", "中国工商关联排查"),
+    ("andrew-tao-li-audit-sql-builder", "审计取数 SQL 生成器"),
 ]
 
 
@@ -167,26 +168,30 @@ def build_report(hub: list, comments: dict, gh: dict, prev: dict, namespace: str
     missing = [r for r in hub if not r.get("found")]
     if found or missing:
         if found:
+            # v2026-10-11：SkillHub 的 `installs` 字段恒为 0（平台未填充）；**真实使用信号是 `downloads`**。
+            # 此前日报只印了 installs → 看起来永远"0 安装"，把真实下载量丢了。
+            total_downloads = sum(r.get("downloads", 0) for r in found)
             total_installs = sum(r.get("installs", 0) for r in found)
             total_stars = sum(r.get("stars", 0) for r in found)
             total_comments = sum((comments.get(r["slug"], {}) or {}).get("comments", 0) for r in found)
-            prev_total_installs = sum(r.get("installs", 0) for r in prev.get("hub", []) if isinstance(r, dict))
-            installs_txt = str(total_installs)
-            if total_installs > prev_total_installs:
-                installs_txt += "（↑%d）" % (total_installs - prev_total_installs)
-            lines.append("**SkillHub**（@%s）: 安装 %s · 收藏 %d · 评论 %d"
-                         % (namespace, installs_txt, total_stars, total_comments))
+            prev_total_downloads = sum(r.get("downloads", 0) for r in prev.get("hub", []) if isinstance(r, dict))
+            downloads_txt = str(total_downloads)
+            if total_downloads > prev_total_downloads:
+                downloads_txt += "（↑%d）" % (total_downloads - prev_total_downloads)
+            lines.append("**SkillHub**（@%s）: 下载 %s · 安装 %d · 收藏 %d · 评论 %d"
+                         % (namespace, downloads_txt, total_installs, total_stars, total_comments))
             for r in found:
                 c = (comments.get(r["slug"], {}) or {}).get("comments", 0)
                 cat = r.get("category") or "未分类"
                 bump = ""
                 pv = prev_hub.get(r["slug"], {})
-                if r.get("installs", 0) > pv.get("installs", 0):
-                    bump = " ↑%d" % (r["installs"] - pv.get("installs", 0))
+                d_now, d_prev = r.get("downloads", 0), pv.get("downloads", 0)
+                if d_now > d_prev:
+                    bump = " ↑%d" % (d_now - d_prev)
                 if c and c > prev_comments.get(r["slug"], 0):
                     bump += " 💬新 %d" % (c - prev_comments.get(r["slug"], 0))
-                lines.append("  · %s：安装 %d%s · 收藏 %d · 评论 %d｜%s" % (
-                    r["name"], r.get("installs", 0), bump, r.get("stars", 0), c, cat))
+                lines.append("  · %s：下载 %d%s · 安装 %d · 收藏 %d · 评论 %d｜%s" % (
+                    r["name"], d_now, bump, r.get("installs", 0), r.get("stars", 0), c, cat))
         else:
             lines.append("**SkillHub**（@%s）: 暂时读不到数据" % namespace)
         if missing:
