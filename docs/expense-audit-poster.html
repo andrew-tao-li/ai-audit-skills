@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>费用审计技能 · 一图看懂</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{width:1080px;background:#eef1f7}
+  body{font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#0f172a}
+  .poster{width:1080px}
+
+  /* 顶部 */
+  .hero{background:linear-gradient(135deg,#0b1220 0%,#16233f 45%,#1e3a8a 100%);color:#fff;padding:44px 48px 40px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
+               background:radial-gradient(circle,rgba(56,189,248,.28),rgba(56,189,248,0) 70%)}
+  .kicker{font-size:15px;letter-spacing:3px;color:#7dd3fc;font-weight:700}
+  h1{font-size:52px;line-height:1.15;margin:10px 0 8px;letter-spacing:1px}
+  h1 b{color:#38bdf8}
+  .lede{font-size:19px;color:#cbd5e1;max-width:860px}
+  .kpis{display:flex;gap:14px;margin-top:26px;position:relative;z-index:2}
+  .kpi{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:14px 16px}
+  .kpi b{display:block;font-size:34px;color:#fff;line-height:1.1}
+  .kpi span{font-size:14px;color:#94a3b8}
+
+  /* 通用 */
+  .band{padding:34px 48px}
+  .band.alt{background:#fff}
+  .sec{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .num{width:40px;height:40px;border-radius:12px;background:#0b1220;color:#fff;display:flex;align-items:center;
+       justify-content:center;font-weight:800;font-size:19px;flex:0 0 auto}
+  .sec h2{font-size:27px}
+  .sec .note{margin-left:auto;font-size:14px;color:#64748b;background:#f1f5f9;border-radius:999px;padding:5px 14px;border:1px solid #e2e8f0}
+
+  .cards{display:flex;gap:14px}
+  .card{flex:1;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px 18px}
+  .card.dark{background:#0b1220;color:#e2e8f0;border-color:#0b1220}
+  .card h4{font-size:17px;margin-bottom:8px}
+  .card p{font-size:15px;color:#475569;margin:4px 0}
+  .card.dark p{color:#cbd5e1}
+  .chip{display:inline-block;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:2px 11px;font-size:13.5px;margin:3px 5px 0 0;color:#334155}
+  .chip.opt{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+
+  /* 十域 */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .dom{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px 12px;border-top:5px solid #94a3b8;position:relative}
+  .dom .h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+  .dom .lt{width:26px;height:26px;border-radius:8px;color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .dom .nm{font-size:17px;font-weight:700}
+  .dom .ct{font-size:13px;color:#64748b;margin-left:auto;white-space:nowrap}
+  .r{display:flex;gap:8px;font-size:14px;padding:3px 0;border-bottom:1px dotted #eef2f7}
+  .r:last-child{border-bottom:0}
+  .r .a{flex:0 0 43%;color:#0f172a}
+  .r .b{flex:1;color:#64748b;font-size:13.5px}
+  .r.new .a{color:#b45309;font-weight:600}
+  .dom .tag{position:absolute;top:-1px;right:14px;font-size:11.5px;color:#fff;border-radius:0 0 8px 8px;padding:2px 9px}
+  /* 域配色 */
+  .d1{border-top-color:#2563eb} .d1 .lt,.d1 .tag{background:#2563eb}
+  .d2{border-top-color:#0891b2} .d2 .lt,.d2 .tag{background:#0891b2}
+  .d3{border-top-color:#7c3aed} .d3 .lt,.d3 .tag{background:#7c3aed}
+  .d4{border-top-color:#db2777} .d4 .lt,.d4 .tag{background:#db2777}
+  .d5{border-top-color:#ea580c} .d5 .lt,.d5 .tag{background:#ea580c}
+  .d6{border-top-color:#16a34a} .d6 .lt,.d6 .tag{background:#16a34a}
+  .d7{border-top-color:#ca8a04} .d7 .lt,.d7 .tag{background:#ca8a04}
+  .d8{border-top-color:#0d9488} .d8 .lt,.d8 .tag{background:#0d9488}
+
+  /* 护栏 */
+  .rails{display:flex;gap:14px}
+  .rail{flex:1;border-radius:16px;padding:16px 18px;border:1px solid #e2e8f0;background:#fff}
+  .rail h4{font-size:18px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .rail li{font-size:14.5px;margin:6px 0;list-style:none;padding-left:20px;position:relative;color:#334155}
+  .rail li::before{content:"•";position:absolute;left:4px;color:#94a3b8}
+  .rail.b{border-top:5px solid #dc2626} .rail.b h4{color:#b91c1c}
+  .rail.r{border-top:5px solid #d97706} .rail.r h4{color:#b45309}
+  .rail.s{border-top:5px solid #059669} .rail.s h4{color:#047857}
+
+  .steps{display:flex;gap:12px;margin-top:4px}
+  .step{flex:1;background:#0b1220;color:#e2e8f0;border-radius:14px;padding:14px 16px}
+  .step b{display:block;color:#38bdf8;font-size:13px;letter-spacing:1px;margin-bottom:4px}
+  .step span{font-size:14.5px;color:#cbd5e1}
+
+  footer{background:#0b1220;color:#94a3b8;padding:24px 48px;font-size:14.5px;display:flex;justify-content:space-between;align-items:center}
+  footer b{color:#e2e8f0}
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <div class="hero">
+    <div class="kicker">EXPENSE AUDIT · 一图看懂</div>
+    <h1>费用审计技能 · <b>把一整本台账</b><br>变成可复核的线索</h1>
+    <p class="lede">给它一张费用/报销台账，它做全量扫描，输出每一条都能追回原始行的线索。
+      它只做「数据之间对得上」的核对——<b>不下结论、不做认定</b>。</p>
+    <div class="kpis">
+      <div class="kpi"><b>43</b><span>条确定性规则</span></div>
+      <div class="kpi"><b>10</b><span>个审计域</span></div>
+      <div class="kpi"><b>33</b><span>个标准字段（自动识别）</span></div>
+      <div class="kpi"><b>0</b><span>次联网 · 全程离线</span></div>
+    </div>
+  </div>
+
+  <!-- ① 进 -->
+  <div class="band">
+    <div class="sec"><div class="num">1</div><h2>进料：给它什么</h2><span class="note">不给可选项也能跑</span></div>
+    <div class="cards">
+      <div class="card dark">
+        <h4>📄 1 张主台账</h4>
+        <p>CSV / Excel 台账：费用明细、报销明细、发票明细都可以</p>
+        <p>中文字段名、中文日期、表头错位都能认</p>
+      </div>
+      <div class="card">
+        <h4>📋 制度（可选）</h4>
+        <p>限额 · 审批阈值 · 节假日 · 大额线</p>
+        <p style="color:#94a3b8;font-size:13.5px">不给 → 相关规则自动跳过并说明</p>
+      </div>
+      <div class="card">
+        <h4>➕ 6 类可选辅助</h4>
+        <span class="chip opt">出差申请</span><span class="chip opt">打卡</span><span class="chip opt">航班核验</span>
+        <span class="chip opt">支付流水</span><span class="chip opt">市场价</span><span class="chip opt">运单</span>
+        <p style="color:#94a3b8;font-size:13.5px">给了才生效——不给就完全等同旧版</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 洗 -->
+  <div class="band alt">
+    <div class="sec"><div class="num">2</div><h2>洗涤：先把数据弄干净</h2></div>
+    <div class="cards">
+      <div class="card"><h4>🔤 字段与日期识别</h4><p>33 个标准字段自动对别名；支持「2026年10月09日」等中文日期</p></div>
+      <div class="card"><h4>🔎 坏行隔离</h4><p>解析不了的行单独存 <b>bad_rows.csv</b>——不参与分析，也<b>绝不静默丢弃</b></p></div>
+      <div class="card"><h4>🚦 状态过滤</h4><p>按审批状态纳入/排除；被排除的行完整留痕 → <b>excluded_by_status.csv</b></p></div>
+    </div>
+  </div>
+
+  <!-- ③ 规则引擎 -->
+  <div class="band">
+    <div class="sec"><div class="num">3</div><h2>扫描：10 个域 · 43 条规则</h2><span class="note">橙色 = 真实审计师反馈驱动新增</span></div>
+    <div class="grid">
+
+      <div class="dom d1"><div class="tag">9 条</div>
+        <div class="h"><div class="lt">A</div><div class="nm">重复与复用</div><div class="ct">查"同一笔被报两次"</div></div>
+        <div class="r"><span class="a">发票号重复</span><span class="b">同发票号+金额多次出现</span></div>
+        <div class="r"><span class="a">同员工同日同金额</span><span class="b">同人同天同额两笔</span></div>
+        <div class="r"><span class="a">金额近似</span><span class="b">同商户短期金额相近</span></div>
+        <div class="r"><span class="a">发票跨人复用</span><span class="b">一张发票被多人报销</span></div>
+        <div class="r new"><span class="a">同一凭证多人各报</span><span class="b">一个订座号多人各报全额</span></div>
+        <div class="r new"><span class="a">同一票号重复</span><span class="b">同一张票号出现多次</span></div>
+        <div class="r new"><span class="a">同商户同额无发票</span><span class="b">同商户同额且都无票</span></div>
+        <div class="r"><span class="a">高频小额</span><span class="b">短期很多笔小额（疑套现）</span></div>
+        <div class="r"><span class="a">撤回重提加码</span><span class="b">撤回后重提、金额变大</span></div>
+      </div>
+
+      <div class="dom d2"><div class="tag">7 条</div>
+        <div class="h"><div class="lt">B</div><div class="nm">制度与阈值</div><div class="ct">比制度、比审批权限</div></div>
+        <div class="r"><span class="a">超制度上限</span><span class="b">超过制度限额</span></div>
+        <div class="r"><span class="a">拆单报销</span><span class="b">同商户多笔合计超阈值</span></div>
+        <div class="r new"><span class="a">跨商户拆单</span><span class="b">跨商户多笔合计超阈值</span></div>
+        <div class="r"><span class="a">大额低层级审批</span><span class="b">大额由低层级审批</span></div>
+        <div class="r new"><span class="a">绝对大额</span><span class="b">单笔达到设定金额线</span></div>
+        <div class="r new"><span class="a">超适用差标</span><span class="b">超过按行给出的差标</span></div>
+        <div class="r new"><span class="a">单价高于市场价</span><span class="b">单价高过参考价</span></div>
+      </div>
+
+      <div class="dom d3"><div class="tag">8 条</div>
+        <div class="h"><div class="lt">C</div><div class="nm">时序与日期</div><div class="ct">查"时间对不上"</div></div>
+        <div class="r"><span class="a">提交早于消费</span><span class="b">先报销、后消费</span></div>
+        <div class="r"><span class="a">未来日期</span><span class="b">日期在未来</span></div>
+        <div class="r"><span class="a">跨期入账</span><span class="b">提交距发生过久</span></div>
+        <div class="r new"><span class="a">出票晚于行程</span><span class="b">先飞了才出票</span></div>
+        <div class="r new"><span class="a">日期与周几不符</span><span class="b">日期和星期对不上</span></div>
+        <div class="r"><span class="a">周末消费</span><span class="b">周末发生（弱信号）</span></div>
+        <div class="r"><span class="a">节假日消费</span><span class="b">节假日发生（弱信号）</span></div>
+        <div class="r new"><span class="a">住宿晚数不符</span><span class="b">晚数与入离店日期不符</span></div>
+      </div>
+
+      <div class="dom d4"><div class="tag">4 条</div>
+        <div class="h"><div class="lt">D</div><div class="nm">行为与集中度</div><div class="ct">查"谁在自批、钱流去哪"</div></div>
+        <div class="r"><span class="a">自审自批</span><span class="b">审批人＝报销人（含多人列表）</span></div>
+        <div class="r new"><span class="a">商户集中度</span><span class="b">支出过度集中在一家</span></div>
+        <div class="r new"><span class="a">连续逐晚开票</span><span class="b">连续多晚各开一张</span></div>
+        <div class="r"><span class="a">时空冲突</span><span class="b">同一天出现在多个城市</span></div>
+      </div>
+
+      <div class="dom d5"><div class="tag">1 条</div>
+        <div class="h"><div class="lt">E</div><div class="nm">统计离群</div><div class="ct">同类里相对偏高</div></div>
+        <div class="r"><span class="a">异常高额</span><span class="b">同费用类型中相对偏离（不是"绝对高"）</span></div>
+      </div>
+
+      <div class="dom d6"><div class="tag">9 条</div>
+        <div class="h"><div class="lt">F</div><div class="nm">凭证 / 票据真实性</div><div class="ct">查"票本身有没有破绽"</div></div>
+        <div class="r new"><span class="a">凭证要素不全</span><span class="b">缺发票号 / 发票日期</span></div>
+        <div class="r"><span class="a">发票连号</span><span class="b">同商户短期连号发票</span></div>
+        <div class="r"><span class="a">发票格式异常</span><span class="b">发票号格式不正常</span></div>
+        <div class="r new"><span class="a">订座号同日多航段矛盾</span><span class="b">同一订座号同日多个航段</span></div>
+        <div class="r"><span class="a">缺费用类型</span><span class="b">没有填费用类型</span></div>
+        <div class="r new"><span class="a">票号重复 / 出票倒挂</span><span class="b">见「重复与复用」「时序」两域</span></div>
+      </div>
+
+      <div class="dom d7"><div class="tag">6 条 · 需外部数据</div>
+        <div class="h"><div class="lt">G</div><div class="nm">外部核验</div><div class="ct">拿外部事实来比对</div></div>
+        <div class="r new"><span class="a">行程核验不符</span><span class="b">与外部航班记录不一致</span></div>
+        <div class="r new"><span class="a">行程核验未找到</span><span class="b">外部来源查不到（<b>≠ 虚构</b>）</span></div>
+        <div class="r new"><span class="a">替票：开票方≠收款方</span><span class="b">发票抬头与实际收款分裂</span></div>
+        <div class="r new"><span class="a">运单勾稽不一致</span><span class="b">运单合计 ≠ 报销金额</span></div>
+        <div class="r new"><span class="a">运单缺单号</span><span class="b">缺单号，无法验证</span></div>
+        <div class="r new"><span class="a">疑似私人地址</span><span class="b">寄/收件疑似私宅</span></div>
+      </div>
+
+      <div class="dom d8"><div class="tag">3 条 · 需辅助数据</div>
+        <div class="h"><div class="lt">H</div><div class="nm">差旅交叉</div><div class="ct">台账×申请×打卡 三方比</div></div>
+        <div class="r"><span class="a">差旅无出差申请</span><span class="b">报销找不到对应申请</span></div>
+        <div class="r"><span class="a">称外地但当天公司打卡</span><span class="b">人却在公司打卡</span></div>
+        <div class="r"><span class="a">打卡城市不符</span><span class="b">打卡地与出差地不同城</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ④ 出 -->
+  <div class="band alt">
+    <div class="sec"><div class="num">4</div><h2>出料：给你什么</h2><span class="note">每条线索都能追回原始行</span></div>
+    <div class="cards">
+      <div class="card"><h4>📊 dashboard.html</h4><p>一页全景图，第一屏就是结论：几条高风险、涉及多少钱、先看哪三条</p></div>
+      <div class="card"><h4>📝 summary.md</h4><p>完整结论 + 建议复核顺序 + 业务实质性声明（边界）</p></div>
+      <div class="card"><h4>🧾 findings + evidence</h4><p>逐条线索 + 行级证据（可回源到源行，哈希留痕）</p></div>
+    </div>
+  </div>
+
+  <!-- ⑤ 护栏 -->
+  <div class="band">
+    <div class="sec"><div class="num">5</div><h2>护栏：边界 · 风险 · 安全与隐私</h2></div>
+    <div class="rails">
+      <div class="rail b">
+        <h4>🚧 它不做什么（边界）</h4>
+        <ul>
+          <li><b>不判断业务实质</b>——费用是否真实发生，它不知道</li>
+          <li><b>不做舞弊 / 拒付认定</b>——异常只是"要看的线索"</li>
+          <li>不验发票真伪（需外部数据）· 不连银行流水</li>
+          <li>制度阈值<b>只能来自你给的制度</b>，不替你假设</li>
+          <li>不写业务系统、不改原始资料</li>
+        </ul>
+      </div>
+      <div class="rail r">
+        <h4>⚠️ 要说清的风险</h4>
+        <ul>
+          <li><b>异常 ≠ 舞弊</b>；<b>未发现问题 ≠ 没有问题</b></li>
+          <li>会有<b>漏报和误报</b>——它只做优先级排序</li>
+          <li>请先在合成样例上验证，再上真实数据</li>
+          <li>输出目录可能含敏感信息，按保密要求存放</li>
+          <li>最终定性必须由有资质的人做</li>
+        </ul>
+      </div>
+      <div class="rail s">
+        <h4>🔒 安全与隐私</h4>
+        <ul>
+          <li><b>全程离线</b>：不联网、不上传、无外部服务</li>
+          <li><b>不内置任何密钥</b>，不调任何大模型 API</li>
+          <li><b>只读输入</b>，输出只写到新目录</li>
+          <li><b>不静默丢弃</b>：排除/压制的内容都单独留痕</li>
+          <li><b>事实 / 推断 / 假设 / 判断分开</b>；可复现（哈希留痕）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 怎么用 -->
+  <div class="band alt">
+    <div class="sec"><div class="num">→</div><h2>怎么用（三步）</h2></div>
+    <div class="steps">
+      <div class="step"><b>STEP 1</b><span>给它 1 张费用台账（什么都不配也能跑）</span></div>
+      <div class="step"><b>STEP 2</b><span>看 dashboard + summary，先查高危线索</span></div>
+      <div class="step"><b>STEP 3</b><span>需要更深 → 再补辅助数据（出差/打卡/运单/收款方…）</span></div>
+    </div>
+  </div>
+
+  <footer>
+    <div>机器负责<b>全量找线索</b>，人负责<b>定性</b>。</div>
+    <div>离线 · 可追溯 · 不替代专业判断</div>
+  </footer>
+
+</div>
+<script>window.addEventListener('load',function(){document.documentElement.setAttribute('data-h', document.body.scrollHeight);});</script>
+</body>
+</html>
