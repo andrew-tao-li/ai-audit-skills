@@ -1,28 +1,28 @@
 # OpenCode 全自动验收报告
 
-- 时间：20261010T010006Z
+- 时间：20261011T010009Z
 - 平台：OpenCode（无头 `opencode run`）
 - 结果：**2/4 通过**
 
-## ❌ expense-trigger-and-run（expense-audit-v2，耗时 31.4s）
+## ❌ expense-trigger-and-run（expense-audit-v2，耗时 43.5s）
 
-> 提问：用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-a5pi618x/out，并告诉我发现了几条 finding。
+> 提问：用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-k2b9qb7v/out，并告诉我发现了几条 finding。
 
 - ❌ 加载预期 skill；skill 调用=[]
 - ✅ 执行了目标脚本；含 'run_expense_audit.py'
 - ✅ 产出预期文件；全部存在
 - ✅ 回答含预期要点；命中: ['finding', '发现']
 
-## ❌ procurement-trigger-and-run（procurement-fraud-v2，耗时 50.8s）
+## ❌ procurement-trigger-and-run（procurement-fraud-v2，耗时 38.2s）
 
-> 提问：用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-4zl3n4i4/out，并告诉我发现了几条红旗。
+> 提问：用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-2sx8a45r/out，并告诉我发现了几条红旗。
 
 - ❌ 加载预期 skill；skill 调用=[]
 - ✅ 执行了目标脚本；含 'run_procurement_audit.py'
 - ✅ 产出预期文件；全部存在
 - ✅ 回答含预期要点；命中: ['红旗', 'finding', '发现']
 
-## ✅ cn-entity-three-state（cn-entity-relation-check，耗时 44.6s）
+## ✅ cn-entity-three-state（cn-entity-relation-check，耗时 58.2s）
 
 > 提问：用 cn-entity-relation-check skill 判断两个主体「上海甲科技有限公司」和「上海乙科技有限公司」有没有公开工商关联。它包内 examples/input/company_company_related.json 是证据。请给出三态结论（关联/不关联/待核查）并说明依据。
 
@@ -30,7 +30,7 @@
 - ✅ 回答含预期要点；命中: ['关联']
 - skill 调用：`['cn-entity-relation-check']`
 
-## ✅ no-trigger-control（负向对照，耗时 4.2s）
+## ✅ no-trigger-control（负向对照，耗时 5.8s）
 
 > 提问：请只回答数字：1+1 等于几？
 
