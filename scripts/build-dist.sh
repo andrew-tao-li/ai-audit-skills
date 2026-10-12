@@ -9,9 +9,23 @@ SKILLS=(expense-audit-v2 procurement-fraud-v2 investigation-assistant-v2 cn-enti
 echo "▶ 重新打包 skills-v2 → dist-v2/zips/"
 rm -f dist-v2/zips/*.zip dist-v2/lobsterai/*.zip dist-v2/workbuddy/*.zip
 for skill in "${SKILLS[@]}"; do
-    (cd "skills-v2/$skill" && zip -q -r -X "$ROOT/dist-v2/zips/$skill.zip" .)
+    (cd "skills-v2/$skill" && zip -q -r -X "$ROOT/dist-v2/zips/$skill.zip" . \
+        -x '*/__pycache__/*' -x '*.pyc' -x '*/.DS_Store' -x '.DS_Store')
     echo "  ✓ $skill.zip ($(du -h "dist-v2/zips/$skill.zip" | cut -f1))"
 done
+
+echo "▶ 生成「沙箱/云宿主」专用包 → dist-v2/sandbox/（单顶层文件夹，内容与原包一致）"
+rm -rf dist-v2/sandbox && mkdir -p dist-v2/sandbox
+for skill in "${SKILLS[@]}"; do
+    tmpdir="$(mktemp -d)"
+    unzip -q "dist-v2/zips/$skill.zip" -d "$tmpdir/$skill"
+    # 归一化时间戳 → 保证同一输入必然产出同一字节（可复现）
+    find "$tmpdir/$skill" -exec touch -t 202001010000 {} + 2>/dev/null
+    (cd "$tmpdir" && zip -qrX "$ROOT/dist-v2/sandbox/$skill-sandbox.zip" "$skill")
+    rm -rf "$tmpdir"
+    echo "  ✓ $skill-sandbox.zip"
+done
+(cd dist-v2/sandbox && shasum -a 256 *.zip > SHA256SUMS)
 
 echo "▶ 复制到 lobsterai/ 与 workbuddy/"
 for host in lobsterai workbuddy; do

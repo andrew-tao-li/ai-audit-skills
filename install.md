@@ -66,6 +66,12 @@ $f="$env:TEMP\ai-audit-install.ps1"; iwr -UseBasicParsing https://raw.githubuser
 - **处理 XLSX 需要 `openpyxl`**：CSV 模式不需要。若 `--check-env` 显示 `xlsx_support: unavailable`，先 `pip install openpyxl`（或用带 openpyxl 的那个 Python 解释器）。
 - **SkillHub CLI 会自升级**：若你需要版本稳定，调用时加 `--no-self-upgrade`。
 
+### 如果你在沙箱 / 云宿主里装不上
+
+云端沙箱类智能体（Copilot · ChatGPT/Codex · 云 IDE）**出网白名单通常不含 GitHub**，会报 `403 Request blocked by sandbox policy`，需要"浏览器下载 → 上传 zip"的装法：
+
+→ 见 **[沙箱 / 云宿主安装指南](docs/sandbox-host-install.md)**（含专用 `-sandbox.zip` 下载地址，与两条重要提醒）。
+
 ### 如果宿主提示「危险指令」怎么办
 
 安装技能本质上就两步：**从 GitHub 下载一个 zip、解压到技能目录**。宿主之所以提示，通常是因为
