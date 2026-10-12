@@ -327,6 +327,32 @@
 
 ---
 
+## #12 自查发现（**非用户反馈**）：安装脚本的两处漂移
+
+**背景**：用户询问「豆包平台兼容性」时做的一次全面核对。
+
+**① `install.ps1` 少了第 5 个技能**（真实缺口）
+`$AllSkills` 只有 4 个，缺 `audit-sql-builder`；而 **Windows 用户（含豆包用户）走的正是 `install.ps1`**，
+`install.sh` 与 README（"五个可独立安装"）都是 5 个。
+**根因**：第 5 个技能只加进了 `install.sh`，且**没有任何测试看住这份清单** → 静默漂移。
+**已修**：补上；新增用例 `test_skill_lists_match`（解析两边清单比相等，**已反向验证能抓到该漂移**）。
+
+**② `install.sh` 少了四个平台**（真实缺口）
+显式 `HOST=claude|cursor|codex|gemini` 会落到**相对路径 `claude`** —— 即装进当前目录的垃圾文件夹，**而且仍然打印成功**。
+但 README 早已宣称支持 Claude Code / Cursor，`install.md` 甚至写明了
+「探测顺序 OpenCode → WorkBuddy → LobsterAI → 豆包 → Claude / Cursor / Codex / Gemini」，
+而 `install.ps1` 早已实现 → **属于"代码没跟上文档"**。
+**已修**：`install.sh` 补齐这四个 host，仍**追加在最后**，既有平台的探测结果一律不变（已用用例锁死：
+`test_new_hosts_do_not_outrank_existing`）。
+**影响面**：macOS / Linux 上使用 Claude Code / Cursor / Codex / Gemini 的用户（此前会装错位置）。
+**与豆包无关**：豆包的探测顺序与落点**未改动**。
+
+**核对结论（针对用户的问题）**：**豆包兼容性本身没有问题** —— 两套目录（`Doubao`/`.doubao` 与
+`DoubaoWork`/`.doubaowork`）都认、弱匹配（workspace 未创建）也认、落点为 `.user_skills/`、
+有两处实机验证（2026-09、2026-10 Windows 豆包工作）；本次两个修复与 `-sandbox.zip` **都不影响豆包用户**。
+
+---
+
 ## 附：判定「改动有没有倒灌/污染」的现有机制
 
 - 净化版构建后，`git status --porcelain skills-v2/` 必须为空（构建只读 canonical、只写 `dist-v2/skillhub/`）。

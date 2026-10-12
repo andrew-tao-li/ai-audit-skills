@@ -147,6 +147,34 @@ class TestDetectCases(unittest.TestCase):
         self._assert_both(local, home, "doubao",
                           prefix_contains="DoubaoWork", prefix_endswith=".doubaowork/agent_mode/workspace/.user_skills")
 
+    # ── Claude / Cursor / Codex / Gemini（2026-10 补齐：install.sh 原先漏了这四个，
+    #    显式 HOST=claude 会落到相对路径 "claude"；install.ps1 早已支持，两边必须一致）─────
+    def test_claude_dir(self):
+        local, home = self._case("claude")
+        (home / ".claude" / "skills").mkdir(parents=True, exist_ok=True)
+        self._assert_both(local, home, "claude", prefix_endswith=".claude/skills")
+
+    def test_cursor_dir(self):
+        local, home = self._case("cursor")
+        (home / ".cursor" / "skills").mkdir(parents=True, exist_ok=True)
+        self._assert_both(local, home, "cursor", prefix_endswith=".cursor/skills")
+
+    def test_codex_via_agents_standard_path(self):
+        """Codex 也认跨客户端标准路径 .agents/skills，落点仍是 .codex/skills。"""
+        local, home = self._case("codex")
+        (home / ".agents" / "skills").mkdir(parents=True, exist_ok=True)
+        self._assert_both(local, home, "codex", prefix_endswith=".codex/skills")
+
+    def test_gemini_dir(self):
+        local, home = self._case("gemini")
+        (home / ".gemini" / "skills").mkdir(parents=True, exist_ok=True)
+        self._assert_both(local, home, "gemini", prefix_endswith=".gemini/skills")
+
+    def test_explicit_claude(self):
+        """显式指定 claude、机器上没装：解析出用户级落点（绝不能是相对路径 "claude"）。"""
+        local, home = self._case("explicit-claude")
+        self._assert_both(local, home, "claude", prefix_endswith=".claude/skills", host="claude")
+
     # ── 不能破坏既有优先级 ──────────────────────────────────────────────────
     def test_opencode_priority_unchanged(self):
         """机器上同时有 opencode 目录时，仍按原优先级选 opencode。"""
@@ -158,6 +186,14 @@ class TestDetectCases(unittest.TestCase):
     def test_empty_defaults_to_opencode(self):
         """什么都没有时，默认仍是 opencode（不改变旧行为）。"""
         local, home = self._case("empty")
+        self._assert_both(local, home, "opencode")
+
+    def test_new_hosts_do_not_outrank_existing(self):
+        """新增的 Claude/Cursor/Codex/Gemini 只追加在最后：有 opencode 目录时仍选 opencode。"""
+        local, home = self._case("prio-new")
+        (home / ".config" / "opencode" / "skills").mkdir(parents=True, exist_ok=True)
+        (home / ".claude" / "skills").mkdir(parents=True, exist_ok=True)
+        (home / ".gemini" / "skills").mkdir(parents=True, exist_ok=True)
         self._assert_both(local, home, "opencode")
 
     # ── 显式指定 ────────────────────────────────────────────────────────────
@@ -174,6 +210,27 @@ class TestDetectCases(unittest.TestCase):
 class TestScriptsExist(unittest.TestCase):
     def test_install_ps1_present(self):
         self.assertTrue(INSTALL_PS1.exists(), "install.ps1（Windows 原生安装脚本）缺失")
+
+    def test_skill_lists_match(self):
+        """install.sh 与 install.ps1 的默认技能清单必须一致。
+
+        2026-10 发现：第 5 个技能（audit-sql-builder）只加进了 install.sh，
+        install.ps1 漏了 —— 而 Windows 用户（含豆包用户）走的正是 install.ps1，
+        且此前没有任何测试看住这份清单，于是静默漂移。此用例锁死两边一致。
+        """
+        sh = re.search(r"^ALL_SKILLS=\(([^)]*)\)",
+                       (ROOT / "install.sh").read_text(encoding="utf-8"), re.M)
+        self.assertIsNotNone(sh, "install.sh 里找不到 ALL_SKILLS")
+        ps = re.search(r"^\$AllSkills\s*=\s*@\(([^)]*)\)",
+                       INSTALL_PS1.read_text(encoding="utf-8"), re.M)
+        self.assertIsNotNone(ps, "install.ps1 里找不到 $AllSkills")
+
+        def norm(raw):
+            return sorted(x.strip().strip("'\"").strip()
+                          for x in re.split(r"[,\s]+", raw) if x.strip())
+
+        self.assertEqual(norm(sh.group(1)), norm(ps.group(1)),
+                         "install.sh 与 install.ps1 的默认技能清单不一致（会静默少装/多装技能）")
 
 
 if __name__ == "__main__":

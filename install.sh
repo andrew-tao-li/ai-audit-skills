@@ -5,7 +5,7 @@
 #   curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.sh | bash
 #
 # 可选环境变量：
-#   HOST=auto|opencode|workbuddy|lobsterai|doubao  默认 auto（自动探测已存在的 skills 目录）
+#   HOST=auto|opencode|workbuddy|lobsterai|doubao|claude|cursor|codex|gemini  默认 auto（自动探测已存在的 skills 目录）
 #   PREFIX=...                          覆盖默认安装目录
 #   VERSION=v0.X.Y                      锁定版本（默认：releases/latest）
 #   MIRROR=https://my.mirror/           下载源前缀（github.com 被墙/超时时用；可选）
@@ -74,16 +74,22 @@ host_dirs() {
         lobsterai) printf '%s\n' "$HOME/Library/Application Support/LobsterAI/SKILLs" "$HOME/.lobsterai/skills" ;;
         # 豆包：用 workspace 目录是否存在来判断「装了豆包」——.user_skills 可能尚未创建
         doubao)    [ -n "$DOUBAO_WORKSPACE" ] && printf '%s\n' "$DOUBAO_WORKSPACE" ;;
+        # 以下与 install.ps1 保持一致（Codex 另认跨客户端标准路径 .agents/skills）
+        claude)    printf '%s\n' "$HOME/.claude/skills" ;;
+        cursor)    printf '%s\n' "$HOME/.cursor/skills" ;;
+        codex)     printf '%s\n' "$HOME/.codex/skills" "$HOME/.agents/skills" ;;
+        gemini)    printf '%s\n' "$HOME/.gemini/skills" ;;
     esac
 }
 
-# Auto-detect Agent host（OpenCode → WorkBuddy → LobsterAI → Doubao，找第一个已存在的 skills 目录）
-# 注意：Doubao 追加在**最后**，因此不会改变任何既有平台的探测结果。
-# 不传 HOST 或传 HOST=auto 走探测；显式传 opencode/workbuddy/lobsterai/doubao/<path> 走指定。
+# Auto-detect Agent host（OpenCode → WorkBuddy → LobsterAI → Doubao → Claude → Cursor → Codex → Gemini，
+# 找第一个已存在的 skills 目录）
+# 注意：Doubao 及其后的平台都追加在**最后**，因此不会改变任何既有平台的探测结果。
+# 不传 HOST 或传 HOST=auto 走探测；显式传 opencode/workbuddy/lobsterai/doubao/claude/cursor/codex/gemini/<path> 走指定。
 if [ -z "$HOST" ] || [ "$HOST" = "auto" ]; then
     detected=""
     found_list=""
-    for h in opencode workbuddy lobsterai doubao; do
+    for h in opencode workbuddy lobsterai doubao claude cursor codex gemini; do
         while IFS= read -r d; do
             [ -n "$d" ] || continue
             if [ -d "$d" ]; then
@@ -122,6 +128,11 @@ case "$HOST" in
             PREFIX="${PREFIX:-$HOME/.doubao/skills}"
         fi
         ;;
+    # 与 install.ps1 一致；缺失时以前会落到相对路径 "claude"/"cursor"...（装到当前目录的垃圾文件夹）
+    claude)     PREFIX="${PREFIX:-$HOME/.claude/skills}" ;;
+    cursor)     PREFIX="${PREFIX:-$HOME/.cursor/skills}" ;;
+    codex)      PREFIX="${PREFIX:-$HOME/.codex/skills}" ;;
+    gemini)     PREFIX="${PREFIX:-$HOME/.gemini/skills}" ;;
     *)          PREFIX="${PREFIX:-$HOST}" ;;
 esac
 # 头部标签：显式 PREFIX 时显示 custom，否则显示探测到的 host

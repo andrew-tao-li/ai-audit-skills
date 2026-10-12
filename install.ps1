@@ -51,7 +51,7 @@ if (-not $env:LOCALAPPDATA) { $env:LOCALAPPDATA = Join-Path $env:USERPROFILE 'Ap
 
 $Repo      = 'andrew-tao-li/ai-audit-skills'
 $UA        = 'ai-audit-installer'
-$AllSkills = @('expense-audit-v2', 'procurement-fraud-v2', 'investigation-assistant-v2', 'cn-entity-relation-check')
+$AllSkills = @('expense-audit-v2', 'procurement-fraud-v2', 'investigation-assistant-v2', 'cn-entity-relation-check', 'audit-sql-builder')
 
 # 用平台自己的分隔符拼路径（Windows 上是 \，其他地方是 /）——避免把 \ 写死进路径
 function Join-All([string]$Base, [string[]]$Parts) {
