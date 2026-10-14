@@ -1,0 +1,138 @@
+{
+  "timestamp": "20261014T010010Z",
+  "platform": "opencode",
+  "total": 4,
+  "passed": 2,
+  "failed": 2,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-421_0gkn/out，并告诉我发现了几条 finding。",
+      "exit_code": 0,
+      "passed": false,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": false,
+          "detail": "skill 调用=[]"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_expense_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['finding']"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [
+        "ls -la && echo \"---SKILLS-V2---\" && ls -la skills-v2/ 2>/dev/null",
+        "find skills-v2/expense-audit-v2 -type f | sort",
+        "python3 --version && python3 skills-v2/expense-audit-v2/scripts/run_expense_audit.py --check-env",
+        "for p in python3.10 python3.11 python3.12 python3.13 python3.14; do command -v $p >/dev/null 2>&1 && echo \"$p -> $($p --version)\"; done; echo \"done\"",
+        "python3 skills-v2/expense-audit-v2/scripts/run_expense_audit.py \\\n  --input skills-v2/expense-audit-v2/examples/input/expenses.csv \\\n  --policy skills-v2/expense-audit-v2/examples/input/policy.json \\\n  --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-421_0gkn/out\necho \"EXIT_CODE=$?\"",
+        "ls -la /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-421_0gkn/out"
+      ],
+      "answer_excerpt": "已完成。用 `expense-audit-v2` 技能（仓库内 `skills-v2/expense-audit-v2/`）跑通了包内自带的 `examples/input` 样例（`expenses.csv` + `policy.json`），输出已写入指定目录。\n\n## 运行结果\n\n- **命令**：`python3 scripts/run_expense_audit.py --input examples/input/expenses.csv --policy examples/input/policy.json --output <你的目录>/out`\n- **返回码**：0，`network_access: false`（纯离线、只读）\n- **数据**：14 行有效 + 1 行坏行（`EXP-BAD`，`not-a-date` 日期列，进了 `bad_rows.csv`）\n- **Finding 总数：11 条**（evidence 72 条）\n\n## Finding 类型分布\n\n| 数量 | 类型 | 中文 |\n|---|---|---|\n| 3 | `policy-threshold` | 超制度上限（住宿 920/920/910 > 800） |\n| 2 | `weekend-signal` | 周末消费（弱信号） |\n| 1 | `exact-duplicate",
+      "stderr_tail": "",
+      "duration_s": 41.8
+    },
+    {
+      "id": "procurement-trigger-and-run",
+      "skill": "procurement-fraud-v2",
+      "prompt": "用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-vj6zb4f3/out，并告诉我发现了几条红旗。",
+      "exit_code": 0,
+      "passed": false,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": false,
+          "detail": "skill 调用=[]"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_procurement_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['红旗', 'finding', '发现']"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [
+        "ls -la /Users/rockymary/ai-audit-skills/repo && echo \"--- skills-v2 ---\" && ls -la /Users/rockymary/ai-audit-skills/repo/skills-v2 2>/dev/null",
+        "find /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2 -type f | sort",
+        "cd /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2 && python3 --version && python3 scripts/run_procurement_audit.py --check-env",
+        "cd /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2 && python3 scripts/run_procurement_audit.py --input-dir examples/input --config examples/input/config.json --output \"/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-vj6zb4f3/out\"",
+        "cd \"/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-vj6zb4f3/out\" && ls -1 && echo \"--- summary.md ---\" && cat summary.md"
+      ],
+      "answer_excerpt": "已完成。用 `procurement-fraud-v2` 包内脚本跑了 `examples/input` 样例，输出写入指定目录。\n\n## 结果：共发现 12 条红旗\n\n- **风险优先级**：高 1 · 中 8 · 低 3\n- **证据**：71 条（每条 finding 均绑定可回源的 evidence_id）\n- **调查移交建议**：`recommended`（多个独立红旗指向同一供应商，需人工批准方可启动）\n\n**12 条红旗类型（各 1 条）**：\n供应商共享账户、员工供应商共享电话、价格异常偏高、拆单采购、下单早于审批、收货早于下单、收货早于审批、付款早于审批、采购员供应商集中、投标文本雷同、报价异常聚集、报价模式异常。\n\n## 输出文件（15 个）\n\n`dashboard.html`、`summary.md`、`findings.csv/jsonl`、`evidence.jsonl`、`relationship_graph.json`、`investigation_handoff.json`、`data_quality.md`、`run_manifest.json`、`bad_rows.csv` 及 5 张标准化表（`normalized_vendors/employees/purchase_orders/payments/bids.csv`）。\n\n## 提示（sk",
+      "stderr_tail": "",
+      "duration_s": 36.5
+    },
+    {
+      "id": "cn-entity-three-state",
+      "skill": "cn-entity-relation-check",
+      "prompt": "用 cn-entity-relation-check skill 判断两个主体「上海甲科技有限公司」和「上海乙科技有限公司」有没有公开工商关联。它包内 examples/input/company_company_related.json 是证据。请给出三态结论（关联/不关联/待核查）并说明依据。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "skill 调用=['cn-entity-relation-check']"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['关联', '待核查']"
+        }
+      ],
+      "skill_calls": [
+        "cn-entity-relation-check"
+      ],
+      "shell_cmds": [
+        "python3 scripts/cli.py --a \"上海甲科技有限公司\" --b \"上海乙科技有限公司\" --graph examples/input/company_company_related.json",
+        "python3 scripts/cli.py --a \"上海甲科技有限公司\" --b \"上海乙科技有限公司\" --graph examples/input/company_company_related.json --entities-resolved --structured-provider --scope-complete"
+      ],
+      "answer_excerpt": "## 三态结论：**关联（RELATED）**\n\n### 依据\n\n我用 skill 内的确定性核心脚本 `scripts/cli.py` 读取了 `examples/input/company_company_related.json` 作为证据图，并按照该文件声明的能力（`structured_company_data: true`、`negative_semantics_supported: true`）与 `examples/expected/expectations.json` 约定的锚定/范围前提（`entities_resolved`、`structured_provider`、`scope_complete` 均为 true）执行判定，结果为 **`RELATED` / 关联**。\n\n证据图结构如下：\n\n| 节点 | 类型 | 名称 | 稳定标识 |\n|---|---|---|---|\n| A | company | 上海甲科技有限公司 | 91310000MA1K3A000X |\n| B | company | 上海乙科技有限公司 | 91310000MA1K3B000Y |\n| P1 | person | 张三 | person-zhangsan-001 |\n\n边（均为当前有效 `current: true`）：\n\n| 从 | 到 | 关系 | 说明 |\n|---",
+      "stderr_tail": "",
+      "duration_s": 30.5
+    },
+    {
+      "id": "no-trigger-control",
+      "skill": null,
+      "prompt": "请只回答数字：1+1 等于几？",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "未加载任何 skill",
+          "ok": true,
+          "detail": "skill 调用=[]"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [],
+      "answer_excerpt": "2",
+      "stderr_tail": "",
+      "duration_s": 1.8
+    }
+  ]
+}
