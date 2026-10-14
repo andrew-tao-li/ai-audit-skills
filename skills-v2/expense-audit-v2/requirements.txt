@@ -1,3 +1,8 @@
 # CSV mode uses Python standard library only.
-# XLSX support (optional):
-#   pip install openpyxl
+#
+# Optional, offline-installed extras (never required; missing them degrades
+# gracefully with a clear message instead of failing the run):
+#   XLSX (.xlsx) support:  pip install openpyxl
+#   XLS  (.xls, Excel 97-2003) support: pip install xlrd
+#
+# 说明：本项目运行时**不联网**。上面两个包只在读取表格时用，不会发起任何网络请求。

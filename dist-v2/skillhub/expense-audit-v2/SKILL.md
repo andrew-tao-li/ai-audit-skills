@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.27
+version: 0.2.28
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -10,7 +10,7 @@ homepage: https://github.com/andrew-tao-li/ai-audit-skills
 tags: [审计, 费用审计, 报销, 发票, 差旅, 反舞弊, 财税处理, 风险风控]
 metadata:
   author: "andrew-tao-li"
-  aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
+  aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; xlrd for legacy XLS; pandas not required"
   predecessor: "expense-audit 0.1.1"
 ---
 
@@ -45,7 +45,7 @@ metadata:
 
 用户的明确指示优先于本 skill 的默认流程。不得因本 skill 擅自扩大数据范围、联网、上传数据或做处置决定。
 
-兼容 Agent Skills 宿主；离线优先，建议 Python 3.10+。CSV 使用标准库，XLSX 另需 `openpyxl`。
+兼容 Agent Skills 宿主；离线优先，建议 Python 3.10+。CSV 使用标准库，XLSX 另需 `openpyxl`，老格式 XLS 另需 `xlrd`（均为可选，缺了会给出可读提示）。
 
 ## Use this skill when
 
@@ -75,7 +75,7 @@ metadata:
 
 先盘点用户在当前任务中明确提供的文件和分析范围，不要假设目录里的所有文件都获准处理。若当前任务没有附件、准确路径或粘贴记录，只列出所需输入并请用户提供；不得搜索工作目录、复用其他任务的历史输出，或把包内合成样例当作用户数据，除非用户明确要求运行样例。
 
-- Full Execution：有本地 Python 时运行脚本。输入支持 CSV 和 XLSX。
+- Full Execution：有本地 Python 时运行脚本。输入支持 CSV、XLSX 和 XLS（老格式 Excel 97-2003，需可选依赖 `xlrd`）。
 - Host Native：不能运行脚本时，用表格/SQL 工具复现 [规则目录](references/rule-catalog.md)，输出仍遵循 [输出协议](references/output-contract.md)。
 - Reasoning Only：只有少量粘贴数据时，说明样本行数、缺失字段和不能执行的规则；不得声称完成全量检查或计算总体异常率。
 
@@ -100,7 +100,7 @@ python3 scripts/run_expense_audit.py \
   --output /path/to/new-output-directory
 ```
 
-可选参数：`--field-map` 提供 JSON 字段映射，`--sheet` 指定 XLSX 工作表。先用 `python3 scripts/run_expense_audit.py --check-env` 查看环境。
+可选参数：`--field-map` 提供 JSON 字段映射，`--sheet` 指定 XLSX/XLS 工作表。先用 `python3 scripts/run_expense_audit.py --check-env` 查看环境（含 `.xlsx` / `.xls` 支持与 `network_required: false`）。
 
 ## v0.2.0 新增 policy.json 字段（可选）
 
@@ -378,6 +378,18 @@ K2,,50.00,公司园区A,客户C
 > **不提供 `--shipments` 时完全不参与**（与旧版逐字节一致）。
 > `private_address_keywords` 可覆盖默认私址关键词；快递类报销在运单台账里没有记录时，只在 `data_quality.md` 给一条覆盖提示。
 
+## v0.2.28 新增：老格式 `.XLS` + 会计账接入（**均可选，不提供则不改变任何行为**）
+
+- **可选支持 `.xls`（Excel 97-2003）**：审计/财务现场的老账本大量是这个格式。离线装可选依赖
+  `pip install xlrd` 即可直接 `--input xxx.xls`（**不装完全不影响 CSV/XLSX**；Excel 日期序列号会被正确还原成日期，
+  否则日期类规则会全部失效）。用 `--check-env` 看 `xls_support` 是否 `available`。
+- **会计账 / 序时账 / 明细账接入**（输入不是报销台账时）：见
+  [会计账 / 明细账接入指南](references/ledger-input-guide.md)——五步法（分交易级/非交易级 → 子集去重 → 统一映射 →
+  从摘要抽人名 → 先体检后跑）、老格式处理，以及**缺制度/发票号/审批人时会自动跳过哪些规则**。
+- ⚠️ **最常踩的坑**：把「**凭证号 / 单据号**」当成**人员标识** → 同一凭证下的多行明细被当成"同一个人"，
+  凭空产生假的重复。**抽不到人名时请用「每行唯一」的匿名占位**（`匿名R1` / `匿名R2`…）——
+  同类错误已出现 3 次，详见 [真实台账接入指南 §八](references/field-mapping-guide.md)。
+
 ## Output contract
 
 完整执行应生成 **9 个文件**：`dashboard.html`、`summary.md`、`findings.csv`、`findings.jsonl`、`evidence.jsonl`、`data_quality.md`、`clean_expenses.csv`、`bad_rows.csv`、`run_manifest.json`。
@@ -387,7 +399,7 @@ K2,,50.00,公司园区A,客户C
 ## Failure and fallback
 
 - 缺核心字段：停止正式规则运行，交付字段盘点和建议映射，不伪造结果。
-- XLSX 缺 `openpyxl`：告知精确依赖，并建议另存为 UTF-8 CSV；不要自动联网安装。
+- XLSX 缺 `openpyxl` / XLS 缺 `xlrd`：告知**精确**依赖（`pip install openpyxl` / `pip install xlrd`），并建议另存为 `.xlsx` 或 UTF-8 CSV；不要自动联网安装。
 - 制度缺失：继续做重复和统计规则，明确跳过制度阈值与审批拆单。
 - 小样本或 MAD 为零：跳过相应统计组并记录原因，不把算法失败包装成“无异常”。
 - 输出目录已有文件：换用新目录；不要覆盖历史运行。
@@ -474,6 +486,7 @@ python3 scripts/build_feedback.py --output "<本次输出目录>" --rating satis
 
 - 字段映射与质量门槛：[references/data-contract.md](references/data-contract.md)
 - **真实台账接入（多列金额 / 表头偏移 / 状态列）**：[references/field-mapping-guide.md](references/field-mapping-guide.md)
+- **会计账 / 序时账 / 明细账接入（含 `.XLS` 老格式）**：[references/ledger-input-guide.md](references/ledger-input-guide.md)
 - 规则、参数与合理解释：[references/rule-catalog.md](references/rule-catalog.md)
 - 输出 Schema 与 Agent 解读顺序：[references/output-contract.md](references/output-contract.md)
 - 业务实质性声明与深入核查佐证清单：[references/business-substance.md](references/business-substance.md)

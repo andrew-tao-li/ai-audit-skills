@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.27"
+VERSION = "0.2.28"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -224,7 +224,49 @@ def read_table(path: Path, sheet: Optional[str]) -> Tuple[List[str], List[Dict[s
             rows.append(row)
         workbook.close()
         return headers, rows, worksheet.title
-    raise ValueError("仅支持 .csv 和 .xlsx 输入")
+    if suffix == ".xls":
+        # v0.2.28：可选支持 .xls（Excel 97-2003）。审计/财务现场的老账本大量是这个格式。
+        # 帕累托：依赖 xlrd 是**可选**的——没装时报错信息友好，CSV/XLSX 路径一行代码都不变。
+        try:
+            import xlrd
+        except ImportError as exc:
+            raise RuntimeError(
+                "读取 .xls（Excel 97-2003）需要 xlrd；请离线安装（pip install xlrd），"
+                "或把文件另存为 .xlsx / UTF-8 CSV"
+            ) from exc
+        book = xlrd.open_workbook(str(path))
+        names = book.sheet_names()
+        if sheet and sheet not in names:
+            raise ValueError("找不到工作表：%s；可用工作表：%s" % (sheet, ", ".join(names)))
+        worksheet = book.sheet_by_name(sheet) if sheet else book.sheet_by_index(0)
+        grid: List[List[Any]] = []
+        for row_index in range(worksheet.nrows):
+            values_row: List[Any] = []
+            for column in range(worksheet.ncols):
+                cell = worksheet.cell(row_index, column)
+                if cell.ctype == xlrd.XL_CELL_DATE:
+                    # .xls 的日期是「Excel 序列号」——不转换就会被当成数字，日期类规则会全部失效
+                    try:
+                        values_row.append(
+                            xlrd.xldate_as_datetime(cell.value, book.datemode).strftime("%Y-%m-%d %H:%M:%S"))
+                    except Exception:
+                        values_row.append(cell.value)
+                elif cell.ctype == xlrd.XL_CELL_BOOLEAN:
+                    values_row.append(bool(cell.value))
+                else:
+                    values_row.append(cell.value)
+            grid.append(values_row)
+        if not grid:
+            return [], [], worksheet.name
+        headers = [norm_text(v) for v in grid[0]]
+        rows = []
+        for row_number, values_row in enumerate(grid[1:], start=2):
+            row = {headers[index]: value for index, value in enumerate(values_row) if index < len(headers)}
+            row["_source_row"] = row_number
+            row["_source_sheet"] = worksheet.name
+            rows.append(row)
+        return headers, rows, worksheet.name
+    raise ValueError("仅支持 .csv、.xlsx 和 .xls 输入（.xls 需可选依赖 xlrd）")
 
 
 # v0.2.0: policy.json 合法键清单（白名单），未知键会被拒绝并提示
@@ -2238,7 +2280,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             xlsx = "available (%s)" % openpyxl.__version__
         except ImportError:
             xlsx = "unavailable; CSV mode still works"
-        print(json.dumps({"python": sys.version.split()[0], "recommended": ">=3.10", "xlsx_support": xlsx, "network_required": False}, ensure_ascii=False))
+        try:
+            import xlrd
+            xls = "available (%s)" % xlrd.__version__
+        except ImportError:
+            xls = "unavailable; CSV/XLSX mode still works"
+        print(json.dumps({"python": sys.version.split()[0], "recommended": ">=3.10",
+                          "xlsx_support": xlsx, "xls_support": xls, "network_required": False},
+                         ensure_ascii=False))
         return 0
     if not args.input or not args.output:
         parser.error("正式运行需要 --input 和 --output")

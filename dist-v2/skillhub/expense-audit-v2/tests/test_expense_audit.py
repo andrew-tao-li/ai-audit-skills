@@ -20,6 +20,86 @@ def read_jsonl(path):
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+XLRD_SHIM = '''
+"""测试替身：只实现 run_expense_audit 用到的那部分 xlrd API。"""
+
+__version__ = "2.0.1-shim"
+
+XL_CELL_EMPTY = 0
+XL_CELL_TEXT = 1
+XL_CELL_NUMBER = 2
+XL_CELL_DATE = 3
+XL_CELL_BOOLEAN = 4
+XL_CELL_ERROR = 5
+XL_CELL_BLANK = 6
+
+
+class _Cell(object):
+    def __init__(self, ctype, value):
+        self.ctype = ctype
+        self.value = value
+
+
+class _Sheet(object):
+    def __init__(self, name, grid):
+        self.name = name
+        self._grid = grid
+        self.nrows = len(grid)
+        self.ncols = max([len(r) for r in grid] + [0])
+
+    def cell(self, r, c):
+        row = self._grid[r]
+        if c < len(row):
+            return row[c]
+        return _Cell(XL_CELL_EMPTY, "")
+
+
+class _Book(object):
+    datemode = 0
+
+    def __init__(self, name, grid):
+        self._sheets = [_Sheet(name, grid)]
+
+    def sheet_names(self):
+        return [s.name for s in self._sheets]
+
+    def sheet_by_index(self, i):
+        return self._sheets[i]
+
+    def sheet_by_name(self, n):
+        for s in self._sheets:
+            if s.name == n:
+                return s
+        raise KeyError(n)
+
+
+# 两行：同员工、同商户、相隔 1 天、金额 480 + 490（合计 970 > 示例制度的 900 审批阈值）
+_GRID = [
+    [_Cell(XL_CELL_TEXT, "expense_id"), _Cell(XL_CELL_TEXT, "employee_id"),
+     _Cell(XL_CELL_TEXT, "expense_type"), _Cell(XL_CELL_TEXT, "expense_date"),
+     _Cell(XL_CELL_TEXT, "amount"), _Cell(XL_CELL_TEXT, "currency"),
+     _Cell(XL_CELL_TEXT, "vendor_name")],
+    [_Cell(XL_CELL_TEXT, "EXP-X1"), _Cell(XL_CELL_TEXT, "E001"),
+     _Cell(XL_CELL_TEXT, "office"), _Cell(XL_CELL_DATE, 44259.0),
+     _Cell(XL_CELL_NUMBER, 480.0), _Cell(XL_CELL_TEXT, "CNY"),
+     _Cell(XL_CELL_TEXT, "文具店")],
+    [_Cell(XL_CELL_TEXT, "EXP-X2"), _Cell(XL_CELL_TEXT, "E001"),
+     _Cell(XL_CELL_TEXT, "office"), _Cell(XL_CELL_DATE, 44260.0),
+     _Cell(XL_CELL_NUMBER, 490.0), _Cell(XL_CELL_TEXT, "CNY"),
+     _Cell(XL_CELL_TEXT, "文具店")],
+]
+
+
+def open_workbook(path):
+    return _Book("费用明细", _GRID)
+
+
+def xldate_as_datetime(value, datemode):
+    import datetime
+    return datetime.datetime(2021, 1, 1) + datetime.timedelta(days=int(value) - 44197)
+'''
+
+
 class ExpenseAuditEndToEndTest(unittest.TestCase):
     def run_example(self, input_path=EXAMPLE):
         temp = tempfile.TemporaryDirectory()
@@ -99,6 +179,63 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             finally:
                 temp.cleanup()
 
+
+    def test_xls_input_via_injected_xlrd_shim(self):
+        """v0.2.28：可选支持 .xls（Excel 97-2003）——审计/财务现场的老账本大量是这个格式。
+
+        用 PYTHONPATH 注入 xlrd 替身 → 不依赖真实安装该包也能覆盖整条 .xls 路径。
+        重点验证：**Excel 日期序列号必须被还原成日期**（否则日期类规则会全部失效）。
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shim = root / "shim"
+            shim.mkdir()
+            (shim / "xlrd.py").write_text(XLRD_SHIM, encoding="utf-8")
+            xls = root / "expenses.xls"
+            xls.write_bytes(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1stub")  # 内容由替身模块提供
+            output = root / "out"
+            completed = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(xls), "--policy", str(POLICY),
+                 "--output", str(output)],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                env={**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONPATH": str(shim)},
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            clean = (output / "clean_expenses.csv").read_text(encoding="utf-8")
+            self.assertIn("2021-03-04", clean)
+            self.assertIn("2021-03-05", clean)
+            findings = (output / "findings.csv").read_text(encoding="utf-8")
+            self.assertIn("split-expense", findings)
+            manifest = json.loads((output / "run_manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["network_access"], False)
+
+    def test_xls_without_xlrd_gives_readable_hint(self):
+        """没装 xlrd 时：给出**可读的安装提示**，而不是静默失败。"""
+        try:
+            import xlrd  # noqa: F401
+            self.skipTest("本机已安装 xlrd，无法验证缺失路径")
+        except ImportError:
+            pass
+        with tempfile.TemporaryDirectory() as directory:
+            xls = Path(directory) / "expenses.xls"
+            xls.write_bytes(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1stub")
+            completed = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(xls),
+                 "--output", str(Path(directory) / "out")],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("xlrd", completed.stderr + completed.stdout)
+
+    def test_check_env_reports_xls_support(self):
+        """--check-env 要如实报告 .xls 支持（与 xlsx_support 同款口径），且仍声明不联网。"""
+        completed = subprocess.run([sys.executable, str(SCRIPT), "--check-env"],
+                                   capture_output=True, text=True, encoding="utf-8", errors="replace")
+        payload = json.loads(completed.stdout.strip().splitlines()[-1])
+        self.assertIn("xls_support", payload)
+        self.assertIn("xlsx_support", payload)
+        self.assertEqual(payload["network_required"], False)
 
     def test_status_filter_and_resubmit_rule_are_opt_in(self):
         """v0.2.8：状态过滤与新规则必须「默认不影响旧行为，配置后才生效」。"""

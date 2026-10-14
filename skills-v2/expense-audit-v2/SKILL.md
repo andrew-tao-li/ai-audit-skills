@@ -1,12 +1,12 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.27
+version: 0.2.28
 metadata:
   author: "andrew-tao-li"
-  aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; pandas not required"
+  aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; openpyxl for XLSX; xlrd for legacy XLS; pandas not required"
   predecessor: "expense-audit 0.1.1"
-  changelog: "v0.2.27: 修正 SKILL.md 的输出契约（补上 dashboard.html，共 9 个；并注明两个条件生成文件）。来自第十位审计师的安装/测试报告。 v0.2.26: 修三处（第九位审计师实机反馈）——① 自审自批支持「审批人是多人列表」（分号/顿号/逗号，单人值行为不变）；② 导出 CSV 防公式注入（= + - @ 制表 回车 开头的**文本**加前导单引号，**纯数字不动**）；③ 台账缺「费用类型」维度时不再判离群（避免把整张表当成一个同侪组、产生数百条噪声）。 v0.2.25: 新增「运单台账勾稽」（`--shipments` 可选输入 → shipment-amount-mismatch / shipment-without-tracking / shipment-from-private-address）；`private_address_check` 默认关闭。**不提供该文件即与旧版逐字节一致。** v0.2.24: **帕累托修正**——`run_manifest.json` 只在**真的用了**白名单时才写 `allowlist` 字段；普通场景的 manifest 与旧版一致。另新增守卫测试 `evals/tests/test_pareto_plain_output.py`：断言"**没有任何新输入/新开关时，产出里不得出现任何新功能痕迹**"。 v0.2.23: 新增**精度旋钮**（默认不改变行为）——`outlier_min_amount` / `fixed_amount_types` / `multi_occurrence_types`，用于真实外勤数据的结构性噪声（固定标准补贴、同日同价路桥费、小额被叫"异常高额"）；黑盒黄金集新增 `26_field_sales_precision`（外勤销售分布 + 1 条真线索，含开/关旋钮的对照断言）。 v0.2.22: 新增「**按行差标**」（`row_limit_check`：台账含差标/限额列时按行核对 → row-limit-exceeded）与「**间夜单价派生**」（有 nights 无 unit_price 时自动 amount/nights，多晚订单按间夜比）；`policy.json` 的 `_` 前缀键改为注释（不再报错）；field-mapping-guide 增「语义陷阱」一节。**均为可选/自动，默认与旧版一致。** v0.2.21: 新增「单价合理性」（`--price-reference` 可选输入 → unit-price-above-market）；并在操作原则中明确**触发规则**：需要外部数据的核验（市场价/单价）**只在用户/提示词提到时才提示**，提到几次提示几次，从未提到则一个字都不提。**默认不启用，不提供即与旧版逐字节一致。** v0.2.20: 新增「开票方↔实际收款方」比对（`--payments` 可选输入 → invoice-payee-mismatch，替票/虚开嫌疑）与「日期↔周几一致性」（weekday_check 可选开关 → weekday-mismatch）；新增 weekday 字段别名。**均默认不启用；不提供就与旧版逐字节一致。** v0.2.19: **性能（大数据量）**——修复「发票跨人复用」里的 O(交叉发票数×行数) 热点（改为一建索引）；日期解析加 "YYYY-MM-DD" 快路径；norm_text 加缓存。实测合成台账 **5万行 425s→5.4s**、**20万行从超时→76s**。**输出完全不变**（F1 100%、14/14 单测）。 v0.2.18: 新增「住宿凭证交叉核验」（lodging_cross_check，**默认关闭、完全离线**）——连续逐晚开票 consecutive-nightly-invoicing / 同商户同额无发票号 same-amount-no-invoice / 住宿晚数与入离店日期不符 lodging-night-mismatch；新增 check_in / check_out / nights / room_number 字段别名；指南补充「图形界面里怎么用：参数由智能体传，不是人敲命令行」。 v0.2.17: **条件提示**——台账含航班/订座号信息但未提供外部核验时，交付报告（summary.md）与数据体检（data_quality.md）会自动附一段「去哪里查（航信信天游 / 民航局 / 航司官网客票验真；飞常准 MCP / 飞猪免费 API / 机场官网）+ 怎么填」的指引；**台账里没有航班信息则不提示**（不打扰）。 v0.2.16: 新增「凭证内部一致性」**离线**规则（voucher_consistency_check，默认关闭）——同一票号重复 ticket-number-reused、出票日期晚于行程 ticket-issue-after-flight、同一订座号同日多航段 itinerary-segment-conflict；新增 ticket_number / issue_date 字段别名；并升级《行程/票据外部核验指南》（写实免费渠道：航信/民航局/航司客票验真、飞常准 MCP、飞猪免费 API）。 v0.2.15: 实现审计师 #7 的反馈（**全部可选、默认关闭、技能零联网**）——外部行程核验 --travel-verification（铁律：查不到≠虚构）、同一凭证多人各报 shared_voucher_check、凭证要素完备性 voucher_completeness_check；新增 flight_no / pnr 字段别名。 v0.2.14: 实现真实审计师反馈 #2/#3/#5/#6 四项**可选**能力（**全部默认关闭，默认路径逐字节不变**）——跨商户拆单 split_cross_merchant、绝对大额 large_amount_check、商户集中度 vendor_concentration_check、白名单 --allowlist（被压制内容完整写入 suppressed_findings.csv，绝不静默丢弃）。 v0.2.13: 修两条真实审计师反馈——① 支持中文日期「2026年10月09日 12:30」这类写法（旧版识别不了会当成坏行，导致当天相关规则全部失联）；② 自审自批：报销人允许用「姓名」（只有姓名没有工号的台账现在也能跑），并在「报销人是工号、审批人是姓名」这类口径不一致时明确提示、不再静默漏检。**默认行为不变**（只在原来识别失败/漏检处补上）。 v0.2.12: 修复 Windows 下的测试编码噪音——测试子进程读取改为 errors="replace" 并设置 PYTHONIOENCODING=utf-8（与 investigation-assistant-v2 一致，来自真实审计师 Windows 实机报告）。**审计规则与输出无任何变化。** v0.2.11: 安全整改——移除外发 webhook 地址与密钥；取消「一键更新」的自动执行（改为只提示、命令由用户自己执行）；删除任何可能被读作「隐瞒用户」的表述，改为在 SKILL.md 前置主动披露「联网与风险」。**审计规则与输出无任何变化。** v0.2.10: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.9: 新增可选的「出差交叉核验」——提供 --travel-requests / --attendance 后自动唤醒：差旅报销无对应出差申请、报销称外地但当天有公司打卡、打卡地点与出差城市不一致；「是否在公司」三层判定(显式布尔/经纬度+半径/地点关键词)，判定不了即跳过；默认口径「出差申请可替代打卡」，可配置为出差期间也需打卡。不提供辅助数据时与旧版逐字节一致。v0.2.8: 新增可选的「审批状态过滤」(status_filter)——被排除的行写入 excluded_by_status.csv，绝不静默丢弃；新增规则「撤回/拒绝后重提且金额增加」(仅配置 status_filter 后触发)；新增 amount_columns 多列金额求和；新增 references/field-mapping-guide.md(真实台账接入指南)。以上**全部为可选项**，不配置时与旧版逐字节一致。v0.2.7: 报告改版——第一屏改为「执行摘要」（论点结论+关键指标+风险分布+最需先看的3条+下一步+明细入口），每条发现补「现象/依据/建议/待澄清」并加「按类型汇总」表；反馈说明改为人话（对外解释+红线，webhook 移入 references/feedback.md）；修复 summary 里风险计数恒为 0 的 bug。v0.2.5: 新增 dashboard.html 全景图（自包含、离线、0 外部资源）；description 加边界声明。v0.2.4: 反馈邀请改为确定性产物。v0.2.3: 反馈邀请改为确定性产物（summary.md 段 + stderr 提示 + 交付必呈现）。v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
+  changelog: "v0.2.28: 来自真实**会计账**实测反馈——① **新增可选支持 .xls（Excel 97-2003）**（需可选依赖 `xlrd`；**不装则行为完全不变**，且 Excel 日期序列号会被正确还原成日期，否则日期类规则会全部失效）；② `field-mapping-guide` 补「**凭证号 ≠ 人员标识** / 会计账匿名占位**必须每行唯一**」（同类映射错误已出现 **3 次**）；③ 新增 `references/ledger-input-guide.md`（**会计账 / 序时账 / 明细账**怎么接入：五步法 + 老格式处理 + 会自动跳过什么）；④ `--check-env` 增 `xls_support`。 **不提供 .xls 时不改变任何既有行为。** v0.2.27: 修正 SKILL.md 的输出契约（补上 dashboard.html，共 9 个；并注明两个条件生成文件）。来自第十位审计师的安装/测试报告。 v0.2.26: 修三处（第九位审计师实机反馈）——① 自审自批支持「审批人是多人列表」（分号/顿号/逗号，单人值行为不变）；② 导出 CSV 防公式注入（= + - @ 制表 回车 开头的**文本**加前导单引号，**纯数字不动**）；③ 台账缺「费用类型」维度时不再判离群（避免把整张表当成一个同侪组、产生数百条噪声）。 v0.2.25: 新增「运单台账勾稽」（`--shipments` 可选输入 → shipment-amount-mismatch / shipment-without-tracking / shipment-from-private-address）；`private_address_check` 默认关闭。**不提供该文件即与旧版逐字节一致。** v0.2.24: **帕累托修正**——`run_manifest.json` 只在**真的用了**白名单时才写 `allowlist` 字段；普通场景的 manifest 与旧版一致。另新增守卫测试 `evals/tests/test_pareto_plain_output.py`：断言"**没有任何新输入/新开关时，产出里不得出现任何新功能痕迹**"。 v0.2.23: 新增**精度旋钮**（默认不改变行为）——`outlier_min_amount` / `fixed_amount_types` / `multi_occurrence_types`，用于真实外勤数据的结构性噪声（固定标准补贴、同日同价路桥费、小额被叫"异常高额"）；黑盒黄金集新增 `26_field_sales_precision`（外勤销售分布 + 1 条真线索，含开/关旋钮的对照断言）。 v0.2.22: 新增「**按行差标**」（`row_limit_check`：台账含差标/限额列时按行核对 → row-limit-exceeded）与「**间夜单价派生**」（有 nights 无 unit_price 时自动 amount/nights，多晚订单按间夜比）；`policy.json` 的 `_` 前缀键改为注释（不再报错）；field-mapping-guide 增「语义陷阱」一节。**均为可选/自动，默认与旧版一致。** v0.2.21: 新增「单价合理性」（`--price-reference` 可选输入 → unit-price-above-market）；并在操作原则中明确**触发规则**：需要外部数据的核验（市场价/单价）**只在用户/提示词提到时才提示**，提到几次提示几次，从未提到则一个字都不提。**默认不启用，不提供即与旧版逐字节一致。** v0.2.20: 新增「开票方↔实际收款方」比对（`--payments` 可选输入 → invoice-payee-mismatch，替票/虚开嫌疑）与「日期↔周几一致性」（weekday_check 可选开关 → weekday-mismatch）；新增 weekday 字段别名。**均默认不启用；不提供就与旧版逐字节一致。** v0.2.19: **性能（大数据量）**——修复「发票跨人复用」里的 O(交叉发票数×行数) 热点（改为一建索引）；日期解析加 "YYYY-MM-DD" 快路径；norm_text 加缓存。实测合成台账 **5万行 425s→5.4s**、**20万行从超时→76s**。**输出完全不变**（F1 100%、14/14 单测）。 v0.2.18: 新增「住宿凭证交叉核验」（lodging_cross_check，**默认关闭、完全离线**）——连续逐晚开票 consecutive-nightly-invoicing / 同商户同额无发票号 same-amount-no-invoice / 住宿晚数与入离店日期不符 lodging-night-mismatch；新增 check_in / check_out / nights / room_number 字段别名；指南补充「图形界面里怎么用：参数由智能体传，不是人敲命令行」。 v0.2.17: **条件提示**——台账含航班/订座号信息但未提供外部核验时，交付报告（summary.md）与数据体检（data_quality.md）会自动附一段「去哪里查（航信信天游 / 民航局 / 航司官网客票验真；飞常准 MCP / 飞猪免费 API / 机场官网）+ 怎么填」的指引；**台账里没有航班信息则不提示**（不打扰）。 v0.2.16: 新增「凭证内部一致性」**离线**规则（voucher_consistency_check，默认关闭）——同一票号重复 ticket-number-reused、出票日期晚于行程 ticket-issue-after-flight、同一订座号同日多航段 itinerary-segment-conflict；新增 ticket_number / issue_date 字段别名；并升级《行程/票据外部核验指南》（写实免费渠道：航信/民航局/航司客票验真、飞常准 MCP、飞猪免费 API）。 v0.2.15: 实现审计师 #7 的反馈（**全部可选、默认关闭、技能零联网**）——外部行程核验 --travel-verification（铁律：查不到≠虚构）、同一凭证多人各报 shared_voucher_check、凭证要素完备性 voucher_completeness_check；新增 flight_no / pnr 字段别名。 v0.2.14: 实现真实审计师反馈 #2/#3/#5/#6 四项**可选**能力（**全部默认关闭，默认路径逐字节不变**）——跨商户拆单 split_cross_merchant、绝对大额 large_amount_check、商户集中度 vendor_concentration_check、白名单 --allowlist（被压制内容完整写入 suppressed_findings.csv，绝不静默丢弃）。 v0.2.13: 修两条真实审计师反馈——① 支持中文日期「2026年10月09日 12:30」这类写法（旧版识别不了会当成坏行，导致当天相关规则全部失联）；② 自审自批：报销人允许用「姓名」（只有姓名没有工号的台账现在也能跑），并在「报销人是工号、审批人是姓名」这类口径不一致时明确提示、不再静默漏检。**默认行为不变**（只在原来识别失败/漏检处补上）。 v0.2.12: 修复 Windows 下的测试编码噪音——测试子进程读取改为 errors="replace" 并设置 PYTHONIOENCODING=utf-8（与 investigation-assistant-v2 一致，来自真实审计师 Windows 实机报告）。**审计规则与输出无任何变化。** v0.2.11: 安全整改——移除外发 webhook 地址与密钥；取消「一键更新」的自动执行（改为只提示、命令由用户自己执行）；删除任何可能被读作「隐瞒用户」的表述，改为在 SKILL.md 前置主动披露「联网与风险」。**审计规则与输出无任何变化。** v0.2.10: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.9: 新增可选的「出差交叉核验」——提供 --travel-requests / --attendance 后自动唤醒：差旅报销无对应出差申请、报销称外地但当天有公司打卡、打卡地点与出差城市不一致；「是否在公司」三层判定(显式布尔/经纬度+半径/地点关键词)，判定不了即跳过；默认口径「出差申请可替代打卡」，可配置为出差期间也需打卡。不提供辅助数据时与旧版逐字节一致。v0.2.8: 新增可选的「审批状态过滤」(status_filter)——被排除的行写入 excluded_by_status.csv，绝不静默丢弃；新增规则「撤回/拒绝后重提且金额增加」(仅配置 status_filter 后触发)；新增 amount_columns 多列金额求和；新增 references/field-mapping-guide.md(真实台账接入指南)。以上**全部为可选项**，不配置时与旧版逐字节一致。v0.2.7: 报告改版——第一屏改为「执行摘要」（论点结论+关键指标+风险分布+最需先看的3条+下一步+明细入口），每条发现补「现象/依据/建议/待澄清」并加「按类型汇总」表；反馈说明改为人话（对外解释+红线，webhook 移入 references/feedback.md）；修复 summary 里风险计数恒为 0 的 bug。v0.2.5: 新增 dashboard.html 全景图（自包含、离线、0 外部资源）；description 加边界声明。v0.2.4: 反馈邀请改为确定性产物。v0.2.3: 反馈邀请改为确定性产物（summary.md 段 + stderr 提示 + 交付必呈现）。v0.2.2: 版本检查与一键更新 + 匿名反馈（build_feedback.py）基础设施。v0.2.1: 新增时空冲突/跨期入账/高频小额三条规则 + 城市字段（出发/目的城市）别名；修复缺费用类型规则 max→min 误用（多限额时漏报）；由真实审计师 16 场景带答案数据驱动。v0.2.0: 配置契约校验（未知键拒绝）/ 中文表头扩展 / 严重度按金额×置信度分级 / 自审自批 / 发票跨人复用 / 提交日期倒挂 / 未来日期（as_of_date 可配置）/ 缺类型按最严格处理 / 发票连号 / 发票号格式异常 / 大额低层级审批 / 节假日（holidays 配置）/ split-expense 月度去重 / SKILL.md 必查项清单 / 四层标记"
 ---
 
 # Expense Audit
@@ -40,7 +40,7 @@ metadata:
 
 用户的明确指示优先于本 skill 的默认流程。不得因本 skill 擅自扩大数据范围、联网、上传数据或做处置决定。
 
-兼容 Agent Skills 宿主；离线优先，建议 Python 3.10+。CSV 使用标准库，XLSX 另需 `openpyxl`。
+兼容 Agent Skills 宿主；离线优先，建议 Python 3.10+。CSV 使用标准库，XLSX 另需 `openpyxl`，老格式 XLS 另需 `xlrd`（均为可选，缺了会给出可读提示）。
 
 ## Use this skill when
 
@@ -70,7 +70,7 @@ metadata:
 
 先盘点用户在当前任务中明确提供的文件和分析范围，不要假设目录里的所有文件都获准处理。若当前任务没有附件、准确路径或粘贴记录，只列出所需输入并请用户提供；不得搜索工作目录、复用其他任务的历史输出，或把包内合成样例当作用户数据，除非用户明确要求运行样例。
 
-- Full Execution：有本地 Python 时运行脚本。输入支持 CSV 和 XLSX。
+- Full Execution：有本地 Python 时运行脚本。输入支持 CSV、XLSX 和 XLS（老格式 Excel 97-2003，需可选依赖 `xlrd`）。
 - Host Native：不能运行脚本时，用表格/SQL 工具复现 [规则目录](references/rule-catalog.md)，输出仍遵循 [输出协议](references/output-contract.md)。
 - Reasoning Only：只有少量粘贴数据时，说明样本行数、缺失字段和不能执行的规则；不得声称完成全量检查或计算总体异常率。
 
@@ -95,7 +95,7 @@ python3 scripts/run_expense_audit.py \
   --output /path/to/new-output-directory
 ```
 
-可选参数：`--field-map` 提供 JSON 字段映射，`--sheet` 指定 XLSX 工作表。先用 `python3 scripts/run_expense_audit.py --check-env` 查看环境。
+可选参数：`--field-map` 提供 JSON 字段映射，`--sheet` 指定 XLSX/XLS 工作表。先用 `python3 scripts/run_expense_audit.py --check-env` 查看环境（含 `.xlsx` / `.xls` 支持与 `network_required: false`）。
 
 ## v0.2.0 新增 policy.json 字段（可选）
 
@@ -373,6 +373,18 @@ K2,,50.00,公司园区A,客户C
 > **不提供 `--shipments` 时完全不参与**（与旧版逐字节一致）。
 > `private_address_keywords` 可覆盖默认私址关键词；快递类报销在运单台账里没有记录时，只在 `data_quality.md` 给一条覆盖提示。
 
+## v0.2.28 新增：老格式 `.XLS` + 会计账接入（**均可选，不提供则不改变任何行为**）
+
+- **可选支持 `.xls`（Excel 97-2003）**：审计/财务现场的老账本大量是这个格式。离线装可选依赖
+  `pip install xlrd` 即可直接 `--input xxx.xls`（**不装完全不影响 CSV/XLSX**；Excel 日期序列号会被正确还原成日期，
+  否则日期类规则会全部失效）。用 `--check-env` 看 `xls_support` 是否 `available`。
+- **会计账 / 序时账 / 明细账接入**（输入不是报销台账时）：见
+  [会计账 / 明细账接入指南](references/ledger-input-guide.md)——五步法（分交易级/非交易级 → 子集去重 → 统一映射 →
+  从摘要抽人名 → 先体检后跑）、老格式处理，以及**缺制度/发票号/审批人时会自动跳过哪些规则**。
+- ⚠️ **最常踩的坑**：把「**凭证号 / 单据号**」当成**人员标识** → 同一凭证下的多行明细被当成"同一个人"，
+  凭空产生假的重复。**抽不到人名时请用「每行唯一」的匿名占位**（`匿名R1` / `匿名R2`…）——
+  同类错误已出现 3 次，详见 [真实台账接入指南 §八](references/field-mapping-guide.md)。
+
 ## Output contract
 
 完整执行应生成 **9 个文件**：`dashboard.html`、`summary.md`、`findings.csv`、`findings.jsonl`、`evidence.jsonl`、`data_quality.md`、`clean_expenses.csv`、`bad_rows.csv`、`run_manifest.json`。
@@ -382,7 +394,7 @@ K2,,50.00,公司园区A,客户C
 ## Failure and fallback
 
 - 缺核心字段：停止正式规则运行，交付字段盘点和建议映射，不伪造结果。
-- XLSX 缺 `openpyxl`：告知精确依赖，并建议另存为 UTF-8 CSV；不要自动联网安装。
+- XLSX 缺 `openpyxl` / XLS 缺 `xlrd`：告知**精确**依赖（`pip install openpyxl` / `pip install xlrd`），并建议另存为 `.xlsx` 或 UTF-8 CSV；不要自动联网安装。
 - 制度缺失：继续做重复和统计规则，明确跳过制度阈值与审批拆单。
 - 小样本或 MAD 为零：跳过相应统计组并记录原因，不把算法失败包装成“无异常”。
 - 输出目录已有文件：换用新目录；不要覆盖历史运行。
@@ -469,6 +481,7 @@ python3 scripts/build_feedback.py --output "<本次输出目录>" --rating satis
 
 - 字段映射与质量门槛：[references/data-contract.md](references/data-contract.md)
 - **真实台账接入（多列金额 / 表头偏移 / 状态列）**：[references/field-mapping-guide.md](references/field-mapping-guide.md)
+- **会计账 / 序时账 / 明细账接入（含 `.XLS` 老格式）**：[references/ledger-input-guide.md](references/ledger-input-guide.md)
 - 规则、参数与合理解释：[references/rule-catalog.md](references/rule-catalog.md)
 - 输出 Schema 与 Agent 解读顺序：[references/output-contract.md](references/output-contract.md)
 - 业务实质性声明与深入核查佐证清单：[references/business-substance.md](references/business-substance.md)
