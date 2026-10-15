@@ -33,3 +33,6 @@ evals/blackbox/scenarios/run-*/
 .vscode/
 .idea/
 evolution/log/.platform_stats.json
+
+# 主机自检的本机状态（含主机名 / tailnet DNS 名，属机器私有，不进公开仓库）
+evolution/host_state.json

@@ -45,11 +45,12 @@
    │     com.opencode.web    → opencode serve（网页工作台，端口 4096）  │
    │       │                                                            │
    │       ▼                                                            │
-   │   evolve.sh ← 循环引擎（4 步）                                    │
+   │   evolve.sh ← 循环引擎（Step 0–7，含主机/网络自检）               │
    │     Step 1: 跑测试（CPU only）                                    │
    │     Step 2: 评分 precision/recall/F1                             │
    │     Step 3: 写 state.json                                        │
    │     Step 4: 调 MiniMax（回退 DeepSeek），写 proposals/            │
+   │     Step 6c: 主机 + Tailscale 自检 → 日报                         │
    │                                                                   │
    └─────────────────────┬───────────────────────────────────────────┘
                          │

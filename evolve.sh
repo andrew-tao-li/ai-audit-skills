@@ -502,6 +502,19 @@ if [ -f "$PROPOSALS_DIR/${TIMESTAMP}-llm-analysis.md" ]; then
 "
 fi
 
+# 主机与网络自检（Mac mini 系统稳定性 / Tailscale 连通性）——只读本地命令；失败绝不中断例行
+echo ""
+echo "▶ Step 6c: 主机与网络自检"
+HOST_BLOCK=$(python3 evolution/host_selfcheck.py 2>/dev/null || true)
+if [ -n "$HOST_BLOCK" ]; then
+    echo "$HOST_BLOCK" | sed 's/^/  /'
+    NOTIFY_BODY="$NOTIFY_BODY
+
+$HOST_BLOCK"
+else
+    echo "  ⚠ 自检未取到内容（不影响其余步骤）"
+fi
+
 if [ -f "$NOTIFY_SCRIPT" ]; then
     bash "$NOTIFY_SCRIPT" "[Audit Box] $VERSION 每日报告" "$NOTIFY_BODY" 2>&1 | tail -3
 else
