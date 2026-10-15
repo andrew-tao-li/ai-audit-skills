@@ -31,6 +31,59 @@
 
 规则提供可解释积分，优先级由分数映射：1 为 low，2–3 为 medium，4–5 为 high，6 以上为 critical。证据强度独立判断，不能写“舞弊概率”。
 
+## 行为与台账规则（v0.2.0–v0.2.1，默认开启）
+
+> 以下规则为早期版本加入、此前未列入本目录的「行为类 / 台账时序类」信号。除注明外**默认开启**、无需额外配置，
+> 与上面各可配置规则互补，共同构成完整规则面。
+
+### 自审自批（self-approval）
+
+审批人与报销人为同一人。报销人身份按 `employee_id` 或 `employee_name` 任一匹配（v0.2.13 起）；审批人列支持多人列表（`张三;李四`，v0.2.26 起）。强证据（4 分）。
+
+### 发票跨人复用（cross-employee-invoice）
+
+同一发票号被多名员工各自报销。强证据（4 分）。拼单、团建、代订是常见合理解释。
+
+### 提交早于消费（submit-before-expense）
+
+提交日期早于费用发生日期（时序倒挂）。中证据（2 分），可能是补录或数据错。
+
+### 未来日期（future-date）
+
+费用日期晚于基准日。基准日由 `as_of_date` 配置，缺省用运行当天。中证据（3 分）。
+
+### 缺费用类型（missing-expense-type）
+
+缺 `expense_type` 且单笔金额超过所有类别上限的**最严格值**。仅当配置了 `limits` 时生效（2 分）。
+
+### 发票连号（sequential-invoice）
+
+同一商户短期内开具 ≥3 张连续编号发票（窗口默认 3 天）。可能指向拆分报销或虚构业务。中证据（3 分）。
+
+### 发票格式异常（invoice-format-anomaly）
+
+发票号过短 / 过长 / 含非常规字符 / 疑似乱码。中证据（3 分）。可能是虚假发票或录入/OCR 异常。
+
+### 大额低层级审批（large-amount-low-level-approval）
+
+金额 ≥ `large_amount_threshold`（默认 5000）且审批人命中 `low_level_approver_keywords`。仅当配置了 `low_level_approver_keywords` 时生效。强证据（4 分）。
+
+### 时空冲突（space-time-conflict）
+
+同一员工同一天在多个 `dest_city` 产生定位型消费。强证据（3 分）。差旅分段、同名城市误录是常见解释。
+
+### 跨期入账（cross-period）
+
+提交日期距费用发生日期 ≥ `cross_period_months`（默认 3 个月）。`cross_period_months: 0` 可关闭。中证据（2 分）。
+
+### 高频小额（high-frequency-small-amount）
+
+同一员工短期内在同一费用类型下高频小额（`high_frequency_min_count` 默认 10、`high_frequency_window_days` 默认 30、`high_frequency_max_amount` 默认 100）。`high_frequency_min_count ≤ 1` 可关闭。中证据（3 分）。
+
+### 节假日消费（holiday-signal）
+
+当 `weekend_check=true` 且配置了 `holidays` 列表时，费用落在法定节假日生成低优先级弱信号（与周末信号同口径）。
+
 ## 审批状态过滤（v0.2.8，可选）
 
 真实报销台账几乎都有「审批状态」列（如 `已同意 / 已撤回 / 已拒绝`）。**默认不做任何过滤**——与旧版逐字节一致。
