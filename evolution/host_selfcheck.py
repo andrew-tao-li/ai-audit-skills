@@ -19,6 +19,7 @@ import json
 import os
 import platform
 import re
+import socket
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -254,18 +255,48 @@ def probe(url, connect=4, total=6):
     return parts[0] != "000", secs
 
 
-def check_network():
-    """例行任务要用的两个出口 + 日报本身的投递出口。
+def _resolved_ipv4(host):
+    """用 getaddrinfo 解析（与 curl / git 走同一套系统解析）→ 返回第一个 IPv4。"""
+    try:
+        infos = socket.getaddrinfo(host, 443, socket.AF_INET, socket.SOCK_STREAM)
+        return infos[0][4][0] if infos else ""
+    except Exception:
+        return ""
 
-    为什么值得查：GitHub 不通时**日报照样能发**（走企微），但 Step 7 的 push /
-    巡检开 PR 会失败——那正是需要事后能解释的状态。企微不通则日报本身发不出，
-    这一行会落在本地日志兜底里，用于事后判断是"没跑"还是"发不出"。
+
+def _is_private_or_fake(ip):
+    """私有 / 保留 / 代理常用段。
+
+    198.18.0.0/15 是**代理软件 fake-IP 的典型默认段**——2026-10-15 本机就是
+    所有 GitHub 域名都被解析到 198.18.x，导致 git push 间歇性 TLS 失败。
+    """
+    try:
+        a, b = (int(x) for x in ip.split(".")[:2])
+    except Exception:
+        return False
+    return (a == 10 or a == 127 or (a == 172 and 16 <= b <= 31)
+            or (a == 192 and b == 168) or (a == 100 and 64 <= b <= 127)
+            or (a == 198 and b in (18, 19)) or (a == 169 and b == 254))
+
+
+def check_network():
+    """例行任务要用的出口 + 日报本身的投递出口。
+
+    为什么值得查：
+      · GitHub 不通时**日报照样能发**（走企微），但 Step 7 的 push / 巡检开 PR、
+        以及安装冒烟的 release 下载会失败——那正是需要事后能解释的状态；
+      · 2026-10-15 实测：`curl https://github.com` 看上去通（HTTP 403/200），
+        但 **git 通道**间歇性 TLS 失败（SSL_ERROR_SYSCALL）。所以这里**分开探**：
+        首页 / **git 端点** / api / 企微。
     """
     if not Path(PY["curl"]).is_file():
         return ["- 外网: 未找到 curl（跳过）"]
 
-    targets = [("github", "https://github.com", True),
-               ("api.github", "https://api.github.com", True)]
+    targets = [
+        ("github", "https://github.com", True),
+        ("git推送", "https://github.com/andrew-tao-li/ai-audit-skills.git/info/refs?service=git-upload-pack", True),
+        ("api", "https://api.github.com", True),
+    ]
     hook = os.environ.get("WECOM_WEBHOOK", "")
     m = re.match(r"https://([^/]+)/", hook or "")
     if m:
@@ -283,10 +314,20 @@ def check_network():
             failed_critical.append(name)
         else:
             bits.append("%s ✗（本期报告可能发不出）" % name)
+
+    # DNS 是否被接管（代理 fake-IP）：只写正文、不报警——代理是有意配置的，
+    # 报警会天天出现；但"网页能开、git 却失败"时，这一行是解释的关键。
+    ip = _resolved_ipv4("github.com")
+    note = ""
+    if ip and _is_private_or_fake(ip):
+        note = "（github.com 解析到 %s：私有/代理段）" % ip
+
     INFO["network"] = bits
+    INFO["github_resolved_ip"] = ip
     if failed_critical:
-        WARNINGS.append("外网不可达：%s（会影响 git push / 开 PR）" % "、".join(failed_critical))
-    return ["- 外网: " + " · ".join(bits)]
+        WARNINGS.append("外网出口不可达：%s（会影响 git push / 开 PR / release 下载）"
+                        % "、".join(failed_critical))
+    return ["- 外网: " + " · ".join(bits) + note]
 
 
 # ── ③ Tailscale 连通性 ──────────────────────────────────────────────────────
