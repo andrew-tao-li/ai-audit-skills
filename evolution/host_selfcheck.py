@@ -16,6 +16,7 @@
 """
 
 import json
+import os
 import platform
 import re
 import subprocess
@@ -34,6 +35,7 @@ PY = {
     "df": "/bin/df",
     "vm_stat": "/usr/bin/vm_stat",
     "ipconfig": "/usr/sbin/ipconfig",
+    "curl": "/usr/bin/curl",
 }
 TAILSCALE_CANDIDATES = (
     "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
@@ -236,7 +238,58 @@ def check_system():
     return lines
 
 
-# ── ② Tailscale 连通性 ──────────────────────────────────────────────────────
+# ── ② 外网可达（例行任务自己依赖的出口）────────────────────────────────────
+def probe(url, connect=4, total=6):
+    """探测一个 URL；任何非 000 的 HTTP 响应都算「可达」（403 也算，说明网络通）。"""
+    out = run([PY["curl"], "-s", "-o", "/dev/null", "-w", "%{http_code} %{time_total}",
+               "--connect-timeout", str(connect), "--max-time", str(total), "-I", url],
+              timeout=total + 3)
+    parts = (out or "").split()
+    if len(parts) < 2:
+        return False, None
+    try:
+        secs = float(parts[1])
+    except Exception:
+        secs = None
+    return parts[0] != "000", secs
+
+
+def check_network():
+    """例行任务要用的两个出口 + 日报本身的投递出口。
+
+    为什么值得查：GitHub 不通时**日报照样能发**（走企微），但 Step 7 的 push /
+    巡检开 PR 会失败——那正是需要事后能解释的状态。企微不通则日报本身发不出，
+    这一行会落在本地日志兜底里，用于事后判断是"没跑"还是"发不出"。
+    """
+    if not Path(PY["curl"]).is_file():
+        return ["- 外网: 未找到 curl（跳过）"]
+
+    targets = [("github", "https://github.com", True),
+               ("api.github", "https://api.github.com", True)]
+    hook = os.environ.get("WECOM_WEBHOOK", "")
+    m = re.match(r"https://([^/]+)/", hook or "")
+    if m:
+        targets.append(("企微", "https://%s/" % m.group(1), False))
+
+    bits, failed_critical = [], []
+    for name, url, critical in targets:
+        ok, secs = probe(url)
+        if not ok and critical:
+            ok, secs = probe(url)        # 单次抖动不报警：对关键出口重试一次
+        if ok:
+            bits.append("%s ✓%s" % (name, (" %.1fs" % secs) if secs is not None else ""))
+        elif critical:
+            bits.append("%s ✗" % name)
+            failed_critical.append(name)
+        else:
+            bits.append("%s ✗（本期报告可能发不出）" % name)
+    INFO["network"] = bits
+    if failed_critical:
+        WARNINGS.append("外网不可达：%s（会影响 git push / 开 PR）" % "、".join(failed_critical))
+    return ["- 外网: " + " · ".join(bits)]
+
+
+# ── ③ Tailscale 连通性 ──────────────────────────────────────────────────────
 def check_tailscale():
     lines = []
     ts = find_tailscale()
@@ -334,7 +387,7 @@ def check_tailscale():
 
 def main():
     out = []
-    for fn in (check_system, check_tailscale):
+    for fn in (check_system, check_network, check_tailscale):
         try:
             out.extend(fn())
         except Exception as e:      # 绝不因自检本身中断例行
