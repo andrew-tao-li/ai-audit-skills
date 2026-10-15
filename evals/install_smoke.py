@@ -161,14 +161,24 @@ def run_installed_expense(prefix: Path, tmp: Path, results: list) -> None:
                     "skillhub" not in install_sh, "install.sh 里出现了 skillhub"))
 
 
-def notify(passed: int, total: int) -> None:
+def notify(passed: int, total: int, failures: list) -> None:
     notify_sh = ROOT / "evolution" / "notify.sh"
     if not notify_sh.exists():
         return
     title = "[Audit Box] 安装冒烟 %d/%d" % (passed, total)
     body = "安装冒烟测试（从 release 装 + 跑）：**%d/%d 通过**。" % (passed, total)
     if passed != total:
-        body += "\n\n⚠️ 有失败项——多半是「改了 main 忘记重打包/重传 release」，或传错了 zip。"
+        # 区分两类失败，避免把"瞬时下载失败"误导成"忘记重打包"（2026-10-15 实际踩到）：
+        #   · 下载类：多为瞬时网络/CDN 抖动（尤其刚重传 release 资产之后）→ 先重跑
+        #   · 内容类：版本或 sha256 与 main 不一致 → 才是"忘了重打包/传错 zip"
+        names = [name for _s, name, _ok, _d in failures]
+        if any(("下载" in n) for n in names):
+            body += ("\n\n⚠️ 有**下载失败**：多为瞬时网络/CDN 抖动（**刚重传 release 之后尤其常见**）。"
+                     "**先重跑一次**；连续两次都失败才需要查安装路径或资产。")
+        else:
+            body += "\n\n⚠️ 有**内容不一致**：多半是「改了 main 忘记重打包/重传 release」，或传错了 zip。"
+        body += "\n\n失败项：\n" + "\n".join(
+            "- %s / %s%s" % (s, n, ("  ← " + d) if d else "") for s, n, _ok, d in failures)
     subprocess.run(["bash", str(notify_sh), title, body], cwd=str(ROOT), capture_output=True, text=True)
 
 
@@ -205,7 +215,7 @@ def main() -> int:
         print(line)
 
     if not args.no_notify and passed != total:
-        notify(passed, total)
+        notify(passed, total, [r for r in results if not r[2]])
     return 0 if passed == total else 1
 
 
