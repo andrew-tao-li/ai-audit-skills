@@ -65,7 +65,7 @@ body = sys.argv[2]
 content = "【" + title + "】\n\n" + body
 print(json.dumps({"msgtype": "markdown", "markdown": {"content": content}}, ensure_ascii=False))
 ' "$TITLE" "$SIMPLE_BODY")
-    HTTP_CODE=$(curl -s -o /tmp/wecom_notify_resp.json -w "%{http_code}" \
+    HTTP_CODE=$(curl -s --connect-timeout 15 --max-time 45 -o /tmp/wecom_notify_resp.json -w "%{http_code}" \
         -X POST \
         -H "Content-Type: application/json" \
         -d "$MSG_JSON" \

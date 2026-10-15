@@ -81,7 +81,7 @@ HEALTH_MSG=""
 LLM_PROVIDER=""
 
 ping_minimax() {
-    curl -s -X POST https://api.minimax.io/anthropic/v1/messages \
+    curl -s --connect-timeout 15 --max-time 60 -X POST https://api.minimax.io/anthropic/v1/messages \
         -H "Content-Type: application/json" \
         -H "X-Api-Key: $MINIMAX_API_KEY" \
         -H "anthropic-version: 2023-06-01" \
@@ -89,7 +89,7 @@ ping_minimax() {
         -w "%{http_code}" -o /tmp/health_resp.json 2>/dev/null
 }
 ping_deepseek() {
-    curl -s -X POST https://api.deepseek.com/chat/completions \
+    curl -s --connect-timeout 15 --max-time 60 -X POST https://api.deepseek.com/chat/completions \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
         -d '{"model":"deepseek-chat","max_tokens":10,"messages":[{"role":"user","content":"ping"}]}' \
