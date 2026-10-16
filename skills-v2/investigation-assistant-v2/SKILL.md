@@ -1,12 +1,12 @@
 ---
 name: investigation-assistant-v2
 description: "在授权、人员、期间和数据来源已明确后，把举报、投诉、邮件、消息和日志整理为可追溯调查工作空间，包括证据清单与哈希、只读副本、时间线、关系、证据矩阵、反证、假设登记、访谈计划和保管链。必须先取得显式授权（authorization_confirmed=true）、明确范围（persons_in_scope/date_range/allowed_sources）和禁用联网（network_access=false）。Use when the user asks to organize an authorized internal investigation; mentions chain-of-custody, custody log, SHA-256 integrity check, scope filter, out-of-scope exclusion, entity index, evidence matrix, hypothesis register, interview plan, case memo, authorized whistleblower case files, or timezone-aware timeline. Do not use for initial expense/procurement screening, covert collection, secret monitoring, private chat scraping, social media lookups, contacting subjects directly, deleting evidence, expunging records, or automatic discipline/guilt decisions."
-version: 0.2.6
+version: 0.2.7
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+ recommended; tzdata required for IANA timezones (auto-install hint on Windows); openpyxl for XLSX"
   predecessor: "investigation-assistant 0.1.2"
-  changelog: "v0.2.6: 安全整改——移除外发 webhook 地址与密钥；取消「一键更新」的自动执行（改为只提示、命令由用户自己执行）；删除任何可能被读作「隐瞒用户」的表述，改为在 SKILL.md 前置主动披露「联网与风险」。**审计规则与输出无任何变化。** v0.2.5: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.4: 报告改版——第一屏执行摘要（概况+关键指标+授权与范围+待验证事项+下一步+明细入口），事项锚点可跳转；反馈说明改为人话（webhook 移入 references/feedback.md）。v0.2.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）。v0.2.0: 配置契约校验（未知键拒绝）/ tzdata 显式声明 + ZoneInfo 失败降级 + 告警（Windows 兼容）/ 时间线发件人→收件人显式化（消除歧义）/ 坏时间戳单独列 unparseable_rows.csv / scope_status 列区分越界/时间无效 / 时区库健康状况写入 data_quality / SKILL.md 必查项清单 / 四层标记 / Windows 测试支架修复（PYTHONIOENCODING=utf-8）"
+  changelog: "v0.2.7: 吸收 `sxd007/investigation-ontology` 的方法论（**只学思路、自行实现**），新增**三个可选开关**，并补一份缺口归因文档——**全部为可选：不配置时产出与 0.2.6 逐字节一致**。① `scope.evidence_tiers`（HARD/SOFT/LEAD 证据分级）→ `evidence_matrix` 增 `evidence_tier` 列；非 HARD 的事项在 findings 里**只提示**'不能独立支撑认定'；② `scope.deduplicate_sources`（同源去重：同一来源衍生的多份材料不算独立印证）→ 增 `independent_source_count` 列；③ `scope.hypothesis_extended`（可证伪化）→ `hypothesis_register` 增 `refutation_criteria` / `discriminating_evidence` 两列，并**为每条替代解释生成独立反方假设行**；④ 输入含记录时间列（`recorded_at` 等）时，`timeline.csv` 才多出 `observed_at` 列（双时间：发生时间 vs 记录时间）；⑤ 新增 `references/evidence-gaps.md`（缺口三分法 + **不利推定的人工判定清单**，脚本不参与判定）。 v0.2.6: 安全整改——移除外发 webhook 地址与密钥；取消「一键更新」的自动执行（改为只提示、命令由用户自己执行）；删除任何可能被读作「隐瞒用户」的表述，改为在 SKILL.md 前置主动披露「联网与风险」。**审计规则与输出无任何变化。** v0.2.5: SkillHub 上架元数据（分类：行业专业）；版本对齐，**脚本无任何变化**。v0.2.4: 报告改版——第一屏执行摘要（概况+关键指标+授权与范围+待验证事项+下一步+明细入口），事项锚点可跳转；反馈说明改为人话（webhook 移入 references/feedback.md）。v0.2.1: 版本检查与一键更新 + 匿名反馈（build_feedback.py，用户主动触发）。v0.2.0: 配置契约校验（未知键拒绝）/ tzdata 显式声明 + ZoneInfo 失败降级 + 告警（Windows 兼容）/ 时间线发件人→收件人显式化（消除歧义）/ 坏时间戳单独列 unparseable_rows.csv / scope_status 列区分越界/时间无效 / 时区库健康状况写入 data_quality / SKILL.md 必查项清单 / 四层标记 / Windows 测试支架修复（PYTHONIOENCODING=utf-8）"
 ---
 
 # Investigation Assistant
@@ -197,8 +197,25 @@ python3 scripts/build_feedback.py --output "<本次输出目录>" --rating satis
 
 > 触发词只是「**生成**一段文本」，**不是「发送」**。触发后不要自动发送任何内容——本技能也没有发送能力。
 
+## v0.2.7 新增：三个**可选**开关 + 缺口归因（**不配置则与 0.2.6 逐字节一致**）
+
+写在 `scope.json` 里，**不写就完全不会出现在产出中**（合法键白名单已同步扩充）：
+
+| 开关 | 作用 | 产出变化 |
+|---|---|---|
+| `evidence_tiers` | 证据分级 `HARD`/`SOFT`/`LEAD` | `evidence_matrix.csv` 增 `evidence_tier` 列；非 HARD 的事项在 findings 的 `open_questions` 里附「不能独立支撑认定」提示（**只提示，不改结论**） |
+| `deduplicate_sources` | 同源去重（同源材料 ≠ 独立印证） | `evidence_matrix.csv` 增 `independent_source_count` 列 |
+| `hypothesis_extended` | 可证伪化 | `hypothesis_register.csv` 增 `refutation_criteria` / `discriminating_evidence` 两列，并**为每条替代解释生成独立反方假设行**（至少一条真正挑战核心命题） |
+
+另外：输入若含**记录时间**列（`recorded_at` / `observed_at` / `记录时间` 等），`timeline.csv` 会多出
+`observed_at`（**双时间**：`timestamp` 是事实发生时间，`observed_at` 是我们得知的时间）；没有该列则不加列。
+
+> **缺口怎么归因**（调查方缺口 / 被调查方缺口 / 环境缺口）以及**"不利推定"的人工判定清单** →
+> [证据缺口与不利推定边界](references/evidence-gaps.md)。**脚本不做任何不利推定。**
+
 ## References
 
 - 原件登记与副本：[references/chain-of-custody.md](references/chain-of-custody.md)
 - 消息、日志和文本标准化：[references/normalization.md](references/normalization.md)
 - 矩阵、假设、反证与访谈：[references/investigation-workflow.md](references/investigation-workflow.md)
+- 证据缺口与不利推定边界（人工清单）：[references/evidence-gaps.md](references/evidence-gaps.md)

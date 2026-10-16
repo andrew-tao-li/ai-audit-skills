@@ -1,7 +1,7 @@
 ---
 name: investigation-assistant-v2
 description: "在授权、人员、期间和数据来源已明确后，把举报、投诉、邮件、消息和日志整理为可追溯调查工作空间，包括证据清单与哈希、只读副本、时间线、关系、证据矩阵、反证、假设登记、访谈计划和保管链。必须先取得显式授权（authorization_confirmed=true）、明确范围（persons_in_scope/date_range/allowed_sources）和禁用联网（network_access=false）。Use when the user asks to organize an authorized internal investigation; mentions chain-of-custody, custody log, SHA-256 integrity check, scope filter, out-of-scope exclusion, entity index, evidence matrix, hypothesis register, interview plan, case memo, authorized whistleblower case files, or timezone-aware timeline. Do not use for initial expense/procurement screening, covert collection, secret monitoring, private chat scraping, social media lookups, contacting subjects directly, deleting evidence, expunging records, or automatic discipline/guilt decisions."
-version: 0.2.6
+version: 0.2.7
 slug: andrew-tao-li-investigation-assistant
 displayName: 授权内调查材料整理
 summary: 在已获授权、范围明确的前提下，把举报、邮件、消息与日志整理为可追溯调查工作空间：证据清单与哈希、时间线、证据矩阵、反证、访谈计划。不做责任认定。
@@ -202,8 +202,25 @@ python3 scripts/build_feedback.py --output "<本次输出目录>" --rating satis
 
 > 触发词只是「**生成**一段文本」，**不是「发送」**。触发后不要自动发送任何内容——本技能也没有发送能力。
 
+## v0.2.7 新增：三个**可选**开关 + 缺口归因（**不配置则与 0.2.6 逐字节一致**）
+
+写在 `scope.json` 里，**不写就完全不会出现在产出中**（合法键白名单已同步扩充）：
+
+| 开关 | 作用 | 产出变化 |
+|---|---|---|
+| `evidence_tiers` | 证据分级 `HARD`/`SOFT`/`LEAD` | `evidence_matrix.csv` 增 `evidence_tier` 列；非 HARD 的事项在 findings 的 `open_questions` 里附「不能独立支撑认定」提示（**只提示，不改结论**） |
+| `deduplicate_sources` | 同源去重（同源材料 ≠ 独立印证） | `evidence_matrix.csv` 增 `independent_source_count` 列 |
+| `hypothesis_extended` | 可证伪化 | `hypothesis_register.csv` 增 `refutation_criteria` / `discriminating_evidence` 两列，并**为每条替代解释生成独立反方假设行**（至少一条真正挑战核心命题） |
+
+另外：输入若含**记录时间**列（`recorded_at` / `observed_at` / `记录时间` 等），`timeline.csv` 会多出
+`observed_at`（**双时间**：`timestamp` 是事实发生时间，`observed_at` 是我们得知的时间）；没有该列则不加列。
+
+> **缺口怎么归因**（调查方缺口 / 被调查方缺口 / 环境缺口）以及**"不利推定"的人工判定清单** →
+> [证据缺口与不利推定边界](references/evidence-gaps.md)。**脚本不做任何不利推定。**
+
 ## References
 
 - 原件登记与副本：[references/chain-of-custody.md](references/chain-of-custody.md)
 - 消息、日志和文本标准化：[references/normalization.md](references/normalization.md)
 - 矩阵、假设、反证与访谈：[references/investigation-workflow.md](references/investigation-workflow.md)
+- 证据缺口与不利推定边界（人工清单）：[references/evidence-gaps.md](references/evidence-gaps.md)

@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
-VERSION = "0.2.6"
+VERSION = "0.2.7"
 SKILL = "investigation-assistant-v2"
 
 MESSAGE_FIELDS = {
@@ -29,6 +29,9 @@ MESSAGE_FIELDS = {
     "channel": ["channel", "type", "渠道", "消息类型"],
     "content": ["content", "body", "text", "内容", "聊天内容", "正文"],
 }
+# v0.2.7（可选）：双时间——"事实发生时间"由 timestamp 承载，"记录/登记时间"由本列承载。
+# 输入里**没有**这些列时，timeline.csv 不会多出 observed_at 列（旧场景逐字节不变）。
+OBSERVED_AT_ALIASES = ["recorded_at", "observed_at", "record_time", "记录时间", "登记时间", "录入时间"]
 LOG_FIELDS = {
     "event_id": ["event_id", "id", "事件编号", "日志编号"],
     "timestamp": ["timestamp", "time", "event_time", "时间", "发生时间"],
@@ -51,6 +54,20 @@ def header_key(value: Any) -> str:
     return re.sub(r"[\s_\-./\\]+", "", clean_text(value).lower())
 
 
+def optional_column(headers: Sequence[str], aliases: Sequence[str]) -> str:
+    """v0.2.7：找出**可选**列（找不到就返回空串，不报错）。
+
+    与 resolve_mapping 的区别：那是必填字段（找不到要报错），这是可选字段
+    （找不到 = 旧版行为，产出里不会多出任何列）。
+    """
+    by_key = {header_key(header): header for header in headers}
+    for alias in aliases:
+        found = by_key.get(header_key(alias))
+        if found:
+            return found
+    return ""
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -68,7 +85,15 @@ SCOPE_KEYS = frozenset({
     "issues", "interviewees",
     # v0.2.0 新增可选配置
     "holidays", "context_from_other_skill",
+    # v0.2.7 新增可选配置（吸收自 investigation-ontology 的方法论；**不配置则产出与 0.2.6 逐字节一致**）
+    "evidence_tiers",         # {来源文件名: HARD|SOFT|LEAD}；启用后 evidence_matrix 增 evidence_tier 列
+    "deduplicate_sources",    # true 时 evidence_matrix 增 independent_source_count 列（同源≠独立印证）
+    "hypothesis_extended",    # true 时 hypothesis_register 增 refutation_criteria / discriminating_evidence 两列，并为每条替代解释生成独立假设行
 })
+
+# v0.2.7：证据强度分级（吸收自 investigation-ontology 的证据 Tier 设计）
+EVIDENCE_TIERS = ("HARD", "SOFT", "LEAD", "UNSPECIFIED")
+TIER_RANK = {"HARD": 3, "SOFT": 2, "LEAD": 1, "UNSPECIFIED": 0}
 
 
 def validate_scope(scope: Dict[str, Any]) -> None:
@@ -85,6 +110,16 @@ def validate_scope(scope: Dict[str, Any]) -> None:
             msg += " 提示：" + "; ".join(suggestions) + "。"
         msg += " 合法键清单：%s" % ", ".join(sorted(SCOPE_KEYS))
         raise ValueError(msg)
+    # v0.2.7：evidence_tiers 的取值必须落在允许集合内（与"未知键拒绝"同一套防呆思路）
+    tiers = scope.get("evidence_tiers")
+    if tiers is not None and not isinstance(tiers, dict):
+        raise ValueError("evidence_tiers 必须是对象，形如 {\"messages.csv\": \"HARD\"}")
+    if isinstance(tiers, dict):
+        bad = {k: v for k, v in tiers.items() if clean_text(v).upper() not in EVIDENCE_TIERS}
+        if bad:
+            raise ValueError("evidence_tiers 取值只能是 %s；问题项：%s"
+                             % ("/".join(EVIDENCE_TIERS),
+                                ", ".join("%s=%s" % (k, v) for k, v in sorted(bad.items()))))
 
 
 def load_scope(path: Path) -> Dict[str, Any]:
@@ -273,9 +308,11 @@ def process_messages(
         reader = csv.DictReader(handle)
         headers = [clean_text(h) for h in (reader.fieldnames or [])]
         mapping = resolve_mapping(headers, MESSAGE_FIELDS, ("message_id", "timestamp", "sender", "content"))
+        observed_col = optional_column(headers, OBSERVED_AT_ALIASES)   # v0.2.7 可选：记录时间
         for row_number, source in enumerate(reader, start=2):
             source = {clean_text(k): v for k, v in source.items() if k is not None}
             row = {field: clean_text(source.get(mapping.get(field, ""), "")) for field in MESSAGE_FIELDS}
+            observed = clean_text(source.get(observed_col, "")) if observed_col else ""
             parsed, warning = parse_timestamp(row["timestamp"], scope.get("assumed_timezone", "UTC"))
             evidence_id = registry.add_row(relative, digest, row_number, "content", row["content"], "normalized_message")
             if warning:
@@ -291,6 +328,8 @@ def process_messages(
                 continue
             item = dict(row)
             item.update({"timestamp": parsed.isoformat(), "source_file": relative, "source_row": row_number, "evidence_id": evidence_id})
+            if observed_col:
+                item["observed_at"] = observed
             normalized.append(item)
             corpus.append({"text": " ".join((row["sender"], row["recipient"], row["content"])), "summary": "%s 向 %s 发送消息：%s" % (row["sender"], row["recipient"], row["content"][:100]), "evidence_id": evidence_id, "actor": row["sender"]})
     return normalized, excluded, unparseable, warnings, corpus
@@ -305,9 +344,11 @@ def process_logs(
         reader = csv.DictReader(handle)
         headers = [clean_text(h) for h in (reader.fieldnames or [])]
         mapping = resolve_mapping(headers, LOG_FIELDS, ("event_id", "timestamp", "actor", "event_type"))
+        observed_col = optional_column(headers, OBSERVED_AT_ALIASES)   # v0.2.7 可选：记录时间
         for row_number, source in enumerate(reader, start=2):
             source = {clean_text(k): v for k, v in source.items() if k is not None}
             row = {field: clean_text(source.get(mapping.get(field, ""), "")) for field in LOG_FIELDS}
+            observed = clean_text(source.get(observed_col, "")) if observed_col else ""
             parsed, warning = parse_timestamp(row["timestamp"], scope.get("assumed_timezone", "UTC"))
             evidence_id = registry.add_row(relative, digest, row_number, "event", " | ".join(row.values()), "normalized_log")
             if warning:
@@ -321,6 +362,8 @@ def process_logs(
                 continue
             item = dict(row)
             item.update({"timestamp": parsed.isoformat(), "source_file": relative, "source_row": row_number, "evidence_id": evidence_id})
+            if observed_col:
+                item["observed_at"] = observed
             normalized.append(item)
             summary = "%s 执行 %s，对象 %s，结果 %s" % (row["actor"], row["event_type"], row["object"], row["result"])
             corpus.append({"text": " ".join(row.values()), "summary": summary, "evidence_id": evidence_id, "actor": row["actor"]})
@@ -379,6 +422,11 @@ def build_entities_and_relationships(messages: Sequence[Dict[str, Any]], logs: S
 def build_issue_outputs(scope: Dict[str, Any], corpus: Sequence[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     matrix, hypotheses, findings = [], [], []
     priority_points = {"low": 1, "medium": 2, "high": 4, "critical": 6}
+    # v0.2.7（可选）：证据分级与同源去重——只有配置了才启用，未配置则下面这些键不会出现在产出里
+    tier_map = scope.get("evidence_tiers") or {}
+    dedup_on = bool(scope.get("deduplicate_sources"))
+    extended_on = bool(scope.get("hypothesis_extended"))
+    tier_by_file = {clean_text(k): clean_text(v).upper() for k, v in tier_map.items()} if isinstance(tier_map, dict) else {}
     for issue in scope.get("issues", []):
         supporting = [entry for entry in corpus if contains_any(entry["text"], issue.get("keywords", []))]
         contradictory = [entry for entry in corpus if contains_any(entry["text"], issue.get("contradictory_keywords", []))]
@@ -386,7 +434,17 @@ def build_issue_outputs(scope: Dict[str, Any], corpus: Sequence[Dict[str, Any]])
         contradiction_refs = unique([entry["evidence_id"] for entry in contradictory])
         missing = issue.get("missing_evidence", [])
         alternatives = issue.get("alternative_explanations", [])
-        matrix.append({
+        # 证据分级：取该 issue 支持证据里**最强**的 tier；文件没在 evidence_tiers 里出现则记 UNSPECIFIED
+        best_tier = "UNSPECIFIED"
+        for entry in supporting:
+            tier = tier_by_file.get(clean_text(entry.get("source_file", "")), "UNSPECIFIED")
+            if tier not in EVIDENCE_TIERS:
+                tier = "UNSPECIFIED"
+            if TIER_RANK[tier] > TIER_RANK[best_tier]:
+                best_tier = tier
+        # 同源去重：支持证据涉及几个**不同的来源文件**（同一来源衍生的多份材料不算独立印证）
+        independent_sources = len({clean_text(entry.get("source_file", "")) for entry in supporting})
+        row = {
             "issue_id": issue.get("issue_id", "ISSUE-%03d" % (len(matrix) + 1)),
             "allegation_or_issue": issue.get("allegation_or_issue", ""),
             "supporting_evidence_refs": "|".join(support_refs),
@@ -394,14 +452,44 @@ def build_issue_outputs(scope: Dict[str, Any], corpus: Sequence[Dict[str, Any]])
             "missing_evidence": "|".join(clean_text(value) for value in missing),
             "alternative_explanations": "|".join(clean_text(value) for value in alternatives),
             "status": "open",
-        })
-        hypotheses.append({
+        }
+        if tier_by_file:
+            row["evidence_tier"] = best_tier
+        if dedup_on:
+            row["independent_source_count"] = independent_sources
+        matrix.append(row)
+        hypothesis_row = {
             "hypothesis_id": "HYP-%03d" % (len(hypotheses) + 1), "issue_id": matrix[-1]["issue_id"],
             "hypothesis": issue.get("allegation_or_issue", ""), "supporting_evidence_refs": "|".join(support_refs),
             "contradictory_evidence_refs": "|".join(contradiction_refs), "missing_evidence": "|".join(clean_text(value) for value in missing),
             "alternative_explanations": "|".join(clean_text(value) for value in alternatives),
             "next_validation_step": "回到候选记录上下文并补齐列示证据", "status": "open",
-        })
+        }
+        if extended_on:
+            # v0.2.7：可证伪化——把"反驳条件"与"最有区分力的证据"显式列出
+            hypothesis_row["refutation_criteria"] = "|".join(
+                clean_text(value) for value in (issue.get("refutation_criteria") or []))
+            hypothesis_row["discriminating_evidence"] = "|".join(
+                clean_text(value) for value in (issue.get("discriminating_evidence") or []))
+        hypotheses.append(hypothesis_row)
+        if extended_on:
+            # v0.2.7：为每条替代解释生成**独立的反方假设行**（至少一条真正挑战核心命题）
+            for alternative in alternatives:
+                alt = clean_text(alternative)
+                if not alt:
+                    continue
+                hypotheses.append({
+                    "hypothesis_id": "HYP-%03d" % (len(hypotheses) + 1),
+                    "issue_id": matrix[-1]["issue_id"],
+                    "hypothesis": alt,
+                    "supporting_evidence_refs": "|".join(contradiction_refs),
+                    "contradictory_evidence_refs": "|".join(support_refs),
+                    "missing_evidence": "", "alternative_explanations": "",
+                    "next_validation_step": "以与指控同等的力度验证该替代解释",
+                    "status": "open",
+                    "refutation_criteria": "|".join(clean_text(value) for value in (issue.get("refutation_criteria") or [])),
+                    "discriminating_evidence": "|".join(clean_text(value) for value in (issue.get("discriminating_evidence") or [])),
+                })
         refs = unique(support_refs + contradiction_refs)
         if refs:
             priority = clean_text(issue.get("priority", "medium")).lower()
@@ -409,6 +497,12 @@ def build_issue_outputs(scope: Dict[str, Any], corpus: Sequence[Dict[str, Any]])
                 priority = "medium"
             facts = unique([entry["summary"] for entry in supporting + contradictory])[:20]
             strength = "moderate" if len(refs) >= 2 else "weak"
+            open_questions = [clean_text(value) for value in missing]
+            if tier_by_file and best_tier in ("SOFT", "LEAD", "UNSPECIFIED"):
+                # v0.2.7：证据分级开启时，弱证据不得独立支撑认定（与 investigation-ontology 的
+                # "FND 只能引用 HARD" 同源）。只提示，不改结论、不下判断。
+                open_questions.append(
+                    "该事项支撑证据的最高等级为 %s（非 HARD），不能独立支撑认定；需补充直接证据后再定性" % best_tier)
             findings.append({
                 "finding_id": "INV-%06d" % (len(findings) + 1), "skill": SKILL,
                 "finding_type": "investigation-lead", "title": "调查 issue 的候选证据与反证已登记",
@@ -418,7 +512,7 @@ def build_issue_outputs(scope: Dict[str, Any], corpus: Sequence[Dict[str, Any]])
                 "facts": facts,
                 "inferences": ["关键词检索把 %d 条支持候选和 %d 条反证候选连接到该 issue；相关性仍需人工阅读上下文确认" % (len(support_refs), len(contradiction_refs))],
                 "hypotheses": [issue.get("allegation_or_issue", "")],
-                "open_questions": [clean_text(value) for value in missing], "evidence_refs": refs,
+                "open_questions": open_questions, "evidence_refs": refs,
                 "recommended_next_steps": ["核验候选记录上下文", "补齐反证与缺失证据", "由有权人员决定访谈顺序"],
                 "human_review_required": True,
                 "judgment_layer": "线索层（待复核）",  # v0.2.0: 四层标记
@@ -528,18 +622,31 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     timeline = []
     for message in messages:
-        timeline.append({"timestamp": message["timestamp"], "actor": message["sender"], "event_type": "message", "object": "%s → %s: %s" % (message["sender"], message["recipient"], message["content"][:120]), "source_file": message["source_file"], "source_row": message["source_row"], "evidence_id": message["evidence_id"], "confidence": 1.0})
+        timeline.append({"timestamp": message["timestamp"], "observed_at": message.get("observed_at", ""), "actor": message["sender"], "event_type": "message", "object": "%s → %s: %s" % (message["sender"], message["recipient"], message["content"][:120]), "source_file": message["source_file"], "source_row": message["source_row"], "evidence_id": message["evidence_id"], "confidence": 1.0})
     for log in logs:
-        timeline.append({"timestamp": log["timestamp"], "actor": log["actor"], "event_type": log["event_type"], "object": log["object"], "source_file": log["source_file"], "source_row": log["source_row"], "evidence_id": log["evidence_id"], "confidence": 1.0})
+        timeline.append({"timestamp": log["timestamp"], "observed_at": log.get("observed_at", ""), "actor": log["actor"], "event_type": log["event_type"], "object": log["object"], "source_file": log["source_file"], "source_row": log["source_row"], "evidence_id": log["evidence_id"], "confidence": 1.0})
     timeline.sort(key=lambda row: row["timestamp"])
-    write_csv(output / "timeline.csv", timeline, ("timestamp", "actor", "event_type", "object", "source_file", "source_row", "evidence_id", "confidence"))
+    # v0.2.7（可选）：只有输入真的提供了"记录时间"时，才多出 observed_at 列
+    timeline_fields = ["timestamp", "actor", "event_type", "object", "source_file", "source_row", "evidence_id", "confidence"]
+    if any(row.get("observed_at") for row in timeline):
+        timeline_fields.insert(1, "observed_at")
+    write_csv(output / "timeline.csv", timeline, tuple(timeline_fields))
 
     entities, relationships = build_entities_and_relationships(messages, logs)
     write_csv(output / "entity_index.csv", entities, ("entity_id", "entity_type", "value"))
     (output / "relationships.json").write_text(json.dumps(relationships, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     matrix, hypotheses, findings = build_issue_outputs(scope, corpus)
-    write_csv(output / "evidence_matrix.csv", matrix, ("issue_id", "allegation_or_issue", "supporting_evidence_refs", "contradictory_evidence_refs", "missing_evidence", "alternative_explanations", "status"))
-    write_csv(output / "hypothesis_register.csv", hypotheses, ("hypothesis_id", "issue_id", "hypothesis", "supporting_evidence_refs", "contradictory_evidence_refs", "missing_evidence", "alternative_explanations", "next_validation_step", "status"))
+    # v0.2.7（可选）：只有配置了对应开关时，才多出这些列（未配置 → 与 0.2.6 逐字节一致）
+    matrix_fields = ["issue_id", "allegation_or_issue", "supporting_evidence_refs", "contradictory_evidence_refs", "missing_evidence", "alternative_explanations", "status"]
+    if any("evidence_tier" in row for row in matrix):
+        matrix_fields.append("evidence_tier")
+    if any("independent_source_count" in row for row in matrix):
+        matrix_fields.append("independent_source_count")
+    write_csv(output / "evidence_matrix.csv", matrix, tuple(matrix_fields))
+    hyp_fields = ["hypothesis_id", "issue_id", "hypothesis", "supporting_evidence_refs", "contradictory_evidence_refs", "missing_evidence", "alternative_explanations", "next_validation_step", "status"]
+    if any("refutation_criteria" in row for row in hypotheses):
+        hyp_fields += ["refutation_criteria", "discriminating_evidence"]
+    write_csv(output / "hypothesis_register.csv", hypotheses, tuple(hyp_fields))
     write_jsonl(output / "findings.jsonl", findings)
 
     interview_rows = []
