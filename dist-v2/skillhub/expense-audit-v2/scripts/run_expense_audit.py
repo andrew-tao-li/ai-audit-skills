@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.29"
+VERSION = "0.2.30"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2457,8 +2457,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "2. **如需深入核查业务实质**，请补充佐证：客户名单、会议/拜访记录、行程单、签到表、定位记录、业务往来凭证等。", "",
         "审计工作在此只完成了一部分：数据匹配已完成，业务实质仍需更多数据佐证。", "",
         "## 建议复核顺序", "",
-        "1. 先查 high/critical 且 evidence_strength 为 strong 的重复或制度命中。",
-        "2. 再按员工、商户和期间合并 near duplicate、split 和 outlier 模式。",
+        "1. 先查高风险/严重且证据强度为强的重复或制度命中。",
+        "2. 再按员工、商户和期间合并金额近似、拆单报销和异常高额模式。",
         "3. 周末信号单独保持低优先级，主动寻找值班、出差和客户现场等合理解释。", "",
         "## 输出文件", "",
         "**审计结论（给人看）**：dashboard.html（全景图，给经理/管理层快速看）、summary.md（完整结论）、findings.csv、findings.jsonl", "",
