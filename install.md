@@ -5,9 +5,11 @@
 | 你的宿主 | 安装方式 | 要不要跑命令 |
 |---|---|---|
 | **豆包 / 豆包工作**（桌面客户端） | 让用户**用浏览器**下载 `<skill-id>-sandbox.zip` → **你**把整个 `<skill-id>/` 文件夹放进它的 `user_skills/` → 重启客户端 | ❌ **禁止**跑命令、禁止装 CLI、禁止要密钥 |
-| **WorkBuddy** | 用户点：技能 → 添加技能 → 上传 `.zip` | ❌ |
-| **有道龙虾 / LobsterAI** | 用户点：技能 → 添加 → 上传 `.zip` | ❌ |
-| **云端沙箱**（Copilot / ChatGPT / 云 IDE） | 用户用浏览器下载 `-sandbox.zip` → 上传给你 → 你解压到其 skills 目录 | ❌ |
+| **WorkBuddy** | 用户点：技能 → 添加技能 → **上传 `<skill-id>-sandbox.zip`**（单个顶层文件夹） | ❌ |
+| **有道龙虾 / LobsterAI** | 用户点：技能 → 添加 → **上传 `<skill-id>-sandbox.zip`** | ❌ |
+| **云端沙箱**（Copilot / ChatGPT / 云 IDE） | 用户用浏览器下载 `<skill-id>-sandbox.zip` → 上传给你 → 你解压到其 skills 目录（**路径因产品而异**，见 [沙箱指南](docs/sandbox-host-install.md)） | ❌ |
+| **其它图形客户端**（元宝 / 通义 / Kimi / 扣子 等） | **先确认它有没有「技能 / skills」目录**：有 → 按豆包方式放文件夹；**没有 → 说明它暂不支持技能，不要硬装、也不要编命令** | ❌ |
+| **GitHub 不可达**（企业网 / 被墙） | 换一个能上网的网络**用浏览器下载** zip，或让同事下载后传过来 → 再按上表放置（**不要**让 Agent 去 `curl`） | — |
 | **Claude Code / Cursor / Codex / Gemini CLI / OpenCode**（**能执行 shell**） | 见下方「**CLI 类智能体安装**」一节 | ✅ |
 
 > **只要你的宿主有图形界面，就用上面这四行；不要去读下面任何命令。**
