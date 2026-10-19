@@ -6,6 +6,45 @@
 - ⚠️ **只有 Windows / macOS 桌面客户端有 Skill 功能**；网页版、手机 App 没有。
 - 需要切到客户端的**「工作任务」模式**（不是普通对话模式）。
 
+## ⚠️ 不要走 SkillHub CLI 那条路（2026-10-19 真实踩坑）
+
+**现象**：有人把这句话发给豆包——
+
+> 请根据 `https://skillhub.cn/install/skillhub.md`，安装 `@indiv-ai-audit/andrew-tao-li-expense-audit`。
+
+豆包照着那份**命令行**文档去做，最后变成：**打开终端 → 装 SkillHub CLI → 配 PATH → 输入 `skh_xxx` 密钥**，用户直接卡死。
+
+**事实（务必记住）**：
+
+| 事项 | 事实 |
+|---|---|
+| 装本技能需要 SkillHub 吗 | ❌ **不需要**。核心脚本**全程离线**，不联网、不上传、不需要任何 API Key |
+| 需要终端 / 命令行吗 | ❌ **不需要**。豆包是**图形客户端**，只要把**文件夹放进 `user_skills`** |
+| 需要 `skh_xxx` 密钥吗 | ❌ **不需要**。SkillHub 官方安装文档里**根本没有"登录/密钥"这一步**；豆包说的"需要密钥"是它**自己的误读/臆测** |
+| 那份 `skillhub.md` 是给谁的 | 给**能执行命令行的 Agent**（它自己写着"沙箱限网时需以允许联网的权限执行"）——**豆包不属于这一类** |
+
+> **一句话**：**豆包用户永远不要被引导去装 CLI、配 PATH、输密钥。**
+
+---
+
+## ✅ 给豆包用户的「一句话安装」（可直接复制转发）
+
+> **① 用浏览器下载**（浏览器不受任何限制）：
+> `https://github.com/andrew-tao-li/ai-audit-skills/releases/latest/download/expense-audit-v2-sandbox.zip`
+>
+> **② 把下载到的 zip 发给豆包**，并对它说：
+> > 请把这个 zip 里的 `expense-audit-v2` **整个文件夹**放到豆包的 `user_skills` 目录里，然后确认 `<user_skills 路径>\expense-audit-v2\SKILL.md` 存在。
+>
+> **③ 退出豆包 → 重新打开 → 开一个新对话**，然后问它：
+> > 运行 `python3 scripts/run_expense_audit.py --check-env`
+>
+> 看到 `network_required: false` 就说明装好了。**全程不需要密钥。**
+
+> ⚠️ **必须用带 `-sandbox` 的 zip**：它内部是**单个顶层文件夹** `expense-audit-v2/`，解压后正好形成
+> `user_skills/expense-audit-v2/`；普通 zip 是**扁平结构**，直接解压会把文件散落到 `user_skills/` 根目录。
+
+
+
 ## ⚠️ 先分清：「豆包」和「豆包工作」是两个产品、两套目录
 
 它们是**不同的应用**，数据目录名也不一样。安装脚本两套都探测，但你自己手动找的时候别找错：
