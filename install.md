@@ -7,6 +7,34 @@
 > 2. 跑下面「Install 命令」对应那行；**Windows 且机器上没有 bash 的，改用 `install.ps1`**（见「Windows 用户」一节）。
 >
 > 整个文件就是一个「统一安装入口」，URL 永远指向 `main` 分支、`install.sh` 内部自动取 GitHub 最新 tag。本文件是 mirror，权威源在仓库。
+>
+> 📌 **发给别人就用这一个链接（覆盖所有平台）**：`https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/install.md`
+
+## 🚦 先看这张表：按平台选安装方式（**最重要**）
+
+> ⚠️ **不要给图形客户端（豆包 / WorkBuddy / 龙虾 等）发 SkillHub 的 `skillhub.md`，也不要让它们装 CLI。**
+> 那份文档**没有这些客户端的条目**（它只列 Claude Code / Cursor / Windsurf / Codex / Antigravity / Gemini / QoderWork / workbuddy），
+> 并且写着"按当前环境自行确定"——Agent 只能**自己猜**，会退化成"装 CLI → 配 PATH → 输入密钥"。
+> **2026-10-19 真实踩坑：豆包用户就是这样卡死的。**
+
+| 平台 | 安装方式 | 需要终端 | 需要 SkillHub / 密钥 |
+|---|---|---|---|
+| **豆包 / 豆包工作**（桌面客户端） | 下载 `<skill-id>-sandbox.zip` → 让 Agent 把整个 `<skill-id>/` 文件夹放进 `user_skills/` | ❌ | ❌ |
+| **WorkBuddy** | 「专家·技能·连接器 → 技能 → 添加技能 → 上传技能」传 `.zip`；或「通过 URL 导入」填本仓库地址 | ❌ | ❌ |
+| **有道龙虾 / LobsterAI** | 「技能 → 添加 → 上传 .zip」 | ❌ | ❌ |
+| **Claude Code / Cursor / Codex / Gemini CLI / OpenCode** | 本文件下面的 Install 命令（自动装到对应 skills 目录） | ✅ | ❌ |
+| **云端沙箱**（Copilot / ChatGPT / 云 IDE） | 浏览器下载 `-sandbox.zip` → 上传给 Agent → 解压到其 skills 目录（见 [沙箱指南](docs/sandbox-host-install.md)） | ❌ | ❌ |
+
+> **判断口诀**：**能点鼠标就不要打字；能上传就不要装 CLI。**
+> 任何宿主让你"打开终端 / 装 CLI / 配 PATH / 输密钥"——**对桌面客户端来说都是走错了路**，请按本表改走。
+
+### 两条 zip 别选错
+
+| 包 | 内部结构 | 给谁用 |
+|---|---|---|
+| `<skill-id>.zip`（普通） | **扁平**（文件直接在根目录） | `install.sh` / `install.ps1`（它会解压到 `<skill-id>/`） |
+| `<skill-id>-sandbox.zip` | **单个顶层文件夹** `<skill-id>/` | **平台上传** 或 **手动放进 skills 目录** |
+
 
 ## Skills（友好名 → skill-id）
 
