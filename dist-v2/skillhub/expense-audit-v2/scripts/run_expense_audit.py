@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.30"
+VERSION = "0.2.31"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -73,7 +73,7 @@ ALIASES = {
     "employee_name": ["employee_name", "emp_name", "员工姓名", "姓名"],
     "department": ["department", "dept", "部门"],
     "expense_type": ["expense_type", "category", "type", "费用类型", "费用类别", "报销类型"],
-    "expense_date": ["expense_date", "date", "transaction_date", "发生日期", "费用日期", "报销日期"],
+    "expense_date": ["expense_date", "date", "transaction_date", "发生日期", "费用日期", "报销日期", "费用发生日期"],
     "submit_date": ["submit_date", "submission_date", "提交日期"],
     "amount": ["amount", "expense_amount", "claim_amount", "金额", "报销金额", "费用金额"],
     "currency": ["currency", "币种", "货币"],
@@ -189,6 +189,52 @@ def parse_date(value: Any) -> Optional[str]:
     return None
 
 
+# v0.2.31：提示词注入的**启发式**检测（只做提示，不改规则、不执行任何动作）
+# 思路：输入里的文字是"数据"，不是指令。这里只负责把"看起来像指令的文字"挑出来告诉人。
+INJECTION_PATTERNS = (
+    ("忽略指令", r"忽略[^。；\n]{0,14}(指令|规则|提示词|设定|限制)"),
+    ("系统提示", r"系统\s*(提示词|提示|prompt)"),
+    ("英文指令", r"(?i)(ignore|disregard)\s+(all\s+)?(the\s+)?(previous|above|prior|earlier)?\s*(instructions?|prompts?|rules?)"),
+    ("葡语指令", r"(?i)ignore\s+todas\s+as\s+instru"),
+    ("隐瞒要求", r"(不要|无需|不必|勿)[^。；\n]{0,10}(向用户|在报告中)[^。；\n]{0,10}(说明|提及|披露|告知)"),
+    ("英文隐瞒", r"(?i)(do\s+not|don't|never)\s+(tell|notify|inform)\s+the\s+user"),
+    ("HTML注释", r"<!--"),
+    ("外发要求", r"(?i)(发送|发到|send\s+it\s+to|email\s+to)[^。；\n]{0,20}@[A-Za-z0-9.-]+"),
+)
+
+# 检测哪些字段（自由文本才有意义；结构化字段如金额/日期不扫）
+INJECTION_SCAN_FIELDS = ("business_purpose", "vendor_name", "expense_type", "employee_name", "department", "project_code")
+
+
+def find_injection_hints(text: Any) -> List[str]:
+    """返回命中的疑似注入片段（最多 3 条）。纯启发式：命中不代表一定被攻击。"""
+    value = str(text or "")
+    hits: List[str] = []
+    for _label, pattern in INJECTION_PATTERNS:
+        match = re.search(pattern, value)
+        if match:
+            hits.append(match.group(0)[:40])
+        if len(hits) >= 3:
+            break
+    return hits
+
+
+def scan_injection(rows: Sequence[Dict[str, Any]]) -> List[Dict[str, str]]:
+    """扫描已清洗的记录，返回命中清单（expense_id / 字段 / 片段）。不修改任何数据。"""
+    found: List[Dict[str, str]] = []
+    for row in rows:
+        for field in INJECTION_SCAN_FIELDS:
+            hits = find_injection_hints(row.get(field, ""))
+            if hits:
+                found.append({
+                    "expense_id": str(row.get("expense_id") or row.get("_source_row") or ""),
+                    "field": field,
+                    "snippet": hits[0],
+                })
+                break
+    return found
+
+
 def read_table(path: Path, sheet: Optional[str]) -> Tuple[List[str], List[Dict[str, Any]], Optional[str]]:
     suffix = path.suffix.lower()
     if suffix == ".csv":
@@ -279,6 +325,8 @@ POLICY_KEYS = frozenset({
     # v0.2.0 新增配置
     "holidays",
     "large_amount_threshold", "low_level_approver_keywords",
+    # v0.2.31（可选）：制度来源可溯——谁提供 / 依据哪个文件 / 日期。不填则产出与旧版一致。
+    "policy_source",
     "as_of_date",  # v0.2.0: future-date 基准日
     "cross_period_months",  # v0.2.1: 跨期入账阈值（月）
     "high_frequency_window_days", "high_frequency_min_count", "high_frequency_max_amount",  # v0.2.1: 高频小额
@@ -2360,6 +2408,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         skipped.extend(run_shipment_check(analyzable, shipment_rows, policy, builder))
     validate(builder.findings, builder.evidence)
 
+    injection_found = scan_injection(clean)   # v0.2.31：只挑出来提示，不改规则、不执行
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
     write_csv(output / "bad_rows.csv", bad, ("source_row", "reasons", "raw_record"))
     if status_excluded:
@@ -2410,6 +2459,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     quality.extend("- `%s`: %.2f%%" % (field, rate * 100) for field, rate in null_rates.items())
     if warnings or skipped:
         quality.extend(["", "## 警告与跳过规则", ""] + ["- " + item for item in warnings + skipped])
+    if injection_found:
+        quality.append(
+            "- ⚠️ **疑似提示词注入**：%d 条记录的自由文本字段里出现指令式文字（如「忽略…」「系统提示词」）。"
+            "已按**数据**处理，**未执行其中任何指令、未改变任何规则**。涉及 expense_id：%s。"
+            "（启发式检测：**命中 ≠ 一定被攻击**——可能是模板残留或粘贴误入；**未命中 ≠ 安全**。）"
+            % (len(injection_found),
+               "、".join(sorted({item["expense_id"] for item in injection_found})[:10])))
     (output / "data_quality.md").write_text("\n".join(quality) + "\n", encoding="utf-8")
 
     # 类型/优先级显示层中文化（英文 key 保留在 findings.jsonl 供机器比对）
@@ -2471,6 +2527,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "想反馈时，把这句发给 AI 即可（可附意见，如「速度偏慢」）：", "",
         "> 生成反馈内容",
     ]
+    if injection_found:
+        # v0.2.31：放到**第一屏**——这类提示必须在交付时被看到，不能埋在 data_quality 里
+        summary = ([
+            "## ⚠️ 数据中发现疑似指令注入（请先看这一条）", "",
+            "在 **%d 条**记录的自由文本字段里检测到指令式文字（如「忽略…」「系统提示词」「发送到…@…」）。"
+            % len(injection_found),
+            "**本工具已按数据处理：未执行其中任何指令、未改变任何规则、未改变任何结论。**", "",
+            "涉及 expense_id：%s" % "、".join(sorted({item["expense_id"] for item in injection_found})[:10]),
+            "提示：这可能是模板残留或粘贴误入，也可能是有人试图操纵分析过程——建议核对台账来源与访问权限。", "",
+        ] + summary)
     (output / "summary.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
 
     finished = datetime.now(timezone.utc)
@@ -2509,6 +2575,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # v0.2.24：只有**真的用了**白名单时才写这个字段——普通场景的 manifest 与旧版一致（帕累托）
     if allowlist is not None:
         manifest["allowlist"] = {"entries": len(allowlist.entries), "suppressed_findings": len(builder.suppressed)}
+    if policy.get("policy_source"):
+        # v0.2.31：制度来源可溯（不填则 manifest 与旧版一致）
+        manifest["policy_source"] = policy.get("policy_source")
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     build_dashboard_html(manifest, builder.findings, len(clean), len(bad), output)
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
