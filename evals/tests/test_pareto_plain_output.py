@@ -27,8 +27,9 @@ SKILL = ROOT / "skills-v2" / "expense-audit-v2"
 SCRIPT = SKILL / "scripts" / "run_expense_audit.py"
 
 # 普通场景下**原件**就产出的文件（多一个都算破坏帕累托）
+# v0.2.37：dashboard 文件名带数据源 → 本用例的输入固定为 plain.csv，故固定为 dashboard-plain.html
 BASELINE_FILES = sorted([
-    "bad_rows.csv", "clean_expenses.csv", "dashboard.html", "data_quality.md",
+    "bad_rows.csv", "clean_expenses.csv", "dashboard-plain.html", "data_quality.md",
     "evidence.jsonl", "findings.csv", "findings.jsonl", "run_manifest.json", "summary.md",
 ])
 
