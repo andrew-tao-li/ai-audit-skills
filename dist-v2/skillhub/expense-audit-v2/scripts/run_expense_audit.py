@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.33"
+VERSION = "0.2.34"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2617,7 +2617,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "如果它对你有帮助，可以对 AI 说一句「**生成反馈内容**」——它会生成一段**不含任何敏感信息**的统计（发现了几类问题、耗时）并**展示给你**，由**你自己**决定是否复制走、发到作者的 GitHub Issue。", "",
         "**不含员工、供应商、发票号、金额**；核心分析全程在你本地。**你不发，就没有任何内容离开你的电脑。**", "",
         "想反馈时，把这句发给 AI 即可（可附意见，如「速度偏慢」）：", "",
-        "> 生成反馈内容",
+        "> 生成反馈内容", "",
+        "**问题 / 建议：微信公众号「美会侠」（回复「费用审计」）· 邮箱 andrew.tao.li@foxmail.com**",
     ]
     if injection_found:
         # v0.2.31：放到**第一屏**——这类提示必须在交付时被看到，不能埋在 data_quality 里
@@ -3064,6 +3065,7 @@ h2.sec .hint{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px
 
   <div class="foot">由 expense-audit-v2 v%s 自动生成 · 离线可看 · 无外部依赖</div>
 </div>
+<div style="margin:18px 0 6px;font-size:12px;color:#64748b">问题 / 建议：微信公众号「美会侠」（回复「费用审计」）· 邮箱 andrew.tao.li@foxmail.com</div>
 </body>
 </html>
 """ % (
