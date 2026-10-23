@@ -1,7 +1,7 @@
 ---
 name: expense-audit-v2
 description: "用于清洗、体检和审计员工费用、报销、发票、差旅或相关付款台账；分离坏行与标准化结果，识别重复、制度例外、拆分、统计离群、自审自批、发票跨人复用、提交日期倒挂、未来日期等。Use when the user asks to examine, clean, normalize, or audit expense/reimbursement/invoice/travel/meal CSV, XLSX, or pasted records; mentions duplicate claims, policy exceptions, split reimbursements, weekend signals, robust outliers, MAD outlier, self-approval, cross-employee invoice reuse, missing expense type, large amount without proper approval, or asks for findings.jsonl/evidence.jsonl/data_quality reports. Do not use for policy drafting, procurement payments, vendor screening, fraud determinations, reimbursement rejection, disciplinary decisions, secret monitoring, archiving, translation, or summarization."
-version: 0.2.39
+version: 0.2.40
 slug: andrew-tao-li-expense-audit
 displayName: 费用报销审计
 summary: 扫描费用/报销/发票/差旅台账，识别重复报销、超制度上限、拆分报销、自审自批、发票跨人复用等异常，输出可追溯证据与经理可读报告。辅助分析，不替代专业审计判断。
@@ -392,7 +392,7 @@ K2,,50.00,公司园区A,客户C
 
 ## Output contract
 
-完整执行应生成 **10 个文件**：`index.html`（**入口页，建议先看这个**）、`dashboard-<输入文件名>.html`（如 `dashboard-expenses.html`；文件名带数据源，避免多份报告在扁平列表里撞名）、`summary.md`、`findings.csv`、`findings.jsonl`、`evidence.jsonl`、`data_quality.md`、`clean_expenses.csv`、`bad_rows.csv`、`run_manifest.json`。
+完整执行应生成 **10 个文件**，**全部带 `<数据源>-` 前缀**（例：输入 `expenses.csv` → `expenses-index.html`、`expenses-summary.md`、`expenses-findings.csv` …；`dashboard-<数据源>.html` 单独命名）。`<数据源>-index.html` 是**入口页，建议先看这个**。之所以带前缀，是因为部分宿主会把**多次运行**的产物**扁平聚合**，固定文件名会撞名。原固定名清单为、`findings.csv`、`findings.jsonl`、`evidence.jsonl`、`data_quality.md`、`clean_expenses.csv`、`bad_rows.csv`、`run_manifest.json`。
 另有**条件生成**：`excluded_by_status.csv`（配置了 `status_filter` 时）、`suppressed_findings.csv`（使用 `--allowlist` 时）。
 字段和语言边界见 [输出协议](references/output-contract.md)。
 

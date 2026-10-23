@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.39"
+VERSION = "0.2.40"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2745,6 +2745,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "top": _top_html, "time_block": _time_html, "dash": _esc(dash_name), "demo": _demo_html,
     }
     (output / "index.html").write_text(_index, encoding="utf-8")
+
+    # v0.2.40：**所有产出加数据源前缀**（扁平产物列表里永不撞名）
+    _stem = input_path.stem
+    _mapping = {}
+    for _p in sorted(output.iterdir()):
+        if not _p.is_file() or _p.name.startswith("dashboard-") or _p.name.startswith(_stem + "-"):
+            continue
+        _new = output / ("%s-%s" % (_stem, _p.name))
+        _mapping[_p.name] = _new.name
+        _p.rename(_new)
+    if _mapping:
+        for _p in sorted(output.iterdir()):
+            if _p.suffix in (".md", ".html", ".json", ".jsonl", ".csv"):
+                _txt = _p.read_text(encoding="utf-8")
+                _new_txt = _txt
+                for _old, _new in _mapping.items():
+                    _new_txt = _new_txt.replace(_old, _new)
+                if _new_txt != _txt:
+                    _p.write_text(_new_txt, encoding="utf-8")
+
 
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
     print("提示：如果本工具有帮助，可以对我说「生成反馈内容」——我会生成一段不含敏感信息的统计（不含员工/供应商/发票号/金额）给你，由你自己决定是否发给作者。核心分析在本地；工具不会自动外发任何内容。", file=sys.stderr)

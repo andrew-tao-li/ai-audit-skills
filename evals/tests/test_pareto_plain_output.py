@@ -28,10 +28,12 @@ SCRIPT = SKILL / "scripts" / "run_expense_audit.py"
 
 # 普通场景下**原件**就产出的文件（多一个都算破坏帕累托）
 # v0.2.37：dashboard 文件名带数据源 → 本用例的输入固定为 plain.csv，故固定为 dashboard-plain.html
-BASELINE_FILES = sorted([
-    "bad_rows.csv", "clean_expenses.csv", "dashboard-plain.html", "data_quality.md", "index.html",
+# v0.2.40：所有产出带数据源前缀（本用例输入固定 plain.csv）
+BASELINE_FILES = sorted("plain-" + n for n in (
+    "bad_rows.csv", "clean_expenses.csv", "data_quality.md", "index.html",
     "evidence.jsonl", "findings.csv", "findings.jsonl", "run_manifest.json", "summary.md",
-])
+) ) + ["dashboard-plain.html"]
+BASELINE_FILES = sorted(BASELINE_FILES)
 
 # 新增能力的"痕迹词"：普通场景一个都不该出现
 NEW_TRACES = [
@@ -66,6 +68,12 @@ PLAIN_POLICY = {
 }
 
 
+def _find(directory, name):
+    """v0.2.40：产出名带数据源前缀，按后缀查找。"""
+    hits = sorted(Path(directory).glob("*-" + name))
+    return hits[0] if hits else Path(directory) / name
+
+
 class ParetoPlainOutputTest(unittest.TestCase):
     def test_plain_run_has_no_new_feature_traces(self):
         with tempfile.TemporaryDirectory(prefix="pareto-plain-") as td:
@@ -90,14 +98,14 @@ class ParetoPlainOutputTest(unittest.TestCase):
 
             # ② 面向用户的文本里没有新功能痕迹
             blob = "\n".join([
-                (out / "summary.md").read_text(encoding="utf-8"),
-                (out / "data_quality.md").read_text(encoding="utf-8"),
+                _find(out, "summary.md").read_text(encoding="utf-8"),
+                _find(out, "data_quality.md").read_text(encoding="utf-8"),
             ])
             for kw in NEW_TRACES:
                 self.assertNotIn(kw, blob, "普通场景不该出现新功能痕迹：%r" % kw)
 
             # ③ manifest 里没有新功能条目
-            manifest = json.loads((out / "run_manifest.json").read_text(encoding="utf-8"))
+            manifest = json.loads(_find(out, "run_manifest.json").read_text(encoding="utf-8"))
             manifest_text = json.dumps(manifest, ensure_ascii=False)
             for kw in ("travel-verification", "weekday", "row-limit", "unit-price", "invoice-payee",
                        "allowlist", "multi_occurrence", "fixed_amount"):
