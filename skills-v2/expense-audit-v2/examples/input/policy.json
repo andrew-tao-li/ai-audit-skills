@@ -23,5 +23,6 @@
   "split_window_days": 3,
   "weekend_check": true,
   "outlier_min_group_size": 5,
-  "outlier_robust_z": 3.5
+  "outlier_robust_z": 3.5,
+  "_note": "示例数据全为合成数据。住宿行带 check_in/check_out（示例中 3 晚那行还带 nights/room_number）；机票行带 flight_no/pnr/issue_date；expense_date 可含具体时间（如 2026-06-15 08:30）。这些列默认不参与规则，开启 lodging_cross_check / voucher_consistency_check / shared_voucher_check 后才生效。"
 }
