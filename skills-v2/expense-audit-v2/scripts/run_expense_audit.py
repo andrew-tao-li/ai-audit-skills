@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.37"
+VERSION = "0.2.38"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2663,7 +2663,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "outputs": ["clean_expenses.csv", "bad_rows.csv"]
         + (["excluded_by_status.csv"] if status_excluded else [])
         + (["suppressed_findings.csv"] if builder.suppressed else [])
-        + ["findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", dash_name],
+        + ["index.html", "findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", dash_name],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
     # v0.2.24：只有**真的用了**白名单时才写这个字段——普通场景的 manifest 与旧版一致（帕累托）
@@ -2674,6 +2674,62 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         manifest["policy_source"] = policy.get("policy_source")
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     build_dashboard_html(manifest, builder.findings, len(clean), len(bad), output, input_path.name)
+
+    # v0.2.38：本次运行的「入口页」——首层只暴露一个文件，其余下钻
+    from html import escape as _esc
+    # 只在**规则真能跑**时才展示时间级（用户要求：没有时间维度就不要给时间级反馈）
+    _t = lambda v: bool(re.search(r"\d{1,2}:\d{2}", str(v or "")))
+    _has_hotel_time = any(_t(r.get("check_out")) for r in analyzable)
+    _has_move_time = any(_t(r.get("_expense_at")) for r in analyzable)
+    _has_city = any(norm_text(r.get("origin_city")) for r in analyzable)
+    _has_arrive = any(_t(r.get("arrive_at")) for r in analyzable)
+    _time_capable = _has_arrive or (_has_hotel_time and _has_move_time and _has_city)
+    _pri = {}
+    for _f in builder.findings:
+        _pri[_f.get("risk_priority")] = _pri.get(_f.get("risk_priority"), 0) + 1
+    _top_html = "".join(
+        '<li><b>%s</b> <span style="color:#94a3b8">%s</span></li>' % (_esc(x.get("title", "")), x.get("finding_type", ""))
+        for x in builder.findings[:3])
+    _time_html = ""
+    if _time_capable:
+        _tl = [f for f in builder.findings if f.get("finding_type") in ("checkout-before-transport", "segment-overlap")]
+        _time_html = ('<div class="blk"><h3>时间级检查（已启用）</h3><p>%s</p></div>' % (
+            ("命中 <b>%d</b> 条：%s" % (len(_tl), "、".join(sorted({f["finding_type"] for f in _tl}))))
+            if _tl else "数据里含具体时间，已做时段比对；本次未发现时间矛盾。"))
+    _index = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>审计结果入口 · %(src)s</title></head>
+<body style="margin:0;background:#eef2f8;font:16px/1.7 -apple-system,'PingFang SC',sans-serif;color:#0f172a">
+<div style="max-width:760px;margin:0 auto;padding:28px 20px 40px">
+  <div style="background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;border-radius:16px;padding:24px 26px">
+    <div style="font-size:13px;color:#93c5fd;letter-spacing:2px">费用审计 · 本次结果</div>
+    <div style="font-size:30px;font-weight:800;margin:8px 0 6px">%(total)d 条复核线索</div>
+    <div style="font-size:14px;color:#c7d2fe">数据源 %(src)s · 有效 %(clean)d 行 / 坏行 %(bad)d · v%(ver)s</div>
+  </div>
+  <div style="display:flex;gap:10px;margin:14px 0">
+    <div class="kpi" style="flex:1;background:#fff;border-radius:12px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:800;color:#dc2626">%(high)d</div><div style="font-size:12px;color:#64748b">高风险</div></div>
+    <div class="kpi" style="flex:1;background:#fff;border-radius:12px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:800;color:#d97706">%(mid)d</div><div style="font-size:12px;color:#64748b">中风险</div></div>
+    <div class="kpi" style="flex:1;background:#fff;border-radius:12px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:800;color:#64748b">%(low)d</div><div style="font-size:12px;color:#64748b">低风险</div></div>
+  </div>
+  <div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px">
+    <h3 style="margin:0 0 8px;font-size:16px">先看这三条</h3><ol style="margin:0;padding-left:20px">%(top)s</ol>
+  </div>
+  %(time_block)s
+  <div style="background:#fff;border-radius:12px;padding:16px 18px">
+    <h3 style="margin:0 0 8px;font-size:16px">详细内容</h3>
+    <p style="margin:6px 0"><a href="%(dash)s">完整全景报告（给经理看）</a></p>
+    <p style="margin:6px 0"><a href="data_quality.md">数据体检（字段映射 / 空值率 / 跳过规则）</a></p>
+    <p style="margin:6px 0"><a href="findings.csv">全部线索明细</a> · <a href="summary.md">文字摘要</a> · <a href="evidence.jsonl">行级证据</a></p>
+  </div>
+  <div style="margin-top:14px;font-size:12px;color:#64748b">问题 / 建议：微信公众号「美会侠」（回复「费用审计」）· 邮箱 andrew.tao.li@foxmail.com</div>
+</div></body></html>""" % {
+        "src": _esc(input_path.name), "clean": len(clean), "bad": len(bad),
+        "total": len(builder.findings), "ver": VERSION,
+        "high": _pri.get("high", 0) + _pri.get("critical", 0),
+        "mid": _pri.get("medium", 0), "low": _pri.get("low", 0),
+        "top": _top_html, "time_block": _time_html, "dash": _esc(dash_name),
+    }
+    (output / "index.html").write_text(_index, encoding="utf-8")
+
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
     print("提示：如果本工具有帮助，可以对我说「生成反馈内容」——我会生成一段不含敏感信息的统计（不含员工/供应商/发票号/金额）给你，由你自己决定是否发给作者。核心分析在本地；工具不会自动外发任何内容。", file=sys.stderr)
     return 0
