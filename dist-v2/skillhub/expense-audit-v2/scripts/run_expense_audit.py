@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.40"
+VERSION = "0.2.41"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2711,6 +2711,22 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                       '<p style="margin:6px 0;font-size:13px;color:#64748b">想看那一套，运行：'
                       '<code>--input examples/input/%s.csv</code>（会自动生成它自己的 index.html 与报告）。</p></div>'
                       % (_esc(_cur), len(builder.findings), _esc(_other_name), _esc(_other_note), _esc(_other_stem)))
+    _sfx = input_path.stem
+    _files = [
+        ("dashboard-%s.html" % _sfx, "完整报告", "给经理看的全景（结论/风险/前三条）"),
+        ("summary.md", "文字摘要", "结论与建议复核顺序"),
+        ("findings.csv", "线索明细", "每条线索一行，可按风险排序"),
+        ("evidence.jsonl", "行级证据", "每条线索对应原始哪一行"),
+        ("data_quality.md", "数据体检", "字段映射 / 空值率 / 坏行 / 跳过规则"),
+        ("clean_expenses.csv", "清洗结果", "进入分析的有效记录"),
+        ("bad_rows.csv", "坏行", "未参与分析的行及其原因"),
+        ("run_manifest.json", "运行清单", "参数 / 输入哈希 / 是否联网"),
+    ]
+    _files_html = "".join(
+        '<tr><td style="padding:5px 0;border-bottom:1px solid #f1f5f9;width:34%%"><a href="%s">%s</a></td>'
+        '<td style="padding:5px 0;border-bottom:1px solid #f1f5f9;color:#475569;font-size:13px">%s</td></tr>'
+        % (_esc(href), _esc(title), _esc(note)) for href, title, note in _files)
+
     _index = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 <title>审计结果入口 · %(src)s</title></head>
 <body style="margin:0;background:#eef2f8;font:16px/1.7 -apple-system,'PingFang SC',sans-serif;color:#0f172a">
@@ -2731,10 +2747,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
   %(demo)s
   %(time_block)s
   <div style="background:#fff;border-radius:12px;padding:16px 18px">
-    <h3 style="margin:0 0 8px;font-size:16px">详细内容</h3>
-    <p style="margin:6px 0"><a href="%(dash)s">完整全景报告（给经理看）</a></p>
-    <p style="margin:6px 0"><a href="data_quality.md">数据体检（字段映射 / 空值率 / 跳过规则）</a></p>
-    <p style="margin:6px 0"><a href="findings.csv">全部线索明细</a> · <a href="summary.md">文字摘要</a> · <a href="evidence.jsonl">行级证据</a></p>
+    <h3 style="margin:0 0 4px;font-size:16px">本页是总账 · 下面每个文件是明细</h3>
+    <p style="margin:0 0 10px;font-size:13px;color:#64748b">建议阅读顺序：<b>本页</b> → <b>完整报告</b> → 需要核对原始行时再看 <b>线索明细 / 行级证据</b>。</p>
+    <table style="width:100%%;border-collapse:collapse;font-size:14px">%(files)s</table>
+    <p style="margin:10px 0 0;font-size:12px;color:#94a3b8">提示：在宿主（如 WorkBuddy）的预览窗里相对链接可能点不动，请用浏览器打开本文件所在目录的 index。</p>
   </div>
   <div style="margin-top:14px;font-size:12px;color:#64748b">问题 / 建议：微信公众号「美会侠」（回复「费用审计」）· 邮箱 andrew.tao.li@foxmail.com</div>
 </div></body></html>""" % {
@@ -2742,7 +2758,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "total": len(builder.findings), "ver": VERSION,
         "high": _pri.get("high", 0) + _pri.get("critical", 0),
         "mid": _pri.get("medium", 0), "low": _pri.get("low", 0),
-        "top": _top_html, "time_block": _time_html, "dash": _esc(dash_name), "demo": _demo_html,
+        "top": _top_html, "time_block": _time_html, "dash": _esc(dash_name), "demo": _demo_html, "files": _files_html,
     }
     (output / "index.html").write_text(_index, encoding="utf-8")
 
@@ -3188,6 +3204,14 @@ h2.sec .hint{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px
         html = html.replace('<div class="sub">',
                             '<div class="sub">数据源：%s · 有效 %d 行 / 坏行 %d · %d 条线索 · '
                             % (input_name, clean_count, bad_count, len(findings)), 1)
+    _is_time_report = any(f.get("finding_type") in ("checkout-before-transport", "segment-overlap")
+                          for f in findings)
+    if _is_time_report:
+        html = html.replace("费用报销审计 · 全景报告", "时间线冲突核查 · 时间级", 1)
+        html = html.replace("<h1>费用报销审计", "<h1>时间线冲突核查", 1)
+        html = html.replace("</head>",
+                            "<style>.masthead{background:linear-gradient(125deg,#3b0764,#7c3aed) !important}"
+                            ".tag{background:#ede9fe !important;color:#5b21b6 !important}</style></head>", 1)
     _dash = "dashboard-%s.html" % (Path(input_name).stem if input_name else "report")
     (output_dir / _dash).write_text(html, encoding="utf-8")
 
