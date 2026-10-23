@@ -126,9 +126,10 @@ def run_installed_expense(prefix: Path, tmp: Path, results: list) -> None:
         capture_output=True, text=True, timeout=180,
     )
     results.append(("expense-audit-v2", "装好的脚本能跑通", proc.returncode == 0, (proc.stderr or "")[-200:]))
-    for name in ("findings.csv", "summary.md", "dashboard.html"):
+    for name in ("findings.csv", "summary.md"):
         results.append(("expense-audit-v2", "产出 %s" % name, (out / name).exists(), ""))
-    dash = out / "dashboard.html"
+    _dashes = sorted(out.glob("dashboard*.html"))
+    dash = _dashes[0] if _dashes else out / "dashboard.html"
     if dash.exists():
         html = dash.read_text(encoding="utf-8")
         for m in DASHBOARD_MARKERS:

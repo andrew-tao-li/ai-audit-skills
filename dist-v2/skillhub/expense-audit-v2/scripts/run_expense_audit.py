@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.36"
+VERSION = "0.2.37"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2500,6 +2500,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         skipped.extend(run_shipment_check(analyzable, shipment_rows, policy, builder))
     validate(builder.findings, builder.evidence)
 
+    dash_name = "dashboard-%s.html" % input_path.stem   # v0.2.37：文件名带数据源，扁平列表里不再撞名
     injection_found = scan_injection(clean)   # v0.2.31：只挑出来提示，不改规则、不执行
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
     write_csv(output / "bad_rows.csv", bad, ("source_row", "reasons", "raw_record"))
@@ -2609,7 +2610,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "2. 再按员工、商户和期间合并金额近似、拆单报销和异常高额模式。",
         "3. 周末信号单独保持低优先级，主动寻找值班、出差和客户现场等合理解释。", "",
         "## 输出文件", "",
-        "**审计结论（给人看）**：dashboard.html（全景图，给经理/管理层快速看）、summary.md（完整结论）、findings.csv、findings.jsonl", "",
+        "**审计结论（给人看）**：%s（全景图，给经理/管理层快速看）" % dash_name + "、summary.md（完整结论）、findings.csv、findings.jsonl", "",
         "**技术审计轨迹（复核追溯用，非审计结论）**：data_quality.md、run_manifest.json、clean_expenses.csv、bad_rows.csv、evidence.jsonl", "",
         *travel_hint_block,
         "## 这个工具好用吗？（可选反馈，工具不会自动外发）", "",
@@ -2662,7 +2663,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "outputs": ["clean_expenses.csv", "bad_rows.csv"]
         + (["excluded_by_status.csv"] if status_excluded else [])
         + (["suppressed_findings.csv"] if builder.suppressed else [])
-        + ["findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", "dashboard.html"],
+        + ["findings.csv", "findings.jsonl", "evidence.jsonl", "summary.md", "data_quality.md", "run_manifest.json", dash_name],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
     # v0.2.24：只有**真的用了**白名单时才写这个字段——普通场景的 manifest 与旧版一致（帕累托）
@@ -2744,7 +2745,11 @@ def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir,
         _s = datetime.fromisoformat(manifest["started_at"])
         _e = datetime.fromisoformat(manifest["finished_at"])
         duration_str = "%.1f 秒" % (_e - _s).total_seconds()
-        date_str = _s.strftime("%Y-%m-%d %H:%M")
+        # v0.2.37：展示层用**本地时区**并显式标注（run_manifest 仍保留 UTC，机器可读）
+        try:
+            date_str = _s.astimezone().strftime("%Y-%m-%d %H:%M %Z")
+        except Exception:
+            date_str = _s.strftime("%Y-%m-%d %H:%M")
     except (KeyError, ValueError):
         pass
     version = manifest.get("skill_version", "?")
@@ -3091,7 +3096,8 @@ h2.sec .hint{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px
         html = html.replace('<div class="sub">',
                             '<div class="sub">数据源：%s · 有效 %d 行 / 坏行 %d · %d 条线索 · '
                             % (input_name, clean_count, bad_count, len(findings)), 1)
-    (output_dir / "dashboard.html").write_text(html, encoding="utf-8")
+    _dash = "dashboard-%s.html" % (Path(input_name).stem if input_name else "report")
+    (output_dir / _dash).write_text(html, encoding="utf-8")
 
 if __name__ == "__main__":
     try:
