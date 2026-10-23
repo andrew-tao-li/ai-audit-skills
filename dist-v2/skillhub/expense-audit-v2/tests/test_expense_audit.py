@@ -831,5 +831,51 @@ class TimeSegmentRulesTest(unittest.TestCase):
             temp.cleanup()
 
 
+class TimeExampleTest(unittest.TestCase):
+    """时间级专用示例：`examples/input/expenses-time.csv`
+
+    硬验收：
+      ① 两条「物理不可能」规则**各命中一次**（不多不少）；
+      ② 两组正常对照**不得误报**；
+      ③ **主示例仍是 11 findings / 72 evidence**（帕累托：新增示例不影响原基线）。
+    """
+
+    TIME_CSV = SKILL_ROOT / "examples" / "input" / "expenses-time.csv"
+
+    def _run(self, data, policy=None):
+        temp = tempfile.TemporaryDirectory()
+        out = Path(temp.name) / "out"
+        cmd = [sys.executable, str(SCRIPT), "--input", str(data)]
+        if policy:
+            cmd += ["--policy", str(policy)]
+        cmd += ["--output", str(out)]
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return temp, out
+
+    def test_time_example_hits_exactly_two_rules(self):
+        temp, out = self._run(self.TIME_CSV)
+        try:
+            with (out / "findings.csv").open(encoding="utf-8") as handle:
+                types = sorted(row["finding_type"] for row in csv.DictReader(handle))
+            self.assertEqual(types, ["checkout-before-transport", "segment-overlap"],
+                             "时间级示例应恰好命中两条规则（不多不少）：%s" % types)
+        finally:
+            temp.cleanup()
+
+    def test_main_example_baseline_unchanged(self):
+        """帕累托：主示例必须仍是 11 findings / 72 evidence（新增时间级示例不得影响它）。"""
+        temp, out = self._run(EXAMPLE, POLICY)
+        try:
+            with (out / "findings.csv").open(encoding="utf-8") as handle:
+                findings = list(csv.DictReader(handle))
+            evidence = sum(1 for _ in (out / "evidence.jsonl").open(encoding="utf-8"))
+            self.assertEqual(len(findings), 11, "主示例 findings 数变了")
+            self.assertEqual(evidence, 72, "主示例 evidence 数变了")
+        finally:
+            temp.cleanup()
+
+
 if __name__ == "__main__":
     unittest.main()

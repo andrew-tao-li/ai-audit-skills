@@ -1,0 +1,48 @@
+{
+  "synthetic_data": true,
+  "_note": "时间级规则专用示例（与主示例 expenses.csv **完全独立**）。主示例仍是 11 findings / 72 evidence，不受影响。本文件只用于验证两条「物理不可能」规则。",
+  "must_include_finding_types": [
+    "checkout-before-transport",
+    "segment-overlap"
+  ],
+  "expected_finding_count": 2,
+  "must_not_include_finding_types": {
+    "space-time-conflict": "同一人的城市不同日出现，不构成同日多城冲突",
+    "weekend-signal": "所有日期均为工作日（刻意避开周末）",
+    "policy-threshold": "本示例不提供 policy.json，制度类规则自动跳过"
+  },
+  "seeded_cases": [
+    {
+      "case_id": "T1",
+      "rows": ["T-001", "T-002"],
+      "expect": "checkout-before-transport",
+      "why": "E10 在 2026-07-03 12:00 才退房，但同一人 09:30 已从上海出发坐火车（同城）"
+    },
+    {
+      "case_id": "T2",
+      "rows": ["T-003", "T-004"],
+      "expect": "segment-overlap",
+      "why": "E11 的航班 08:00–11:00 与火车 09:30–12:30 时段重叠（人不可能同时在两个交通工具上）"
+    }
+  ],
+  "control_cases": [
+    {
+      "case_id": "C1",
+      "rows": ["T-005", "T-006"],
+      "expect_no_finding": true,
+      "why": "退房 07-10 12:00，火车 14:00 出发 —— 时间顺序正常"
+    },
+    {
+      "case_id": "C2",
+      "rows": ["T-007", "T-008"],
+      "expect_no_finding": true,
+      "why": "航班 07-13、火车 07-14 —— 不同城市不同日期，无重叠"
+    }
+  ],
+  "field_notes": {
+    "origin_city": "交通出发城市（规则①要求与酒店 dest_city 相同才判）",
+    "dest_city": "目的地城市（酒店行填所在城市）",
+    "arrive_at": "到达时间，**只读取、不输出**；缺列则 segment-overlap 不参与",
+    "check_out": "必须带 HH:MM，否则不参与规则①"
+  }
+}
