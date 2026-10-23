@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.35"
+VERSION = "0.2.36"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2672,13 +2672,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         # v0.2.31：制度来源可溯（不填则 manifest 与旧版一致）
         manifest["policy_source"] = policy.get("policy_source")
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    build_dashboard_html(manifest, builder.findings, len(clean), len(bad), output)
+    build_dashboard_html(manifest, builder.findings, len(clean), len(bad), output, input_path.name)
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
     print("提示：如果本工具有帮助，可以对我说「生成反馈内容」——我会生成一段不含敏感信息的统计（不含员工/供应商/发票号/金额）给你，由你自己决定是否发给作者。核心分析在本地；工具不会自动外发任何内容。", file=sys.stderr)
     return 0
 
 
-def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir):
+def build_dashboard_html(manifest, findings, clean_count, bad_count, output_dir, input_name=""):
     """生成面向「审计经理」的自包含 HTML 全景报告（离线可看，0 外部依赖）。
 
     结构对齐审计报告最佳实践：
@@ -3086,6 +3086,11 @@ h2.sec .hint{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px
         version,
     )
 
+    # v0.2.36：副标题最前面加「数据源 + 规模」——多份报告/邮件附件时一眼分得清
+    if input_name:
+        html = html.replace('<div class="sub">',
+                            '<div class="sub">数据源：%s · 有效 %d 行 / 坏行 %d · %d 条线索 · '
+                            % (input_name, clean_count, bad_count, len(findings)), 1)
     (output_dir / "dashboard.html").write_text(html, encoding="utf-8")
 
 if __name__ == "__main__":
