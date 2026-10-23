@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.38"
+VERSION = "0.2.39"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2696,6 +2696,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         _time_html = ('<div class="blk"><h3>时间级检查（已启用）</h3><p>%s</p></div>' % (
             ("命中 <b>%d</b> 条：%s" % (len(_tl), "、".join(sorted({f["finding_type"] for f in _tl}))))
             if _tl else "数据里含具体时间，已做时段比对；本次未发现时间矛盾。"))
+    # v0.2.39：**仅当输入是自带示例**时，给出两套示例的对照（真实数据完全不受影响）
+    _IS_DEMO = {"expenses": ("主示例（常规规则）", "expenses-time", "时间级示例（物理不可能）",
+                              "2 条：退房晚于交通出发 · 两段交通时段重叠"),
+                "expenses-time": ("时间级示例（物理不可能）", "expenses", "主示例（常规规则）",
+                                  "11 条：发票重复/连号/拆单/超限/异常高额/周末弱信号")}
+    _demo_html = ""
+    if input_path.stem in _IS_DEMO:
+        _cur, _other_stem, _other_name, _other_note = _IS_DEMO[input_path.stem]
+        _demo_html = ('<div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;'
+                      'border-left:6px solid #7c3aed"><h3 style="margin:0 0 8px;font-size:16px">'
+                      '示例演示：两套都在这里</h3><p style="margin:6px 0">你现在跑的是 <b>%s</b>（本次 %d 条线索）。</p>'
+                      '<p style="margin:6px 0;color:#475569">另一套是 <b>%s</b>：%s。</p>'
+                      '<p style="margin:6px 0;font-size:13px;color:#64748b">想看那一套，运行：'
+                      '<code>--input examples/input/%s.csv</code>（会自动生成它自己的 index.html 与报告）。</p></div>'
+                      % (_esc(_cur), len(builder.findings), _esc(_other_name), _esc(_other_note), _esc(_other_stem)))
     _index = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 <title>审计结果入口 · %(src)s</title></head>
 <body style="margin:0;background:#eef2f8;font:16px/1.7 -apple-system,'PingFang SC',sans-serif;color:#0f172a">
@@ -2713,6 +2728,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
   <div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px">
     <h3 style="margin:0 0 8px;font-size:16px">先看这三条</h3><ol style="margin:0;padding-left:20px">%(top)s</ol>
   </div>
+  %(demo)s
   %(time_block)s
   <div style="background:#fff;border-radius:12px;padding:16px 18px">
     <h3 style="margin:0 0 8px;font-size:16px">详细内容</h3>
@@ -2726,7 +2742,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "total": len(builder.findings), "ver": VERSION,
         "high": _pri.get("high", 0) + _pri.get("critical", 0),
         "mid": _pri.get("medium", 0), "low": _pri.get("low", 0),
-        "top": _top_html, "time_block": _time_html, "dash": _esc(dash_name),
+        "top": _top_html, "time_block": _time_html, "dash": _esc(dash_name), "demo": _demo_html,
     }
     (output / "index.html").write_text(_index, encoding="utf-8")
 
