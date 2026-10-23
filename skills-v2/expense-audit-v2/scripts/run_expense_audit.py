@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.32"
+VERSION = "0.2.33"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -46,6 +46,8 @@ FINDING_TYPE_ZH = {
     "itinerary-segment-conflict": "同一订座号同日航段矛盾",
     # v0.2.25：运单台账相关（需 --shipments；默认不参与）
     "shipment-amount-mismatch": "运单台账与报销金额不一致",
+    "checkout-before-transport": "退房时间晚于交通出发",
+    "segment-overlap": "同一人同一时段存在两段交通",
     "shipment-without-tracking": "运单缺少运单号",
     "shipment-from-private-address": "运单涉及疑似私人地址",
     # v0.2.18：住宿凭证交叉核验（**离线**，默认关闭）
@@ -89,6 +91,7 @@ ALIASES = {
     # v0.2.18：住宿凭证交叉核验（入离店日期 / 晚数 / 房号）
     "check_in": ["check_in", "checkin", "check_in_date", "arrival_date", "入住日期", "入住"],
     "check_out": ["check_out", "checkout", "check_out_date", "departure_date", "离店日期", "退房日期"],
+    "arrive_at": ["arrive_at", "arrival_at", "arrive_time", "到达时间", "抵达时间"],
     "nights": ["nights", "night_count", "room_nights", "晚数", "住宿晚数", "间夜"],
     "room_number": ["room_number", "room_no", "room", "房号", "房间号"],
     # v0.2.20：日期↔周几一致性（篡改日期时"周几"往往对不上）
@@ -110,7 +113,9 @@ ALIASES = {
     "status": ["status", "approval_status", "approval_state", "state", "状态", "审批状态", "单据状态", "报销状态", "流程状态", "审批结果"],
 }
 CORE_FIELDS = ("expense_id", "employee_id", "amount", "expense_date")
-OUTPUT_FIELDS = tuple(ALIASES.keys())
+# v0.2.33：arrive_at 只用于时段规则 —— **读取**要它，**写出**不要它（保持旧产出逐字节不变）
+INPUT_FIELDS = tuple(ALIASES.keys())
+OUTPUT_FIELDS = tuple(key for key in ALIASES if key != "arrive_at")
 # v0.2.13：白名单可匹配的字段（CSV 列名）；空列 = 通配。另支持 amount_max（金额上限）。
 ALLOWLIST_FIELDS = ("expense_id", "employee_id", "employee_name", "vendor_name", "invoice_number", "expense_type")
 # v0.2.18：住宿类费用类型的默认关键词（住宿凭证交叉核验用；可在 policy.lodging_types 覆盖）
@@ -472,7 +477,7 @@ def resolve_mapping(headers: Sequence[str], explicit: Dict[str, Any], allow_miss
         by_normalized[norm_header(header)].append(header)
     mapping: Dict[str, str] = {}
     warnings: List[str] = []
-    for canonical in OUTPUT_FIELDS:
+    for canonical in INPUT_FIELDS:
         if canonical in explicit:
             source = norm_text(explicit[canonical])
             if source not in headers:
@@ -509,7 +514,7 @@ def normalize_rows(
     changes = {"trimmed_or_normalized_text_values": 0, "parsed_amount_values": 0, "parsed_date_values": 0}
     for source in source_rows:
         row: Dict[str, Any] = {"_source_row": source["_source_row"], "_source_sheet": source["_source_sheet"]}
-        for canonical in OUTPUT_FIELDS:
+        for canonical in INPUT_FIELDS:
             raw = source.get(mapping.get(canonical, ""), "")
             normalized = norm_text(raw)
             row[canonical] = normalized
@@ -536,6 +541,9 @@ def normalize_rows(
             if _found:
                 row["amount"] = repr(round(_total, 6))
         amount = parse_amount(row["amount"])
+        _raw_expense_at = norm_text(row.get("expense_date"))
+        if re.search(r"\d{1,2}:\d{2}", _raw_expense_at or ""):
+            row["_expense_at"] = _raw_expense_at   # v0.2.33：仅供时段规则使用，不写入任何产出
         expense_date = parse_date(row["expense_date"])
         reasons = []
         if not row["expense_id"]:
@@ -919,6 +927,89 @@ def read_aux_table(path: Path, aliases: Dict[str, List[str]], sheet: Optional[st
     for source in source_rows:
         rows.append({canonical: norm_text(source.get(col, "")) for canonical, col in mapping.items()})
     return rows, mapping
+
+
+def _has_time(value: Any) -> bool:
+    return bool(re.search(r"\d{1,2}:\d{2}", str(value or "")))
+
+
+def _at(value: Any) -> Optional[datetime]:
+    """解析「日期 + 时间」为 naive datetime；纯日期/失败返回 None（不猜）。"""
+    text = norm_text(value)
+    if not text or not _has_time(text):
+        return None
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d %H:%M",
+                "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M"):
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+TRANSPORT_TYPES = ("flight", "train", "bus", "transport", "机票", "火车", "高铁", "大巴", "动车")
+
+
+def run_segment_checks(rows: Sequence[Dict[str, Any]], builder: ResultBuilder) -> None:
+    """v0.2.33：时间级「物理不可能」。
+
+    **帕累托**：时间只从内部键 `_expense_at`（原始日期+时间）与 `arrive_at` 读取；
+    普通台账（纯日期、无到达时间）→ 一行都不会产生，产出与旧版逐字节一致。
+    """
+    hotels, moves = [], []
+    for row in rows:
+        if norm_text(row.get("check_out")) and _at(row.get("check_out")):
+            hotels.append(row)
+        if norm_text(row.get("expense_type")).lower() in TRANSPORT_TYPES and _at(row.get("_expense_at")):
+            moves.append(row)
+
+    # ① 退房晚于交通出发（同人、同城：酒店所在地 = 交通出发地）
+    for hotel in hotels:
+        out_at = _at(hotel.get("check_out"))
+        city = norm_text(hotel.get("dest_city"))
+        if not out_at or not city:
+            continue
+        for move in moves:
+            if norm_text(move.get("employee_id")) != norm_text(hotel.get("employee_id")):
+                continue
+            if norm_text(move.get("origin_city")) != city:
+                continue
+            dep_at = _at(move.get("_expense_at"))
+            if dep_at and dep_at < out_at:
+                builder.add(
+                    "checkout-before-transport", "退房时间晚于交通出发（物理不可能）", 4, "strong",
+                    (hotel, move), ("expense_id", "employee_id", "expense_date", "check_out", "origin_city"),
+                    ["%s 在 %s 的退房时间为 %s，但同一人在 %s 已从 %s 出发（%s）"
+                     % (hotel.get("employee_id"), city, out_at.isoformat(sep=" "),
+                        move.get("_expense_at"), move.get("origin_city"), move.get("expense_id"))],
+                    ["退房时间可能是预计离店时间而实际提前离店；或交通票据时间被改填"],
+                    ["实际离店时间与交通票据是否一致？是否提前退房？"],
+                    ["核对酒店离店记录与交通票据原件"],
+                    [{"factor": "checkout_after_departure", "points": 4}])
+
+    # ② 两段交通时段重叠（人不可能同时乘两个交通工具）—— 需 arrive_at
+    for i, left in enumerate(moves):
+        ls, le = _at(left.get("_expense_at")), _at(left.get("arrive_at"))
+        if not ls or not le:
+            continue
+        for right in moves[i + 1:]:
+            if norm_text(right.get("employee_id")) != norm_text(left.get("employee_id")):
+                continue
+            rs, re_ = _at(right.get("_expense_at")), _at(right.get("arrive_at"))
+            if not rs or not re_:
+                continue
+            if ls < re_ and rs < le:
+                builder.add(
+                    "segment-overlap", "同一人同一时段存在两段交通（物理不可能）", 4, "strong",
+                    (left, right), ("expense_id", "employee_id", "expense_date", "arrive_at"),
+                    ["%s 的 %s（%s ~ %s）与 %s（%s ~ %s）时段重叠"
+                     % (left.get("employee_id"), left.get("expense_id"), ls.isoformat(sep=" "),
+                        le.isoformat(sep=" "), right.get("expense_id"),
+                        rs.isoformat(sep=" "), re_.isoformat(sep=" "))],
+                    ["重复报销同一段行程；或行程时间被改填；或票据为他人"],
+                    ["两段交通的实际乘坐人是谁？是否存在退改签？"],
+                    ["核对两段票据的乘机/乘车人、票号与退改记录"],
+                    [{"factor": "overlapping_segments", "points": 4}])
 
 
 def run_travel_cross_check(analyzable, travel_rows, attendance_rows, policy, builder,
@@ -2370,6 +2461,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         warnings.append("已按 status_filter 排除 %d 行（见 excluded_by_status.csv），这些行不参与分析" % len(status_excluded))
     builder = ResultBuilder(input_path.name, source_hash, policy, allowlist=allowlist)
     skipped, parameters = run_rules(analyzable, policy, builder, status_excluded=status_excluded)
+    run_segment_checks(analyzable, builder)  # v0.2.33：仅在有具体时间时才可能触发
 
     # v0.2.9：出差交叉核验（可选）。不提供辅助数据时**一行也不产生**，输出与旧版完全一致。
     travel_rows: List[Dict[str, Any]] = []

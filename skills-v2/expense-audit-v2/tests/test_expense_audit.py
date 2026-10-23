@@ -768,5 +768,68 @@ class ExpenseAuditEndToEndTest(unittest.TestCase):
             self.assertTrue(any("费用类型" in s for s in manifest["skipped_rules"]))
 
 
+class TimeSegmentRulesTest(unittest.TestCase):
+    """v0.2.33：时间级「物理不可能」。
+
+    硬验收：① 退房晚于交通出发 → 必须报；② 同人两段交通时段重叠 → 必须报；
+    ③ **只有日期没有时间**的台账 → 一条都不报（帕累托）。
+    """
+
+    HEADER = ("expense_id,employee_id,expense_type,expense_date,arrive_at,amount,currency,"
+              "vendor_name,origin_city,dest_city,check_in,check_out\n")
+
+    def _run(self, body):
+        temp = tempfile.TemporaryDirectory()
+        root = Path(temp.name)
+        data = root / "data.csv"
+        data.write_text(self.HEADER + body, encoding="utf-8")
+        out = root / "out"
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--input", str(data), "--output", str(out)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return temp, out
+
+    def _types(self, out):
+        with (out / "findings.csv").open(encoding="utf-8") as handle:
+            return [row["finding_type"] for row in csv.DictReader(handle)]
+
+    def test_checkout_after_transport_departure(self):
+        """退房 12:00 vs 火车 09:30（同城同人）→ 必须报 checkout-before-transport。"""
+        temp, out = self._run(
+            "A-HOTEL,E1,hotel,2026-07-01,,800,CNY,某酒店,,上海,2026-07-01,2026-07-03 12:00\n"
+            "A-TRAIN,E1,train,2026-07-03 09:30,,553,CNY,铁路12306,上海,北京,,\n")
+        try:
+            self.assertIn("checkout-before-transport", self._types(out))
+        finally:
+            temp.cleanup()
+
+    def test_overlapping_transport_segments(self):
+        """航班 08:00–11:00 与火车 09:30–12:30（同一人）→ 必须报 segment-overlap。"""
+        temp, out = self._run(
+            "B-FLIGHT,E2,flight,2026-07-05 08:00,2026-07-05 11:00,1200,CNY,中国国航,上海,北京,,\n"
+            "B-TRAIN,E2,train,2026-07-05 09:30,2026-07-05 12:30,300,CNY,铁路12306,上海,南京,,\n")
+        try:
+            self.assertIn("segment-overlap", self._types(out))
+        finally:
+            temp.cleanup()
+
+    def test_same_rows_without_times_produce_nothing(self):
+        """同样的矛盾，但只有日期没有时间 → 时段规则一条都不许报（帕累托）。"""
+        temp, out = self._run(
+            "C-HOTEL,E3,hotel,2026-07-01,,800,CNY,某酒店,,上海,2026-07-01,2026-07-03\n"
+            "C-TRAIN,E3,train,2026-07-03,,553,CNY,铁路12306,上海,北京,,\n"
+            "D-FLIGHT,E4,flight,2026-07-05,,1200,CNY,中国国航,上海,北京,,\n"
+            "D-TRAIN,E4,train,2026-07-05,,300,CNY,铁路12306,上海,南京,,\n")
+        try:
+            types = self._types(out)
+            self.assertNotIn("checkout-before-transport", types)
+            self.assertNotIn("segment-overlap", types)
+        finally:
+            temp.cleanup()
+
+
 if __name__ == "__main__":
     unittest.main()

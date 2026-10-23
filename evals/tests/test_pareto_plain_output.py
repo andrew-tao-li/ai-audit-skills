@@ -39,6 +39,8 @@ NEW_TRACES = [
     "ticket-number-reused", "itinerary-segment", "lodging", "住宿凭证", "suppressed_findings",
     "allowlist", "multi_occurrence", "fixed_amount", "outlier_min_amount", "vendor-concentration",
     "split-expense-cross-merchant", "large-amount", "voucher-incomplete",
+    # v0.2.33：时间级规则——普通台账（无具体时间）不许出现
+    "checkout-before-transport", "segment-overlap",
 ]
 
 # 最小「普通台账」：不含航班/住宿/差标等任何新场景字段；日期全为工作日
