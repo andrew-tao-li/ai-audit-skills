@@ -27,13 +27,11 @@ SKILL = ROOT / "skills-v2" / "expense-audit-v2"
 SCRIPT = SKILL / "scripts" / "run_expense_audit.py"
 
 # 普通场景下**原件**就产出的文件（多一个都算破坏帕累托）
-# v0.2.37：dashboard 文件名带数据源 → 本用例的输入固定为 plain.csv，故固定为 dashboard-plain.html
-# v0.2.40：所有产出带数据源前缀（本用例输入固定 plain.csv）
-BASELINE_FILES = sorted("plain-" + n for n in (
-    "bad_rows.csv", "clean_expenses.csv", "data_quality.md", "index.html",
-    "evidence.jsonl", "findings.csv", "findings.jsonl", "run_manifest.json", "summary.md",
-) ) + ["dashboard-plain.html"]
-BASELINE_FILES = sorted(BASELINE_FILES)
+BASELINE_FILES = sorted(
+    ("bad_rows.csv", "clean_expenses.csv", "data_quality.md", "index.html",
+     "evidence.jsonl", "findings.csv", "findings.jsonl", "run_manifest.json", "summary.md",
+     "dashboard.html")
+)
 
 # 新增能力的"痕迹词"：普通场景一个都不该出现
 NEW_TRACES = [
