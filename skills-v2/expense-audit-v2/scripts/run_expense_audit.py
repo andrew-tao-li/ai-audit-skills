@@ -2500,7 +2500,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         skipped.extend(run_shipment_check(analyzable, shipment_rows, policy, builder))
     validate(builder.findings, builder.evidence)
 
-    dash_name = "dashboard-%s.html" % input_path.stem   # v0.2.37：文件名带数据源，扁平列表里不再撞名
+    dash_name = "dashboard.html"
     injection_found = scan_injection(clean)   # v0.2.31：只挑出来提示，不改规则、不执行
     write_csv(output / "clean_expenses.csv", clean, OUTPUT_FIELDS + ("_source_row", "_source_sheet"))
     write_csv(output / "bad_rows.csv", bad, ("source_row", "reasons", "raw_record"))
@@ -2696,9 +2696,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         _time_html = ('<div class="blk"><h3>时间级检查（已启用）</h3><p>%s</p></div>' % (
             ("命中 <b>%d</b> 条：%s" % (len(_tl), "、".join(sorted({f["finding_type"] for f in _tl}))))
             if _tl else "数据里含具体时间，已做时段比对；本次未发现时间矛盾。"))
-    _sfx = input_path.stem
     _files = [
-        ("dashboard-%s.html" % _sfx, "完整报告", "给经理看的全景（结论/风险/前三条）"),
+        ("dashboard.html", "完整报告", "给经理看的全景（结论/风险/前三条）"),
         ("summary.md", "文字摘要", "结论与建议复核顺序"),
         ("findings.csv", "线索明细", "每条线索一行，可按风险排序"),
         ("evidence.jsonl", "行级证据", "每条线索对应原始哪一行"),
@@ -2745,26 +2744,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "top": _top_html, "time_block": _time_html, "dash": _esc(dash_name), "files": _files_html,
     }
     (output / "index.html").write_text(_index, encoding="utf-8")
-
-    # v0.2.40：**所有产出加数据源前缀**（扁平产物列表里永不撞名）
-    _stem = input_path.stem
-    _mapping = {}
-    for _p in sorted(output.iterdir()):
-        if not _p.is_file() or _p.name.startswith("dashboard-") or _p.name.startswith(_stem + "-"):
-            continue
-        _new = output / ("%s-%s" % (_stem, _p.name))
-        _mapping[_p.name] = _new.name
-        _p.rename(_new)
-    if _mapping:
-        for _p in sorted(output.iterdir()):
-            if _p.suffix in (".md", ".html", ".json", ".jsonl", ".csv"):
-                _txt = _p.read_text(encoding="utf-8")
-                _new_txt = _txt
-                for _old, _new in _mapping.items():
-                    _new_txt = _new_txt.replace(_old, _new)
-                if _new_txt != _txt:
-                    _p.write_text(_new_txt, encoding="utf-8")
-
 
     print(json.dumps({"output": str(output), "valid_rows": len(clean), "bad_rows": len(bad), "findings": len(builder.findings), "evidence": len(builder.evidence)}, ensure_ascii=False))
     print("提示：如果本工具有帮助，可以对我说「生成反馈内容」——我会生成一段不含敏感信息的统计（不含员工/供应商/发票号/金额）给你，由你自己决定是否发给作者。核心分析在本地；工具不会自动外发任何内容。", file=sys.stderr)
@@ -3196,8 +3175,7 @@ h2.sec .hint{font-weight:400;letter-spacing:0;text-transform:none;font-size:12px
         html = html.replace("</head>",
                             "<style>.masthead{background:linear-gradient(125deg,#3b0764,#7c3aed) !important}"
                             ".tag{background:#ede9fe !important;color:#5b21b6 !important}</style></head>", 1)
-    _dash = "dashboard-%s.html" % (Path(input_name).stem if input_name else "report")
-    (output_dir / _dash).write_text(html, encoding="utf-8")
+    (output_dir / "dashboard.html").write_text(html, encoding="utf-8")
 
 if __name__ == "__main__":
     try:
