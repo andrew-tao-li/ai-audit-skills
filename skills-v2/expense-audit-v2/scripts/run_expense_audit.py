@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-VERSION = "0.2.42"
+VERSION = "0.2.43"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -238,6 +238,10 @@ def scan_injection(rows: Sequence[Dict[str, Any]]) -> List[Dict[str, str]]:
                 })
                 break
     return found
+
+
+# v0.2.43：解析前后金额对账（仅在不一致时提示；正常场景恒为空）
+AMOUNT_MISMATCH: List[tuple] = []
 
 
 def read_table(path: Path, sheet: Optional[str]) -> Tuple[List[str], List[Dict[str, Any]], Optional[str]]:
@@ -541,6 +545,16 @@ def normalize_rows(
             if _found:
                 row["amount"] = repr(round(_total, 6))
         amount = parse_amount(row["amount"])
+        # v0.2.43：只当原文去掉 ¥/￥/逗号/空格后是**纯数字**时，才与解析值对账
+        _raw_amt = norm_text(row.get("amount"))
+        _plain = _raw_amt.replace(",", "").replace("¥", "").replace("￥", "").replace(" ", "")
+        if re.fullmatch(r"-?\d+(\.\d+)?", _plain or ""):
+            try:
+                _naive = float(_plain)
+                if amount is not None and abs(amount - _naive) > 0.01:
+                    AMOUNT_MISMATCH.append((row.get("expense_id"), _raw_amt, amount, _naive))
+            except ValueError:
+                pass
         _raw_expense_at = norm_text(row.get("expense_date"))
         if re.search(r"\d{1,2}:\d{2}", _raw_expense_at or ""):
             row["_expense_at"] = _raw_expense_at   # v0.2.33：仅供时段规则使用，不写入任何产出
@@ -2559,6 +2573,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "（启发式检测：**命中 ≠ 一定被攻击**——可能是模板残留或粘贴误入；**未命中 ≠ 安全**。）"
             % (len(injection_found),
                "、".join(sorted({item["expense_id"] for item in injection_found})[:10])))
+    if AMOUNT_MISMATCH:
+        quality.append(
+            "- ⚠️ **金额对账不一致**：%d 行的「原始文本金额」与「解析后数值」不一致（差额合计 %.2f）。"
+            "已按解析值参与分析；请核对这几行的原始单元格是否含隐藏字符或特殊格式。示例：%s"
+            % (len(AMOUNT_MISMATCH), sum(abs(m[2] - m[3]) for m in AMOUNT_MISMATCH),
+               "；".join("%s 原文「%s」→ 解析 %.2f（应为 %.2f）" % (m[0], m[1], m[2], m[3])
+                        for m in AMOUNT_MISMATCH[:3])))
     (output / "data_quality.md").write_text("\n".join(quality) + "\n", encoding="utf-8")
 
     # 类型/优先级显示层中文化（英文 key 保留在 findings.jsonl 供机器比对）
