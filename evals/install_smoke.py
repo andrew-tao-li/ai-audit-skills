@@ -127,7 +127,9 @@ def run_installed_expense(prefix: Path, tmp: Path, results: list) -> None:
     )
     results.append(("expense-audit-v2", "装好的脚本能跑通", proc.returncode == 0, (proc.stderr or "")[-200:]))
     for name in ("findings.csv", "summary.md"):
-        results.append(("expense-audit-v2", "产出 %s" % name, (out / name).exists(), ""))
+        # v0.2.40 起产出带数据源前缀，按后缀找
+        hit = sorted(out.glob("*-" + name))
+        results.append(("expense-audit-v2", "产出 %s" % name, bool(hit), ""))
     _dashes = sorted(out.glob("dashboard*.html"))
     dash = _dashes[0] if _dashes else out / "dashboard.html"
     if dash.exists():

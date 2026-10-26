@@ -24,6 +24,15 @@ RECALL = "recall"
 F1 = "f1"
 
 
+def _find_out(directory, name):
+    """v0.2.44：产出名带数据源前缀，按后缀查找。"""
+    directory = Path(directory)
+    if name.startswith("dashboard-"):
+        return directory / name
+    hits = sorted(directory.glob("*-" + name))
+    return hits[0] if hits else directory / name
+
+
 def run_expense(fix_dir: Path, gt: dict, work_dir: Path) -> list:
     """跑一个 expense fixture，返回 finding_type 列表"""
     # expense fixture 是 csv 文件，直接在 fixtures/ 下
@@ -55,7 +64,7 @@ def run_expense(fix_dir: Path, gt: dict, work_dir: Path) -> list:
     if result.returncode != 0:
         return ["__ERROR__: " + result.stderr[:200]]
 
-    findings_csv = output_dir / "findings.csv"
+    findings_csv = _find_out(output_dir, "findings.csv")
     if not findings_csv.exists():
         return []
 
@@ -95,7 +104,7 @@ def run_procurement(fix_dir: Path, gt: dict, work_dir: Path) -> list:
     if result.returncode != 0:
         return ["__ERROR__: " + result.stderr[:200]]
 
-    findings_csv = output_dir / "findings.csv"
+    findings_csv = _find_out(output_dir, "findings.csv")
     if not findings_csv.exists():
         return []
 
@@ -134,7 +143,7 @@ def run_investigation(fix_dir: Path, gt: dict, work_dir: Path) -> list:
             return ["__ERROR__: " + result.stderr[:200]]
 
         # 检查产出是否完整
-        findings_file = output_dir / "findings.jsonl"
+        findings_file = _find_out(output_dir, "findings.jsonl")
         if findings_file.exists():
             return ["__workspace_created__"]
         return ["__workspace_missing__"]
