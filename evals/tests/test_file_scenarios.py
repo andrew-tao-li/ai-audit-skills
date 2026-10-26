@@ -15,6 +15,13 @@ PROCUREMENT_SCRIPT = PACK_ROOT / "skills-v2" / "procurement-fraud-v2" / "scripts
 INVESTIGATION_SCRIPT = PACK_ROOT / "skills-v2" / "investigation-assistant-v2" / "scripts" / "build_case_workspace.py"
 
 
+def _find_out(directory, name):
+    """v0.2.46：产出名带数据源前缀，按后缀查找。"""
+    directory = Path(directory)
+    hits = sorted(directory.glob("*-" + name))
+    return hits[0] if hits else directory / name
+
+
 def read_csv(path):
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return list(csv.DictReader(handle))
@@ -59,11 +66,11 @@ class ExpenseFileScenarioTest(unittest.TestCase):
     def test_clean_control_accepts_chinese_headers_without_false_findings(self):
         temporary, output, expected = self.run_scenario("clean-control")
         try:
-            self.assertEqual(len(read_csv(output / "clean_expenses.csv")), expected["expected_valid_rows"])
-            self.assertEqual(len(read_csv(output / "bad_rows.csv")), expected["expected_bad_rows"])
-            self.assertEqual(len(read_jsonl(output / "findings.jsonl")), expected["expected_findings"])
-            self.assertEqual(len(read_jsonl(output / "evidence.jsonl")), expected["expected_evidence"])
-            manifest = json.loads((output / "run_manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(len(read_csv(_find_out(output, "clean_expenses.csv"))), expected["expected_valid_rows"])
+            self.assertEqual(len(read_csv(_find_out(output, "bad_rows.csv"))), expected["expected_bad_rows"])
+            self.assertEqual(len(read_jsonl(_find_out(output, "findings.jsonl"))), expected["expected_findings"])
+            self.assertEqual(len(read_jsonl(_find_out(output, "evidence.jsonl"))), expected["expected_evidence"])
+            manifest = json.loads((_find_out(output, "run_manifest.json")).read_text(encoding="utf-8"))
             self.assertEqual(manifest["field_mapping"]["expense_id"], "费用编号")
             self.assertEqual(manifest["field_mapping"]["amount"], "报销金额")
             self.assertEqual(manifest["parameters"]["policy_version"], expected["required_policy_version"])
@@ -73,11 +80,11 @@ class ExpenseFileScenarioTest(unittest.TestCase):
     def test_dirty_input_quarantines_bad_rows_and_keeps_valid_rows(self):
         temporary, output, expected = self.run_scenario("dirty-input")
         try:
-            clean = read_csv(output / "clean_expenses.csv")
-            bad = read_csv(output / "bad_rows.csv")
+            clean = read_csv(_find_out(output, "clean_expenses.csv"))
+            bad = read_csv(_find_out(output, "bad_rows.csv"))
             self.assertEqual(len(clean), expected["expected_valid_rows"])
             self.assertEqual(len(bad), expected["expected_bad_rows"])
-            self.assertEqual(len(read_jsonl(output / "findings.jsonl")), expected["expected_findings"])
+            self.assertEqual(len(read_jsonl(_find_out(output, "findings.jsonl"))), expected["expected_findings"])
             self.assertEqual(clean[1]["currency"], expected["expected_defaulted_currency"])
             rendered_reasons = "\n".join(row["reasons"] for row in bad)
             for required in expected["required_bad_row_reasons"]:
@@ -115,11 +122,11 @@ class ProcurementFileScenarioTest(unittest.TestCase):
     def test_clean_control_runs_all_tables_without_false_findings(self):
         temporary, output, expected = self.run_scenario("clean-control")
         try:
-            self.assertEqual(len(read_jsonl(output / "findings.jsonl")), expected["expected_findings"])
-            self.assertEqual(len(read_csv(output / "bad_rows.csv")), expected["expected_bad_rows"])
-            handoff = json.loads((output / "investigation_handoff.json").read_text(encoding="utf-8"))
+            self.assertEqual(len(read_jsonl(_find_out(output, "findings.jsonl"))), expected["expected_findings"])
+            self.assertEqual(len(read_csv(_find_out(output, "bad_rows.csv"))), expected["expected_bad_rows"])
+            handoff = json.loads((_find_out(output, "investigation_handoff.json")).read_text(encoding="utf-8"))
             self.assertEqual(handoff["status"], expected["expected_handoff_status"])
-            manifest = json.loads((output / "run_manifest.json").read_text(encoding="utf-8"))
+            manifest = json.loads((_find_out(output, "run_manifest.json")).read_text(encoding="utf-8"))
             loaded = {item["table"] for item in manifest["input_files"] if item.get("table") != "config"}
             self.assertEqual(loaded, set(expected["expected_loaded_tables"]))
             self.assertEqual(manifest["skipped_modules"], [])
@@ -129,19 +136,19 @@ class ProcurementFileScenarioTest(unittest.TestCase):
     def test_dirty_input_quarantines_three_rows_and_marks_optional_tables_missing(self):
         temporary, output, expected = self.run_scenario("dirty-input")
         try:
-            self.assertEqual(len(read_jsonl(output / "findings.jsonl")), expected["expected_findings"])
-            bad = read_csv(output / "bad_rows.csv")
+            self.assertEqual(len(read_jsonl(_find_out(output, "findings.jsonl"))), expected["expected_findings"])
+            bad = read_csv(_find_out(output, "bad_rows.csv"))
             self.assertEqual(len(bad), expected["expected_bad_rows"])
             rendered_reasons = "\n".join(row["reasons"] for row in bad)
             for required in expected["required_bad_row_reasons"]:
                 self.assertIn(required, rendered_reasons)
             for table, count in expected["expected_valid_rows"].items():
                 self.assertEqual(len(read_csv(output / ("normalized_%s.csv" % table))), count)
-            manifest = json.loads((output / "run_manifest.json").read_text(encoding="utf-8"))
+            manifest = json.loads((_find_out(output, "run_manifest.json")).read_text(encoding="utf-8"))
             for table in expected["expected_not_provided_tables"]:
                 self.assertIn(table + " 模块：未提供输入", manifest["skipped_modules"])
                 self.assertFalse((output / ("normalized_%s.csv" % table)).exists())
-            handoff = json.loads((output / "investigation_handoff.json").read_text(encoding="utf-8"))
+            handoff = json.loads((_find_out(output, "investigation_handoff.json")).read_text(encoding="utf-8"))
             self.assertEqual(handoff["status"], expected["expected_handoff_status"])
         finally:
             temporary.cleanup()
@@ -169,13 +176,13 @@ class InvestigationFileScenarioTest(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertEqual(completed.returncode, expected["expected_return_code"], completed.stderr)
-            self.assertEqual(len(read_csv(output / "timeline.csv")), expected["expected_timeline_rows"])
-            self.assertEqual(len(read_csv(output / "out_of_scope_rows.csv")), expected["expected_out_of_scope_rows"])
-            self.assertEqual(len(read_jsonl(output / "findings.jsonl")), expected["expected_findings"])
-            matrix = read_csv(output / "evidence_matrix.csv")
+            self.assertEqual(len(read_csv(_find_out(output, "timeline.csv"))), expected["expected_timeline_rows"])
+            self.assertEqual(len(read_csv(_find_out(output, "out_of_scope_rows.csv"))), expected["expected_out_of_scope_rows"])
+            self.assertEqual(len(read_jsonl(_find_out(output, "findings.jsonl"))), expected["expected_findings"])
+            matrix = read_csv(_find_out(output, "evidence_matrix.csv"))
             self.assertEqual(len(matrix), expected["expected_issue_rows"])
             self.assertEqual(matrix[0]["status"], expected["expected_issue_status"])
-            inventory = read_jsonl(output / "evidence_inventory.jsonl")
+            inventory = read_jsonl(_find_out(output, "evidence_inventory.jsonl"))
             self.assertEqual(len(inventory), expected["expected_raw_files"])
             for item in inventory:
                 source = fixture / item["relative_path"]
