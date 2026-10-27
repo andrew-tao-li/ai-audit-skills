@@ -1,10 +1,11 @@
 {
   "schema_version": "1.0",
-  "current_version": "v0.3.45",
+  "current_version": "v0.3.48",
   "last_action": {
-    "type": "llm-analysis",
-    "timestamp": "2026-10-26T01:00:04Z",
-    "summary": "LLM analyzed 37 failures → evolution/proposals/2026-10-26T01:00:04Z-llm-analysis.md"
+    "type": "test",
+    "timestamp": "2026-10-27T01:00:01Z",
+    "run_by": "manual",
+    "summary": "precision=100% recall=100%"
   },
   "baseline_scores": {
     "expense": {
@@ -33,9 +34,9 @@
     "expense": {
       "tests": 26,
       "errors": 0,
-      "precision": 0.0385,
-      "recall": 0.0385,
-      "f1": 0.0385
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
     },
     "procurement": {
       "tests": 14,
@@ -52,233 +53,10 @@
       "f1": 1.0
     }
   },
-  "open_failures": [
-    {
-      "skill": "expense",
-      "fixture": "01_duplicate_invoice",
-      "type": "false_negative",
-      "detail": "exact-duplicate-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "02_employee_date_amount",
-      "type": "false_negative",
-      "detail": "exact-duplicate-employee-date-amount"
-    },
-    {
-      "skill": "expense",
-      "fixture": "03_sequential_invoices",
-      "type": "false_negative",
-      "detail": "sequential-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "04_format_anomaly",
-      "type": "false_negative",
-      "detail": "invoice-format-anomaly"
-    },
-    {
-      "skill": "expense",
-      "fixture": "05_holiday",
-      "type": "false_negative",
-      "detail": "holiday-signal"
-    },
-    {
-      "skill": "expense",
-      "fixture": "06_submit_before_expense",
-      "type": "false_negative",
-      "detail": "submit-before-expense"
-    },
-    {
-      "skill": "expense",
-      "fixture": "07_future_date",
-      "type": "false_negative",
-      "detail": "future-date"
-    },
-    {
-      "skill": "expense",
-      "fixture": "08_self_approval",
-      "type": "false_negative",
-      "detail": "self-approval"
-    },
-    {
-      "skill": "expense",
-      "fixture": "09_large_low_level",
-      "type": "false_negative",
-      "detail": "large-amount-low-level-approval"
-    },
-    {
-      "skill": "expense",
-      "fixture": "10_cross_employee_invoice",
-      "type": "false_negative",
-      "detail": "cross-employee-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "11_missing_expense_type",
-      "type": "false_negative",
-      "detail": "missing-expense-type"
-    },
-    {
-      "skill": "expense",
-      "fixture": "13_space_time_conflict",
-      "type": "false_negative",
-      "detail": "space-time-conflict"
-    },
-    {
-      "skill": "expense",
-      "fixture": "14_cross_period",
-      "type": "false_negative",
-      "detail": "cross-period"
-    },
-    {
-      "skill": "expense",
-      "fixture": "15_high_frequency_small_amount",
-      "type": "false_negative",
-      "detail": "high-frequency-small-amount"
-    },
-    {
-      "skill": "expense",
-      "fixture": "26_field_sales_precision",
-      "type": "false_negative",
-      "detail": "cross-employee-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_cross_employee_composite",
-      "type": "false_negative",
-      "detail": "cross-employee-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_cross_employee_composite",
-      "type": "false_negative",
-      "detail": "policy-threshold"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_cross_employee_composite",
-      "type": "false_negative",
-      "detail": "weekend-signal"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_hotel_over_limit",
-      "type": "false_negative",
-      "detail": "policy-threshold"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_hotel_policy_weekend",
-      "type": "false_negative",
-      "detail": "policy-threshold"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_hotel_policy_weekend",
-      "type": "false_negative",
-      "detail": "weekend-signal"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_self_approval_weekend",
-      "type": "false_negative",
-      "detail": "self-approval"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_self_approval_weekend",
-      "type": "false_negative",
-      "detail": "weekend-signal"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_weekend_hotel",
-      "type": "false_negative",
-      "detail": "weekend-signal"
-    },
-    {
-      "skill": "expense",
-      "fixture": "auto_weekend_taxi",
-      "type": "false_negative",
-      "detail": "weekend-signal"
-    },
-    {
-      "skill": "expense",
-      "fixture": "cand-02",
-      "type": "false_negative",
-      "detail": "weekend-signal"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_01_full_audit",
-      "type": "false_negative",
-      "detail": "exact-duplicate-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_01_full_audit",
-      "type": "false_negative",
-      "detail": "policy-threshold"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_01_full_audit",
-      "type": "false_negative",
-      "detail": "self-approval"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_01_full_audit",
-      "type": "false_negative",
-      "detail": "weekend-signal"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_02_procurement_abuse",
-      "type": "false_negative",
-      "detail": "large-amount-low-level-approval"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_02_procurement_abuse",
-      "type": "false_negative",
-      "detail": "near-duplicate"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_03_hr_falsified",
-      "type": "false_negative",
-      "detail": "cross-employee-invoice"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_03_hr_falsified",
-      "type": "false_negative",
-      "detail": "future-date"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_03_hr_falsified",
-      "type": "false_negative",
-      "detail": "policy-threshold"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_03_hr_falsified",
-      "type": "false_negative",
-      "detail": "self-approval"
-    },
-    {
-      "skill": "expense",
-      "fixture": "complex_03_hr_falsified",
-      "type": "false_negative",
-      "detail": "submit-before-expense"
-    }
-  ],
-  "iteration_count": 54,
+  "open_failures": [],
+  "iteration_count": 55,
   "created_at": "2026-09-20T23:57:00Z",
-  "last_modified": "2026-10-26T01:00:04Z",
+  "last_modified": "2026-10-27T01:00:01Z",
   "next_action": "run_baseline",
   "proposals": [
     {
@@ -352,7 +130,7 @@
     "status": "ok",
     "message": "MiniMax API 可达",
     "provider": "minimax",
-    "checked_at": "2026-10-26T01:00:04Z"
+    "checked_at": "2026-10-27T01:00:01Z"
   },
   "guardrail_history": [
     {
@@ -712,5 +490,6 @@
         }
       }
     }
-  ]
+  ],
+  "baseline_warning": "Baseline 100% 通过，但所有 fixture 都是'单 finding'设计。建议增加复合场景 fixture 来测试真正的业务复杂度。"
 }
