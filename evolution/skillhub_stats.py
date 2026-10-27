@@ -178,8 +178,11 @@ def build_report(hub: list, comments: dict, gh: dict, prev: dict, namespace: str
             downloads_txt = str(total_downloads)
             if total_downloads > prev_total_downloads:
                 downloads_txt += "（↑%d）" % (total_downloads - prev_total_downloads)
-            lines.append("**SkillHub**（@%s）: 下载 %s · 安装 %d · 收藏 %d · 评论 %d"
-                         % (namespace, downloads_txt, total_installs, total_stars, total_comments))
+            # v2026-10-27：`installs` 平台**从未填充**（实测恒为 0，而用户在 WorkBuddy 里确实装过多次）；
+            # 安装动作实际记在 `downloads` 里。为避免每天误导成"0 安装"，为 0 时不再展示该字段。
+            installs_txt = (" · 安装 %d" % total_installs) if total_installs else ""
+            lines.append("**SkillHub**（@%s）: 下载 %s%s · 收藏 %d · 评论 %d"
+                         % (namespace, downloads_txt, installs_txt, total_stars, total_comments))
             for r in found:
                 c = (comments.get(r["slug"], {}) or {}).get("comments", 0)
                 cat = r.get("category") or "未分类"
@@ -190,8 +193,9 @@ def build_report(hub: list, comments: dict, gh: dict, prev: dict, namespace: str
                     bump = " ↑%d" % (d_now - d_prev)
                 if c and c > prev_comments.get(r["slug"], 0):
                     bump += " 💬新 %d" % (c - prev_comments.get(r["slug"], 0))
-                lines.append("  · %s：下载 %d%s · 安装 %d · 收藏 %d · 评论 %d｜%s" % (
-                    r["name"], d_now, bump, r.get("installs", 0), r.get("stars", 0), c, cat))
+                inst = (" · 安装 %d" % r["installs"]) if r.get("installs") else ""
+                lines.append("  · %s：下载 %d%s%s · 收藏 %d · 评论 %d｜%s" % (
+                    r["name"], d_now, bump, inst, r.get("stars", 0), c, cat))
         else:
             lines.append("**SkillHub**（@%s）: 暂时读不到数据" % namespace)
         if missing:
