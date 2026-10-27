@@ -1,0 +1,18 @@
+{
+  "timestamp": "20261027T072235Z",
+  "platform": "opencode",
+  "total": 1,
+  "passed": 0,
+  "failed": 1,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-p0q1gpaz/out，并告诉我发现了几条 finding。",
+      "passed": false,
+      "error": "找不到 opencode 可执行文件",
+      "checks": [],
+      "duration_s": 0.0
+    }
+  ]
+}

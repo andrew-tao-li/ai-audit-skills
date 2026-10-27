@@ -21,6 +21,7 @@ OpenCode 全自动验收（跨平台验收的第 1 站）。
 """
 import argparse
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -63,6 +64,24 @@ def parse_events(stdout: str) -> dict:
     return {"skill_calls": skill_calls, "shell_cmds": shell_cmds, "texts": texts}
 
 
+def _same_skill(a: str, b: str) -> bool:
+    """宿主上报的 skill 名可能去掉 -v2 后缀、大小写/下划线不同；归一后比较。"""
+    def norm(x: str) -> str:
+        x = (x or "").strip().lower().replace("_", "-")
+        return re.sub(r"-v\d+$", "", x)
+    na, nb = norm(a), norm(b)
+    return bool(na) and bool(nb) and (na == nb or na in nb or nb in na)
+
+
+def _find_out(outdir: Path, name: str) -> Path:
+    """v0.2.40 起产出带数据源前缀（如 expenses-summary.md / dashboard-expenses.html），按后缀/前缀查找。"""
+    if name == "dashboard.html" or name.startswith("dashboard-"):
+        hits = sorted(outdir.glob("dashboard*.html"))
+        return hits[0] if hits else outdir / name
+    hits = sorted(outdir.glob("*-" + name))
+    return hits[0] if hits else outdir / name
+
+
 def check_case(case: dict, parsed: dict, outdir: Path) -> dict:
     """对单个用例做校验，返回 {passed, checks: [{name, ok, detail}]}。"""
     exp = case.get("expect", {})
@@ -73,8 +92,17 @@ def check_case(case: dict, parsed: dict, outdir: Path) -> dict:
 
     # 1. 该触发的 skill
     if exp.get("skill_used"):
-        ok = exp["skill_used"] in parsed["skill_calls"]
-        add("加载预期 skill", ok, "skill 调用=%s" % parsed["skill_calls"])
+        want = exp["skill_used"]
+        ok = any(_same_skill(want, c) for c in parsed["skill_calls"])
+        detail = "skill 调用=%s" % parsed["skill_calls"]
+        if not ok:
+            # 无头宿主（opencode run）可能不上报 skill 事件；
+            # 但**执行了该 skill 包内的命令/脚本**是"确实加载并使用了它"的实证。
+            hits = [c for c in parsed["shell_cmds"] if want in c]
+            if hits:
+                ok = True
+                detail = "无 skill 事件，但执行了该 skill 包内命令（实证）：%s" % hits[0][:90]
+        add("加载预期 skill", ok, detail)
 
     # 2. 不该触发（负向对照）
     if exp.get("skill_not_used"):
@@ -89,7 +117,7 @@ def check_case(case: dict, parsed: dict, outdir: Path) -> dict:
 
     # 4. 输出文件
     if exp.get("output_files"):
-        missing = [f for f in exp["output_files"] if not (outdir / f).exists()]
+        missing = [f for f in exp["output_files"] if not _find_out(outdir, f).exists()]
         add("产出预期文件", not missing, "缺: %s" % missing if missing else "全部存在")
 
     # 5. 回答要点

@@ -1,0 +1,50 @@
+{
+  "timestamp": "20261027T072244Z",
+  "platform": "opencode",
+  "total": 1,
+  "passed": 0,
+  "failed": 1,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-lmqz26qg/out，并告诉我发现了几条 finding。",
+      "exit_code": 0,
+      "passed": false,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": false,
+          "detail": "skill 调用=[]"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_expense_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['finding', '发现']"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [
+        "ls -la && echo \"---\" && ls -la skills-v2 2>/dev/null || true",
+        "find skills-v2/expense-audit-v2 -type f | sort",
+        "python3 scripts/run_expense_audit.py --check-env 2>&1",
+        "python3 scripts/run_expense_audit.py \\\n  --input examples/input/expenses.csv \\\n  --policy examples/input/policy.json \\\n  --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-lmqz26qg/out 2>&1; echo \"EXIT=$?\"",
+        "ls -la /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-lmqz26qg/out/",
+        "python3 -c \"import json; f=json.load(open('/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-lmqz26qg/out/expenses-findings.jsonl')); print('findings jsonl lines:', len(f))\" 2>&1; wc -l /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-lmqz26qg/out/expenses-findings.jsonl 2>&1"
+      ],
+      "answer_excerpt": "已跑完，结果如下。\n\n**执行内容**\n- 用 `expense-audit-v2` 技能跑了包内自带的 `examples/input/expenses.csv` + `policy.json`\n- 输出写到 `/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-lmqz26qg/out`（退出码 0，`network_access: false`，全程离线只读）\n\n**发现了几条 finding：11 条**\n\n补充几项关键数字：\n- 有效记录 22 行，坏行 1 行（`EXP-BAD`，日期/金额非法）\n- Evidence 72 条（每条 finding 均可回源到行级证据）\n- 风险分布：高 1 / 中 8 / 低 2\n- 类型分布：超制度上限 3、周末消费 2、发票号重复 1、发票连号 1、同员工同日同金额 1、异常高额 1、拆单报销 1、金额近似 1\n\n产出文件（均带 `expenses-` 前缀）已生成，入口页是 `expenses-index.html`，可直接打开 `dashboard-expenses.html` 看全景图。\n\n提醒一句（技能本身也强调）：这 11 条是**复核线索，不是舞弊/虚假报销/拒付结论**，正式判断需要人工核对原始凭证后作出。",
+      "stderr_tail": "",
+      "duration_s": 57.9
+    }
+  ]
+}

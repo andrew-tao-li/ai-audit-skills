@@ -1,0 +1,48 @@
+{
+  "timestamp": "20261027T072449Z",
+  "platform": "opencode",
+  "total": 1,
+  "passed": 1,
+  "failed": 0,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-cwr9t2pm/out，并告诉我发现了几条 finding。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "无 skill 事件，但执行了该 skill 包内命令（实证）：python3 --version; ls -la /Users/rockymary/ai-audit-skills/repo/skills-v2/expense-audit-v2"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_expense_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['finding', '发现']"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [
+        "python3 --version; ls -la /Users/rockymary/ai-audit-skills/repo/skills-v2/expense-audit-v2/examples/input/",
+        "python3 scripts/run_expense_audit.py --input skills-v2/expense-audit-v2/examples/input/expenses.csv --policy skills-v2/expense-audit-v2/examples/input/policy.json --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-cwr9t2pm/out",
+        "python3 scripts/run_expense_audit.py --input examples/input/expenses.csv --policy examples/input/policy.json --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-cwr9t2pm/out",
+        "ls -la /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-cwr9t2pm/out"
+      ],
+      "answer_excerpt": "已完成。用 `expense-audit-v2`（包内 `expense-audit` 技能的当前版本）跑了自带样例 `examples/input/expenses.csv` + `policy.json`，输出已写入指定目录。\n\n**发现 11 条 finding。**\n\n结果概览：\n- 有效记录 22 条，坏行 1 条（`EXP-BAD`，日期/金额无法解析）\n- Evidence 72 条，每条 finding 都有行级证据可回源\n- 风险分布：高 1 / 中 8 / 低 2\n- 类型分布：超制度上限 3、周末消费 2、发票号重复 1、发票连号 1、同员工同日同金额 1、异常高额 1、拆单报销 1、金额近似 1\n\n产物 10 个文件（均带 `expenses-` 前缀）都在输出目录：\n`expenses-index.html`（入口页）、`expenses-summary.md`、`expenses-findings.{csv,jsonl}`、`expenses-evidence.jsonl`、`expenses-data_quality.md`、`expenses-clean_expenses.csv`、`expenses-bad_rows.csv`、`expenses-run_manifest.json`、`dashboard-expenses.html`。\n\n按 sk",
+      "stderr_tail": "",
+      "duration_s": 49.5
+    }
+  ]
+}
