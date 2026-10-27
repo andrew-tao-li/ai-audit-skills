@@ -63,6 +63,15 @@ def parse_events(stdout: str) -> dict:
     return {"skill_calls": skill_calls, "shell_cmds": shell_cmds, "texts": texts}
 
 
+def _find_out(outdir: Path, name: str) -> Path:
+    """v0.2.40 起产出带数据源前缀（如 expenses-summary.md / dashboard-expenses.html），按后缀/前缀查找。"""
+    if name == "dashboard.html" or name.startswith("dashboard-"):
+        hits = sorted(outdir.glob("dashboard*.html"))
+        return hits[0] if hits else outdir / name
+    hits = sorted(outdir.glob("*-" + name))
+    return hits[0] if hits else outdir / name
+
+
 def check_case(case: dict, parsed: dict, outdir: Path) -> dict:
     """对单个用例做校验，返回 {passed, checks: [{name, ok, detail}]}。"""
     exp = case.get("expect", {})
@@ -89,7 +98,7 @@ def check_case(case: dict, parsed: dict, outdir: Path) -> dict:
 
     # 4. 输出文件
     if exp.get("output_files"):
-        missing = [f for f in exp["output_files"] if not (outdir / f).exists()]
+        missing = [f for f in exp["output_files"] if not _find_out(outdir, f).exists()]
         add("产出预期文件", not missing, "缺: %s" % missing if missing else "全部存在")
 
     # 5. 回答要点
