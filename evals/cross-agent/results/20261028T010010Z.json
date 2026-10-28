@@ -1,0 +1,132 @@
+{
+  "timestamp": "20261028T010010Z",
+  "platform": "opencode",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-z_pubqyu/out，并告诉我发现了几条 finding。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "无 skill 事件，但执行了该 skill 包内命令（实证）：python3 skills-v2/expense-audit-v2/scripts/run_expense_audit.py --input skills-v2/expense-"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_expense_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['finding', '发现']"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [
+        "python3 skills-v2/expense-audit-v2/scripts/run_expense_audit.py --input skills-v2/expense-audit-v2/examples/input/expenses.csv --policy skills-v2/expense-audit-v2/examples/input/policy.json --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-z_pubqyu/out"
+      ],
+      "answer_excerpt": "跑完了。结果如下：\n\n**发现 11 条 finding**（高风险 1 / 中风险 8 / 低风险 2）。\n\n## 运行概况\n\n- 输入：`skills-v2/expense-audit-v2/examples/input/expenses.csv` + `policy.json`\n- 输出目录：`/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-z_pubqyu/out`\n- 有效记录 22 条，坏行 1 条；Evidence 72 条\n- 退出码 0，全程本地、未联网\n\n## Finding 类型分布\n\n| 类型 | 条数 |\n|---|---|\n| 超制度上限 | 3 |\n| 周末消费 | 2 |\n| 发票号重复 | 1 |\n| 发票连号 | 1 |\n| 同员工同日同金额 | 1 |\n| 拆单报销 | 1 |\n| 异常高额 | 1 |\n| 金额近似 | 1 |\n\n## 输出产物（10 个，均带 `expenses-` 前缀）\n\n入口页 `expenses-index.html` → 摘要 `expenses-summary.md` → 明细 `expenses-findings.csv/jsonl`、`expenses-evidence.jsonl`，另有 `expens",
+      "stderr_tail": "",
+      "duration_s": 29.7
+    },
+    {
+      "id": "procurement-trigger-and-run",
+      "skill": "procurement-fraud-v2",
+      "prompt": "用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-98o0eyzh/out，并告诉我发现了几条红旗。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "skill 调用=['procurement-fraud']"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_procurement_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['红旗', 'finding', '发现']"
+        }
+      ],
+      "skill_calls": [
+        "procurement-fraud"
+      ],
+      "shell_cmds": [
+        "python3 scripts/run_procurement_audit.py --check-env",
+        "python3 scripts/run_procurement_audit.py --input-dir examples/input --config examples/input/config.json --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-98o0eyzh/out"
+      ],
+      "answer_excerpt": "已完成。用 `procurement-fraud-v2`（本仓库 canonical 版，`skills-v2/procurement-fraud-v2`）跑了它包内的 `examples/input` 样例，输出写入指定目录。\n\n**结果：发现 12 条红旗**（另有 71 条证据，调查移交建议为 `recommended`）。\n\n风险分布：高 1 条、中 8 条、低 3 条。按类型逐条：\n\n| # | 类型 | 说明 | 风险 |\n|---|---|---|---|\n| PROC-000001 | 供应商共享银行账户 | V001/V002 共享 bank_account | 高 |\n| PROC-000002 | 员工—供应商共享电话 | E001 与 V001 同电话 | 中 |\n| PROC-000003 | 价格异常偏高 | V001 同类采购单价离群 | 中 |\n| PROC-000004 | 拆单采购 | 短期多笔合计超审批阈值 | 中 |\n| PROC-000005 | 下单早于审批（跨日） | | 低 |\n| PROC-000006 | 收货早于下单 | | 中 |\n| PROC-000007 | 收货早于审批 | | 中 |\n| PROC-000008 | 付款早于审批 | | 中 |\n| PROC-000009 | 采购员—供应商集中度 | B900→V00",
+      "stderr_tail": "",
+      "duration_s": 19.2
+    },
+    {
+      "id": "cn-entity-three-state",
+      "skill": "cn-entity-relation-check",
+      "prompt": "用 cn-entity-relation-check skill 判断两个主体「上海甲科技有限公司」和「上海乙科技有限公司」有没有公开工商关联。它包内 examples/input/company_company_related.json 是证据。请给出三态结论（关联/不关联/待核查）并说明依据。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "skill 调用=['cn-entity-relation-check']"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['关联', '待核查']"
+        }
+      ],
+      "skill_calls": [
+        "cn-entity-relation-check"
+      ],
+      "shell_cmds": [
+        "python3 scripts/cli.py --a \"上海甲科技有限公司\" --b \"上海乙科技有限公司\" --graph examples/input/company_company_related.json",
+        "python3 scripts/cli.py --a \"上海甲科技有限公司\" --b \"上海乙科技有限公司\" --graph examples/input/company_company_related.json --entities-resolved --structured-provider --scope-complete"
+      ],
+      "answer_excerpt": "已完成判断。结论如下。\n\n## 三态结论：**关联**（RELATED）\n\n### 依据：存在一条可复核的强关系路径\n\n证据图 `company_company_related.json` 中的节点与边：\n\n| 节点 | 类型 | 名称 | 唯一标识 |\n|---|---|---|---|\n| A | 公司 | 上海甲科技有限公司 | `91310000MA1K3A000X` |\n| B | 公司 | 上海乙科技有限公司 | `91310000MA1K3B000Y` |\n| P1 | 自然人 | 张三 | `person-zhangsan-001` |\n\n| 边 | 关系 | 当前状态 |\n|---|---|---|\n| P1 → A | `LEGAL_REP`（法定代表人） | current |\n| P1 → B | `SHAREHOLDER`（股东，持股 35%） | current |\n\n由此得到一条长度为 2 的强关系路径：\n\n> **上海甲科技有限公司 ←(法定代表人)— 张三 —(股东 35%)→ 上海乙科技有限公司**\n\n即：**张三既是甲公司的法定代表人，又是乙公司持股 35% 的股东**。两个公司通过共同自然人「张三」形成公开工商关联。\n\n### 为什么能下「关联」而不是「待核查」\n\n1. **强关系成立**：`LEGAL_REP`（法人）与 `SHAREHOL",
+      "stderr_tail": "",
+      "duration_s": 30.4
+    },
+    {
+      "id": "no-trigger-control",
+      "skill": null,
+      "prompt": "请只回答数字：1+1 等于几？",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "未加载任何 skill",
+          "ok": true,
+          "detail": "skill 调用=[]"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [],
+      "answer_excerpt": "2",
+      "stderr_tail": "",
+      "duration_s": 1.4
+    }
+  ]
+}
