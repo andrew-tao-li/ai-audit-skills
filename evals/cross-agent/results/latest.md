@@ -1,21 +1,21 @@
 # OpenCode 全自动验收报告
 
-- 时间：20261028T010010Z
+- 时间：20261029T010015Z
 - 平台：OpenCode（无头 `opencode run`）
 - 结果：**4/4 通过**
 
-## ✅ expense-trigger-and-run（expense-audit-v2，耗时 29.7s）
+## ✅ expense-trigger-and-run（expense-audit-v2，耗时 24.5s）
 
-> 提问：用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-z_pubqyu/out，并告诉我发现了几条 finding。
+> 提问：用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-v8lsrvmd/out，并告诉我发现了几条 finding。
 
-- ✅ 加载预期 skill；无 skill 事件，但执行了该 skill 包内命令（实证）：python3 skills-v2/expense-audit-v2/scripts/run_expense_audit.py --input skills-v2/expense-
+- ✅ 加载预期 skill；无 skill 事件，但执行了该 skill 包内命令（实证）：find /Users/rockymary/ai-audit-skills/repo/skills-v2/expense-audit-v2 -type f | sort
 - ✅ 执行了目标脚本；含 'run_expense_audit.py'
 - ✅ 产出预期文件；全部存在
 - ✅ 回答含预期要点；命中: ['finding', '发现']
 
-## ✅ procurement-trigger-and-run（procurement-fraud-v2，耗时 19.2s）
+## ✅ procurement-trigger-and-run（procurement-fraud-v2，耗时 31.9s）
 
-> 提问：用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-98o0eyzh/out，并告诉我发现了几条红旗。
+> 提问：用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-kzktkis9/out，并告诉我发现了几条红旗。
 
 - ✅ 加载预期 skill；skill 调用=['procurement-fraud']
 - ✅ 执行了目标脚本；含 'run_procurement_audit.py'
@@ -23,7 +23,7 @@
 - ✅ 回答含预期要点；命中: ['红旗', 'finding', '发现']
 - skill 调用：`['procurement-fraud']`
 
-## ✅ cn-entity-three-state（cn-entity-relation-check，耗时 30.4s）
+## ✅ cn-entity-three-state（cn-entity-relation-check，耗时 33.2s）
 
 > 提问：用 cn-entity-relation-check skill 判断两个主体「上海甲科技有限公司」和「上海乙科技有限公司」有没有公开工商关联。它包内 examples/input/company_company_related.json 是证据。请给出三态结论（关联/不关联/待核查）并说明依据。
 
