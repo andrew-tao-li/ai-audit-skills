@@ -3,7 +3,7 @@
   "current_version": "v0.3.48",
   "last_action": {
     "type": "test",
-    "timestamp": "2026-10-29T01:00:05Z",
+    "timestamp": "2026-10-30T13:53:50Z",
     "run_by": "manual",
     "summary": "precision=100% recall=100%"
   },
@@ -54,9 +54,9 @@
     }
   },
   "open_failures": [],
-  "iteration_count": 57,
+  "iteration_count": 58,
   "created_at": "2026-09-20T23:57:00Z",
-  "last_modified": "2026-10-29T01:00:05Z",
+  "last_modified": "2026-10-30T13:53:50Z",
   "next_action": "run_baseline",
   "proposals": [
     {
@@ -127,10 +127,10 @@
     }
   ],
   "health": {
-    "status": "ok",
-    "message": "MiniMax 不可用（000000），已回退 DeepSeek",
-    "provider": "deepseek",
-    "checked_at": "2026-10-29T01:00:05Z"
+    "status": "no_api_key",
+    "message": "MINIMAX_API_KEY 和 DEEPSEEK_API_KEY 均未设置",
+    "provider": "",
+    "checked_at": "2026-10-30T13:53:50Z"
   },
   "guardrail_history": [
     {
