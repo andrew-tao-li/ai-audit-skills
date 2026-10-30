@@ -1,0 +1,46 @@
+{
+  "timestamp": "20261030T135628Z",
+  "platform": "opencode",
+  "total": 1,
+  "passed": 1,
+  "failed": 0,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-hb4batoc/out，并告诉我发现了几条 finding。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "无 skill 事件，但执行了该 skill 的目标脚本（实证）：python3 scripts/run_expense_audit.py --check-env"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_expense_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['finding', '发现']"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [
+        "python3 scripts/run_expense_audit.py --check-env",
+        "python3 scripts/run_expense_audit.py \\\n  --input examples/input/expenses.csv \\\n  --policy examples/input/policy.json \\\n  --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-hb4batoc/out"
+      ],
+      "answer_excerpt": "已完成。用 expense-audit skill 的 `run_expense_audit.py` 跑通了它自带的 `examples/input` 样例（`expenses.csv` + `policy.json`），输出写入 `/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-hb4batoc/out`。\n\n结果摘要：\n\n- **Finding 数：11 条**（高 1 / 中 8 / 低 2）\n- 有效记录 22，坏行 1，evidence 72 条\n- 发现类型分布：\n  - 超制度上限 3\n  - 周末消费 2\n  - 发票号重复 1、发票连号 1、同员工同日同金额 1、拆单报销 1、异常高额 1、金额近似 1\n\n产出 10 个文件（全部带 `expenses-` 前缀）：入口页 `expenses-index.html`、`expenses-summary.md`、`expenses-findings.csv/jsonl`、`expenses-evidence.jsonl`、`expenses-data_quality.md`、`expenses-clean_expenses.csv`、`expenses-bad_rows.csv`、`expenses-run_ma",
+      "stderr_tail": "",
+      "duration_s": 20.7
+    }
+  ]
+}

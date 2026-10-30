@@ -98,10 +98,11 @@ def check_case(case: dict, parsed: dict, outdir: Path) -> dict:
         if not ok:
             # 无头宿主（opencode run）可能不上报 skill 事件；
             # 但**执行了该 skill 包内的命令/脚本**是"确实加载并使用了它"的实证。
-            hits = [c for c in parsed["shell_cmds"] if want in c]
+            target = exp.get("script_ran_contains") or ""
+            hits = [c for c in parsed["shell_cmds"] if want in c or (target and target in c)]
             if hits:
                 ok = True
-                detail = "无 skill 事件，但执行了该 skill 包内命令（实证）：%s" % hits[0][:90]
+                detail = "无 skill 事件，但执行了该 skill 的目标脚本（实证）：%s" % hits[0][:90]
         add("加载预期 skill", ok, detail)
 
     # 2. 不该触发（负向对照）
