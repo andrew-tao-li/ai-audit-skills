@@ -73,6 +73,11 @@ def _same_skill(a: str, b: str) -> bool:
     return bool(na) and bool(nb) and (na == nb or na in nb or nb in na)
 
 
+def _has_text(joined: str, needle: str) -> bool:
+    """大小写不敏感的子串匹配：宿主回答的大小写/单复数不受控（如 Findings vs finding）。"""
+    return (needle or "").lower() in (joined or "").lower()
+
+
 def _find_out(outdir: Path, name: str) -> Path:
     """v0.2.40 起产出带数据源前缀（如 expenses-summary.md / dashboard-expenses.html），按后缀/前缀查找。"""
     if name == "dashboard.html" or name.startswith("dashboard-"):
@@ -124,13 +129,13 @@ def check_case(case: dict, parsed: dict, outdir: Path) -> dict:
     # 5. 回答要点
     if exp.get("text_contains_any"):
         joined = "\n".join(parsed["texts"])
-        hit = [k for k in exp["text_contains_any"] if k in joined]
+        hit = [k for k in exp["text_contains_any"] if _has_text(joined, k)]
         add("回答含预期要点", bool(hit), "命中: %s" % hit if hit else "未命中 %s" % exp["text_contains_any"])
 
     # 6. 免责/边界声明
     if exp.get("text_contains_all"):
         joined = "\n".join(parsed["texts"])
-        miss = [k for k in exp["text_contains_all"] if k not in joined]
+        miss = [k for k in exp["text_contains_all"] if not _has_text(joined, k)]
         add("回答含全部要点", not miss, "缺: %s" % miss if miss else "全部命中")
 
     passed = all(c["ok"] for c in checks) and len(checks) > 0
