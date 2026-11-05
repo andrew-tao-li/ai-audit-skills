@@ -50,7 +50,7 @@ python3 evals/blackbox/score_blackbox.py --version local-check
 python3 evals/verify_file_regression.py --root /path/to/host-output
 ```
 
-生成某个宿主的 120 条路由验收记录表：
+生成某个宿主的 200 条路由验收记录表：
 
 ```bash
 python3 evals/run_trigger_eval.py init \
@@ -96,7 +96,7 @@ curl -sL https://raw.githubusercontent.com/andrew-tao-li/ai-audit-skills/main/in
 - **OpenCode 全自动验收**（`evals/cross-agent/`）：**4/4** —— 在真实 Agent 上验证「该触发时是否加载正确 skill、是否执行脚本、是否产出预期文件」，含一条负面对照。
 - **安装冒烟**（`evals/install_smoke.py`）：从 `releases/latest` 下载 → `install.sh` 安装 → 真跑一遍，**25 项全过**；并断言装出来的版本**无外发地址/密钥、无管道执行、无隐瞒措辞、含「联网与风险」前置披露**。
 - **宿主实机**：Codex 项目级发现与安装路径执行通过；WorkBuddy 5.5.6 与 LobsterAI 2026.5.22 均已执行综合样例并完成文件级回归。
-- **仍未完成**：各宿主的**完整隐式路由验收**（每 skill 20 正 + 20 反，共 120 条/宿主）。详见 [测试摘要](evals/test-report-2026-09-15.md) 与 [跨 Agent 验收矩阵](evals/cross-agent-matrix.md)。
+- **仍未完成**：各宿主的**完整隐式路由验收**（每 skill 20 正 + 20 反，共 200 条/宿主）。详见 [测试摘要](evals/test-report-2026-09-15.md) 与 [跨 Agent 验收矩阵](evals/cross-agent-matrix.md)。
 
 ## 目录
 
