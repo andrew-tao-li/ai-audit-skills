@@ -22,11 +22,11 @@
 > **所有增强都是"可选、自动唤醒"的**：不提供额外数据时，行为与之前**完全一致**；提供了才多做一层。
 > 例：费用审计只给台账 → 查"数据之间对不对"；再给出差申请/打卡 → 才查"这个人当时到底在不在外地"。
 
-四个 skill 都已通过 F1 100% 的黑盒测试（expense 25 个、procurement 14 个、investigation 3 个黄金测试集，cn-entity 16 场景行级盲测 16/16 通过）。
+三个有黄金集的黑盒测试均 F1 100%（expense 26 个、procurement 14 个、investigation 3 个）；cn-entity 16 场景行级盲测 16/16 通过；audit-sql-builder 以单元测试覆盖。
 
 ## ⚠ 业务定位：辅助分析，不替代专业判断
 
-四个 skill 都属于**辅助分析工具**，**不替代专业审计/合规/法律判断**。它们：
+五个 skill 都属于**辅助分析工具**，**不替代专业审计/合规/法律判断**。它们：
 
 - **不连接银行流水**、征信系统、ERP 等外部数据源
 - **不接收**身份证号、银行账号、客户底稿、未授权资料等敏感信息
@@ -156,7 +156,7 @@ ai-audit-skills/
 
 ## 国内发布 / 触达渠道
 
-- **SkillHub（skillhub.cn）**：中国版 "Top 50 精选"，腾讯云 CDN + 百度 SEO 优化。**上架包已备好、自检通过，等作者完成实名认证后发布**（见 [docs/skillhub-listing.md](docs/skillhub-listing.md)）。
+- **SkillHub（skillhub.cn）**：中国版 "Top 50 精选"，腾讯云 CDN + 百度 SEO 优化。**已通过审核并上线**（见 [docs/skillhub-listing.md](docs/skillhub-listing.md)）。
 - **ClawHub（OpenClaw 生态）**：WorkBuddy / 有道龙虾用户一键装。**发布脚本就绪**。
 - **微信公众号**：「美会侠」（美丽的美、会计的会、侠客的侠）——国内审计师日常工作案例 + 工具应用。
 - **知识星球**：「涛哥也叫安德鲁」——深度交流与真实案例。
