@@ -35,6 +35,14 @@ FINDING_TYPE_ZH = {
 }
 PRIORITY_ZH = {"critical": "严重", "high": "高", "medium": "中", "low": "低"}
 STRENGTH_ZH = {"strong": "强", "moderate": "中", "weak": "弱"}
+# 共享属性英文字段 key → 中文显示名（出现在 findings 的 title/facts 与 dashboard，避免向审计人员暴露英文 key）
+ATTRIBUTE_ZH = {
+    "bank_account": "银行账号",
+    "phone": "联系电话",
+    "email": "邮箱",
+    "address": "地址",
+    "legal_representative": "法定代表人",
+}
 
 SCHEMAS = {
     "vendors": {
@@ -419,9 +427,10 @@ def add_shared_attribute_findings(vendors: List[Dict[str, Any]], employees: List
             if len(group) < 2:
                 continue
             kind = attribute.replace("_", "-")
-            finding = builder.add("shared-" + kind, "多个供应商共享%s" % attribute, score, strength, group,
+            label = ATTRIBUTE_ZH.get(attribute, attribute)
+            finding = builder.add("shared-" + kind, "多个供应商共享%s" % label, score, strength, group,
                                   ("vendor_id", attribute),
-                                  ["%d 个供应商的归一化 %s 相同" % (len(group), attribute)],
+                                  ["%d 个供应商的归一化 %s 相同" % (len(group), label)],
                                   ["该共享属性需要核对主体独立性和主数据准确性"],
                                   ["是否为集团公共信息、园区地址、平台账户或录入错误？"],
                                   ["核对开户资料、工商资料和供应商准入文件"],
@@ -442,9 +451,10 @@ def add_shared_attribute_findings(vendors: List[Dict[str, Any]], employees: List
             if not key or key in allowed:
                 continue
             for vendor in by_value.get(key, []):
-                finding = builder.add("employee-vendor-shared-" + attribute.replace("_", "-"), "员工与供应商共享%s" % attribute,
+                label = ATTRIBUTE_ZH.get(attribute, attribute)
+                finding = builder.add("employee-vendor-shared-" + attribute.replace("_", "-"), "员工与供应商共享%s" % label,
                                       score, strength, (employee, vendor), ("employee_id", "vendor_id", attribute),
-                                      ["员工 %s 与供应商 %s 的归一化 %s 相同" % (employee["employee_id"], vendor["vendor_id"], attribute)],
+                                      ["员工 %s 与供应商 %s 的归一化 %s 相同" % (employee["employee_id"], vendor["vendor_id"], label)],
                                       ["该属性匹配构成潜在未披露关联的复核线索"],
                                       ["是否为公共信息、数据录入错误或已申报关系？"],
                                       ["核对利益冲突申报、员工资料和供应商准入材料"],
