@@ -1,0 +1,137 @@
+{
+  "timestamp": "20261126T010008Z",
+  "platform": "opencode",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-9narxrt4/out，并告诉我发现了几条 finding。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "skill 调用=['expense-audit']"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_expense_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['finding', '发现']"
+        }
+      ],
+      "skill_calls": [
+        "expense-audit"
+      ],
+      "shell_cmds": [
+        "python3 scripts/run_expense_audit.py --input examples/input/expenses.csv --policy examples/input/policy.json --output /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-9narxrt4/out",
+        "ls -1 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-9narxrt4/out"
+      ],
+      "answer_excerpt": "完成。\n\n我用 `expense-audit-v2` 跑了它包内自带的 `examples/input` 样例数据（`expenses.csv` + `policy.json`），结果已写入：\n\n`/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-9narxrt4/out`\n\n**共发现 11 条 finding**（对应 72 条 evidence），风险分布：高 1 / 中 8 / 低 2。\n\n按类型拆开是：\n- 超制度上限 ×3\n- 周末消费 ×2\n- 发票号重复 ×1\n- 发票连号 ×1\n- 同员工同日同金额 ×1\n- 拆单报销 ×1\n- 异常高额 ×1\n- 金额近似 ×1\n\n另外：有效记录 22 条，坏行 1 条（进 `expenses-bad_rows.csv`）。\n\n输出目录里生成了 10 个带 `expenses-` 前缀的产物（`expenses-summary.md`、`expenses-findings.jsonl`、`expenses-evidence.jsonl`、`expenses-data_quality.md`、`dashboard-expenses.html` 等）。\n\n提醒一句（skill 自身的边界）：这些是**复核线索，不是舞弊/虚假报销/",
+      "stderr_tail": "",
+      "duration_s": 37.6
+    },
+    {
+      "id": "procurement-trigger-and-run",
+      "skill": "procurement-fraud-v2",
+      "prompt": "用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-13mued2j/out，并告诉我发现了几条红旗。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "无 skill 事件，但执行了该 skill 的目标脚本（实证）：ls -la /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2/"
+        },
+        {
+          "name": "执行了目标脚本",
+          "ok": true,
+          "detail": "含 'run_procurement_audit.py'"
+        },
+        {
+          "name": "产出预期文件",
+          "ok": true,
+          "detail": "全部存在"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['红旗', 'finding', '发现']"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [
+        "ls -la /Users/rockymary/ai-audit-skills/repo/skills-v2/ 2>/dev/null; echo \"---\"; find /Users/rockymary/ai-audit-skills/repo -maxdepth 3 -name \"procurement-fraud\" -type d 2>/dev/null",
+        "ls -la /Users/rockymary/ai-audit-skills/repo/skills-v2/ 2>/dev/null; echo \"---\"; find /Users/rockymary/ai-audit-skills/repo -maxdepth 3 -name \"procurement-fraud\" -type d 2>/dev/null",
+        "ls -la /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2/",
+        "find /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2/examples -type f | sort; echo \"---SCRIPTS---\"; find /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2/scripts -type f | sort",
+        "cd /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2 && python3 scripts/run_procurement_audit.py --check-env; echo \"EXIT: $?\"",
+        "cd /Users/rockymary/ai-audit-skills/repo/skills-v2/procurement-fraud-v2 && python3 scripts/run_procurement_audit.py --help"
+      ],
+      "answer_excerpt": "已完成。用 procurement-fraud-v2 skill 跑完包内 `examples/input` 样例，结果如下：\n\n## 运行结果\n\n**共发现 12 条红旗**（evidence 71 条，调查移交建议 `recommended`）\n\n风险分布：高 1 条、中 8 条、低 3 条。\n\n| # | 红旗类型 | 风险 |\n|---|---|---|\n| 1 | 供应商共享银行账号（V001 / V002） | 高 |\n| 2 | 员工与供应商共享电话（E001 / V001） | 中 |\n| 3 | 同类采购单价显著偏高 | 中 |\n| 4 | 拆单采购（短期多笔合计超审批阈值 9000） | 中 |\n| 5 | 订单日期早于审批完成日期（跨日） | 低 |\n| 6 | 收货日期早于采购订单日期 | 中 |\n| 7 | 收货日期早于审批完成日期 | 中 |\n| 8 | 付款日期早于审批完成日期 | 中 |\n| 9 | 采购员对单一供应商金额集中度较高 | 低 |\n| 10 | 同一标段投标文本高度相似 | 中 |\n| 11 | 同一标段多家报价异常接近 | 低 |\n| 12 | 同一标段内报价存在接近子簇 | 中 |\n\n## 输出位置\n\n`/var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-",
+      "stderr_tail": "",
+      "duration_s": 28.8
+    },
+    {
+      "id": "cn-entity-three-state",
+      "skill": "cn-entity-relation-check",
+      "prompt": "用 cn-entity-relation-check skill 判断两个主体「上海甲科技有限公司」和「上海乙科技有限公司」有没有公开工商关联。它包内 examples/input/company_company_related.json 是证据。请给出三态结论（关联/不关联/待核查）并说明依据。",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "加载预期 skill",
+          "ok": true,
+          "detail": "skill 调用=['cn-entity-relation-check']"
+        },
+        {
+          "name": "回答含预期要点",
+          "ok": true,
+          "detail": "命中: ['关联']"
+        }
+      ],
+      "skill_calls": [
+        "cn-entity-relation-check"
+      ],
+      "shell_cmds": [
+        "python3 scripts/cli.py --a \"上海甲科技有限公司\" --b \"上海乙科技有限公司\" --graph examples/input/company_company_related.json",
+        "python3 scripts/cli.py --a \"上海甲科技有限公司\" --b \"上海乙科技有限公司\" --graph examples/input/company_company_related.json --entities-resolved --structured-provider --scope-complete"
+      ],
+      "answer_excerpt": "## 三态结论：**关联（RELATED）**\n\n### 依据（可复核的关系路径）\n\n证据文件 `examples/input/company_company_related.json` 中，两个主体通过同一自然人「张三」形成一条长度为 2 的强关系路径：\n\n```\n上海甲科技有限公司 ←(法定代表人)— 张三 —(股东 35%)→ 上海乙科技有限公司\n```\n\n| 边 | 关系类型 | 时态 | 是否强关系 |\n|---|---|---|---|\n| 张三 → 上海甲科技有限公司 | `LEGAL_REP`（法定代表人） | 当前 | ✅ 是 |\n| 张三 → 上海乙科技有限公司 | `SHAREHOLDER`（股东，持股 35%） | 当前 | ✅ 是 |\n\n### 判定过程（对照三态协议）\n\n1. **主体已锚定**：甲、乙两公司均带 `canonical_id`（统一社会信用代码 `91310000MA1K3A000X` / `91310000MA1K3B000Y`），`capabilities.company_entity_resolution = true`，满足「关键主体已锚定」。\n2. **自然人已消歧**：张三带稳定 `canonical_id = person-zhangsan-001`，无重名歧义，满足「自然人已消歧」。\n3. **结构化数据源**：`capa",
+      "stderr_tail": "",
+      "duration_s": 38.2
+    },
+    {
+      "id": "no-trigger-control",
+      "skill": null,
+      "prompt": "请只回答数字：1+1 等于几？",
+      "exit_code": 0,
+      "passed": true,
+      "checks": [
+        {
+          "name": "未加载任何 skill",
+          "ok": true,
+          "detail": "skill 调用=[]"
+        }
+      ],
+      "skill_calls": [],
+      "shell_cmds": [],
+      "answer_excerpt": "2",
+      "stderr_tail": "",
+      "duration_s": 1.8
+    }
+  ]
+}
