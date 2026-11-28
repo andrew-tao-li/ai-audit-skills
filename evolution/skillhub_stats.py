@@ -209,6 +209,16 @@ def build_report(hub: list, comments: dict, gh: dict, prev: dict, namespace: str
     elif gh.get("error"):
         lines.append("**GitHub**: 读取失败（%s）" % gh["error"])
 
+    # v2026-11-28：**口径纠偏**——平台上的两个「下载量」都不是纯外部用户数，
+    #   此前日报直接把数字印出来，人会当成成绩（尤其是 GitHub release 资产下载：
+    #   实测 ≈ 本机每日安装冒烟自取，每资产每日 1~2 次，v0.3.50 的 33/34/33/33 与 16
+    #   正好等于 15 天 ×2 与 15 天 ×1）。SkillHub 的 downloads 则含客户端
+    #   自动安装/自动更新成分（装过一次就会持续计入）。
+    #   → 明确写进日报，避免"自己的验证回路被当成外部采用"。
+    lines.append("  · 口径：SkillHub「下载」含客户端自动安装/自动更新成分；"
+                 "GitHub release 资产下载计数基本是**本机每日安装冒烟自取**（每资产每日 1~2 次）"
+                 "——两者都不等于外部用户数")
+
     return "\n".join(lines)
 
 
