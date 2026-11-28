@@ -536,21 +536,36 @@ if [ "$SKIP_PUSH" = "0" ]; then
     if ! git diff --cached --quiet 2>/dev/null; then
         git commit -m "auto: iteration $TIMESTAMP (failures=$OPEN_FAILURES_COUNT, health=$HEALTH_STATUS)" 2>&1 | tail -2
 
-        # 尝试 push：先走默认 remote（SSH），失败再回退到 token 认证的 HTTPS
-        # （2026-09-29 教训：本机代理会偶发劫持 SSH，导致无人值守的例行推送静默失败）
+        # 尝试 push：**优先 HTTPS + token**，SSH 退居兜底。
+        # （2026-11-28 实测根因：本机代理用 fake-ip（ssh.github.com 解析到 198.18.31.188，
+        #  落在 198.18.0.0/15 保留段）→ SSH 流量被代理劫持，握手要 3~5 秒且会间歇性挂死，
+        #  导致无人值守的例行推送静默失败（4 条提交堆在本地没上去）。
+        #  HTTPS + token 不走 fake-ip，直连稳定；SSH 仍保留，token 不可用时兜底。）
         if git remote get-url origin >/dev/null 2>&1; then
             echo "  → push 到 GitHub..."
-            if git push origin main 2>&1 | tail -3; then
-                echo "  ✓ push 成功"
-            elif [ -n "${GITHUB_TOKEN:-}" ]; then
-                echo "  ⚠ SSH push 失败，回退到 HTTPS + token..."
-                if git push "https://x-access-token:${GITHUB_TOKEN}@github.com/andrew-tao-li/ai-audit-skills.git" main 2>&1 | tail -3; then
-                    echo "  ✓ push 成功（HTTPS 回退）"
+            pushed=0
+            if [ -n "${GITHUB_TOKEN:-}" ]; then
+                # ⚠️ 不能写成 `if git push ... | tail -3; then` —— 管道的退出码取自 tail（恒为 0），
+                #    推送失败也会被判成「成功」（这正是例行推送一直"静默失败"却无人发现的根因）。
+                #    正确做法：先捕获输出与退出码，再单独判。
+                push_out=$(git push "https://x-access-token:${GITHUB_TOKEN}@github.com/andrew-tao-li/ai-audit-skills.git" main 2>&1); push_rc=$?
+                echo "$push_out" | tail -3
+                if [ "$push_rc" -eq 0 ]; then
+                    echo "  ✓ push 成功（HTTPS + token）"
+                    pushed=1
                 else
-                    echo "  ⚠ push 失败（SSH 与 HTTPS 都不通）"
+                    echo "  ⚠ HTTPS push 失败（退出码 $push_rc），回退到 SSH..."
                 fi
-            else
-                echo "  ⚠ push 失败（SSH key / token 未配置或权限不足）"
+            fi
+            if [ "$pushed" = "0" ]; then
+                # ConnectTimeout 15：代理劫持时 SSH 可能长时间挂住，不能让它拖死整个例行
+                ssh_out=$(GIT_SSH_COMMAND="ssh -o ConnectTimeout=15 -o BatchMode=yes" git push origin main 2>&1); ssh_rc=$?
+                echo "$ssh_out" | tail -3
+                if [ "$ssh_rc" -eq 0 ]; then
+                    echo "  ✓ push 成功（SSH）"
+                else
+                    echo "  ⚠ push 失败（HTTPS 与 SSH 都不通，退出码 $ssh_rc）"
+                fi
             fi
         else
             echo "  ⚠ 没有配置 remote，跳过 push"
