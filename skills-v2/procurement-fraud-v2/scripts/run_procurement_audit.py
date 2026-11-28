@@ -16,8 +16,9 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+import os
 
-VERSION = "0.2.9"
+VERSION = "0.2.10"
 SKILL = "procurement-fraud-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -998,6 +999,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "outputs": sorted(path.name for path in output.iterdir()) + ["run_manifest.json", "dashboard.html"],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、字段映射、参数等），供复核追溯，不是审计结论。",
     }
+    # v0.2.49：来源码（课程/批次归因用）——只有设置了 AUDIT_SOURCE_TAG 才写进 manifest，
+    # 未设置时产出与旧版逐字节一致（帕累托：默认不改变任何行为）。
+    source_tag = os.environ.get("AUDIT_SOURCE_TAG", "").strip()
+    if source_tag:
+        manifest["source_tag"] = source_tag
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     try:
         build_dashboard_html(manifest, builder.findings, len(bad_rows), handoff, {"nodes": nodes, "edges": edges}, output)

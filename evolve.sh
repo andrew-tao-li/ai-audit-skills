@@ -494,6 +494,21 @@ else
     echo "  ⚠ 未能取得平台数据（不影响其余步骤）"
 fi
 
+# 下载归因表（周表：SkillHub 日增量 × 运营动作）——只读；失败绝不中断例行
+# 为什么加它：SkillHub 的公开接口只给 skill 级累计下载（无来源维度、无按版本拆分），
+# 所以「这波下载是谁带来的」只能靠把平台数字和运营台账对齐来回答 —— 这张表每周自动更新。
+echo ""
+echo "▶ Step 6b-2: 下载归因表"
+ATTRIBUTION_BLOCK=$(python3 evolution/attribution.py --weeks 8 2>/dev/null || true)
+if [ -n "$ATTRIBUTION_BLOCK" ]; then
+    echo "$ATTRIBUTION_BLOCK" | sed 's/^/  /' | head -20
+    NOTIFY_BODY="$NOTIFY_BODY
+
+$ATTRIBUTION_BLOCK"
+else
+    echo "  ⚠ 未能生成归因表（不影响其余步骤）"
+fi
+
 if [ -f "$PROPOSALS_DIR/${TIMESTAMP}-llm-analysis.md" ]; then
     NOTIFY_BODY="$NOTIFY_BODY
 

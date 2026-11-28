@@ -20,8 +20,9 @@ import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+import os
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 SKILL = "audit-sql-builder"
 
 # ── 审计「标准字段」→ 数据字典里可能的列名/中文名别名（用于猜映射）─────────────
@@ -329,6 +330,11 @@ def build(args) -> int:
                     "run_manifest.json", "dashboard.html"],
         "note": "技术审计轨迹：本技能只生成 SQL 文本，不连接数据库、不分析数据。",
     }
+    # v0.2.49：来源码（课程/批次归因用）——只有设置了 AUDIT_SOURCE_TAG 才写进 manifest，
+    # 未设置时产出与旧版逐字节一致（帕累托：默认不改变任何行为）。
+    source_tag = os.environ.get("AUDIT_SOURCE_TAG", "").strip()
+    if source_tag:
+        manifest["source_tag"] = source_tag
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (output / "dashboard.html").write_text(build_dashboard(manifest), encoding="utf-8")
     print(json.dumps({"output": str(output), "generated": len(generated), "skipped_missing": len(missing_rows)},

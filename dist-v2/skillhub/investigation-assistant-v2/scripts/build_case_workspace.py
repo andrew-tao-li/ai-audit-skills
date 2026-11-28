@@ -17,8 +17,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
+import os
 
-VERSION = "0.2.8"
+VERSION = "0.2.9"
 SKILL = "investigation-assistant-v2"
 
 MESSAGE_FIELDS = {
@@ -721,6 +722,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "outputs": ["evidence/raw/", "derived/", "evidence_inventory.jsonl", "evidence.jsonl", "chain_of_custody.jsonl", "out_of_scope_rows.csv", "unparseable_rows.csv", "timeline.csv", "entity_index.csv", "relationships.json", "evidence_matrix.csv", "hypothesis_register.csv", "findings.jsonl", "interview_plan.csv", "case_memo_template.md", "data_quality.md", "run_manifest.json", "dashboard.html"],
         "note": "技术审计轨迹：记录本次运行的机器可追溯信息（哈希、范围、时区等），供复核追溯，不是调查结论。",
     }
+    # v0.2.49：来源码（课程/批次归因用）——只有设置了 AUDIT_SOURCE_TAG 才写进 manifest，
+    # 未设置时产出与旧版逐字节一致（帕累托：默认不改变任何行为）。
+    source_tag = os.environ.get("AUDIT_SOURCE_TAG", "").strip()
+    if source_tag:
+        manifest["source_tag"] = source_tag
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     try:
         build_dashboard_html(manifest, scope, inventory, timeline, excluded, matrix, custody, warnings, output)

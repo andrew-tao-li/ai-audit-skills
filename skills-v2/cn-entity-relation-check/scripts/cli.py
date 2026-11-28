@@ -25,6 +25,7 @@ from typing import Optional
 
 from provider_adapter import MockProvider
 from relation_core import run_relation_check
+import os
 
 
 def main() -> int:
@@ -62,6 +63,10 @@ def main() -> int:
         sources=[{"provider": "mock", "retrieved_at": datetime.now(timezone.utc).isoformat()}],
         queried_at=datetime.now(timezone.utc).isoformat(),
     )
+    # v0.1.11：来源码（课程/批次归因用）——未设置时结果与旧版一致
+    _tag = os.environ.get("AUDIT_SOURCE_TAG", "").strip()
+    if _tag:
+        result["source_tag"] = _tag
     if args.dashboard:
         build_dashboard_html(result, args.dashboard)
     print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -51,9 +51,14 @@ NOTE_MAX_LEN = 500
 
 
 def load_manifest(out: Path) -> dict:
+    # v0.2.40 起产出统一带数据源前缀（如 expenses-run_manifest.json），不再固定叫 run_manifest.json。
+    # 写死文件名会让反馈链路自 v0.2.40 起一直报「找不到 run_manifest.json」→ 这里按后缀兜底找。
     m = out / "run_manifest.json"
     if not m.exists():
-        raise SystemExit("找不到 run_manifest.json，请确认 --output 指向审计输出目录")
+        cands = sorted(out.glob("*run_manifest.json"))
+        if not cands:
+            raise SystemExit("找不到 run_manifest.json，请确认 --output 指向审计输出目录")
+        m = cands[0]
     return json.loads(m.read_text(encoding="utf-8"))
 
 
@@ -62,6 +67,9 @@ def count_findings(out: Path) -> dict:
     priorities = {}
     total = 0
     f = out / "findings.jsonl"
+    if not f.exists():
+        c = sorted(out.glob("*findings.jsonl"))
+        f = c[0] if c else f
     if f.exists():
         for line in f.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -118,6 +126,10 @@ def main() -> int:
         lines.append("- 警告：`%s`" % json.dumps(warnings, ensure_ascii=False))
     if args.note.strip():
         lines.append("- 备注：%s" % args.note.strip()[:NOTE_MAX_LEN])
+    # 来源码（课程/批次归因）：只有跑的时候设了 AUDIT_SOURCE_TAG 才出现 → 未设置时逐字节一致
+    tag = manifest.get("source_tag", "")
+    if tag:
+        lines.append("- 来源码：%s" % tag)
     lines.append("- 提交时间：`%s`" % datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
 
     print("\n".join(lines))

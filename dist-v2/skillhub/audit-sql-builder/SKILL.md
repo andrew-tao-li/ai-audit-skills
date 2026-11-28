@@ -1,7 +1,7 @@
 ---
 name: audit-sql-builder
 description: "把审计需求翻译成可在业务系统上执行的 SQL：读数据字典（表名/字段名/中文名），建议字段映射（带候选与置信度，不硬猜），按需渲染多方言 SQL，缺字段时明确报出。Use when the user knows only the business system name and needs to pull data out — asks for 取数/写 SQL/查询语句/数据字典/从 XX 系统导数据, or wants to turn audit needs into SELECT statements before running an audit skill. Do not use for analyzing data, writing findings, or connecting to a database — this skill only produces SQL text."
-version: 0.1.1
+version: 0.1.2
 slug: andrew-tao-li-audit-sql-builder
 displayName: 审计取数 SQL 生成器
 summary: 把审计需求翻译成可在业务系统上执行的 SQL：读数据字典、建议字段映射（带候选与置信度）、按需渲染多方言 SQL，缺字段时明确报出。只取数，不做审计结论。

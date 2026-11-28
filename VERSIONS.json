@@ -1,10 +1,10 @@
 {
-  "pack": "v0.3.51",
+  "pack": "v0.3.52",
   "skills": {
-    "audit-sql-builder": "0.1.1",
-    "cn-entity-relation-check": "0.1.10",
-    "expense-audit-v2": "0.2.48",
-    "investigation-assistant-v2": "0.2.8",
-    "procurement-fraud-v2": "0.2.9"
+    "audit-sql-builder": "0.1.2",
+    "cn-entity-relation-check": "0.1.11",
+    "expense-audit-v2": "0.2.49",
+    "investigation-assistant-v2": "0.2.9",
+    "procurement-fraud-v2": "0.2.10"
   }
 }

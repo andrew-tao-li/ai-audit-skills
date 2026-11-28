@@ -17,8 +17,9 @@ from functools import lru_cache
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+import os
 
-VERSION = "0.2.48"
+VERSION = "0.2.49"
 SKILL = "expense-audit-v2"
 
 # 显示层的中文审计术语（finding_type 英文 key、风险优先级、证据强度 → 中文）
@@ -2693,6 +2694,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if policy.get("policy_source"):
         # v0.2.31：制度来源可溯（不填则 manifest 与旧版一致）
         manifest["policy_source"] = policy.get("policy_source")
+    # v0.2.49：来源码（课程/批次归因用）——只有设置了 AUDIT_SOURCE_TAG 才写进 manifest，
+    # 未设置时产出与旧版逐字节一致（帕累托：默认不改变任何行为）。
+    source_tag = os.environ.get("AUDIT_SOURCE_TAG", "").strip()
+    if source_tag:
+        manifest["source_tag"] = source_tag
     (output / "run_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     build_dashboard_html(manifest, builder.findings, len(clean), len(bad), output, input_path.name)
 

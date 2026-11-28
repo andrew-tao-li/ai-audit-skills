@@ -48,6 +48,10 @@ def main() -> int:
     ]
     if args.note.strip():
         lines.append("- 备注：%s" % args.note.strip()[:NOTE_MAX_LEN])
+    # 来源码（课程/批次归因）：只有跑的时候设了 AUDIT_SOURCE_TAG 才出现 → 未设置时逐字节一致
+    tag = result.get("source_tag", "")
+    if tag:
+        lines.append("- 来源码：%s" % tag)
     lines.append("- 提交时间：`%s`" % datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
 
     print("\n".join(lines))
