@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 SKILL = "audit-sql-builder"
 
 # ── 审计「标准字段」→ 数据字典里可能的列名/中文名别名（用于猜映射）─────────────

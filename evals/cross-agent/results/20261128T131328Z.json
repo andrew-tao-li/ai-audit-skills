@@ -1,0 +1,45 @@
+{
+  "timestamp": "20261128T131328Z",
+  "platform": "opencode",
+  "total": 4,
+  "passed": 0,
+  "failed": 4,
+  "results": [
+    {
+      "id": "expense-trigger-and-run",
+      "skill": "expense-audit-v2",
+      "prompt": "用 expense-audit skill 跑一下它包内自带的 examples/input 样例数据（CSV + policy），然后把输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-expense-trigger-and-run-h8gfxea1/out，并告诉我发现了几条 finding。",
+      "passed": false,
+      "error": "找不到 opencode 可执行文件",
+      "checks": [],
+      "duration_s": 0.0
+    },
+    {
+      "id": "procurement-trigger-and-run",
+      "skill": "procurement-fraud-v2",
+      "prompt": "用 procurement-fraud skill 跑一下它包内的 examples/input 样例（它是一个输入目录，内含 config.json 和几张表），输出写到 /var/folders/n4/mwmjk84x7yd7wpy2w7cqy9c80000gn/T/acc-procurement-trigger-and-run-o91l91pr/out，并告诉我发现了几条红旗。",
+      "passed": false,
+      "error": "找不到 opencode 可执行文件",
+      "checks": [],
+      "duration_s": 0.0
+    },
+    {
+      "id": "cn-entity-three-state",
+      "skill": "cn-entity-relation-check",
+      "prompt": "用 cn-entity-relation-check skill 判断两个主体「上海甲科技有限公司」和「上海乙科技有限公司」有没有公开工商关联。它包内 examples/input/company_company_related.json 是证据。请给出三态结论（关联/不关联/待核查）并说明依据。",
+      "passed": false,
+      "error": "找不到 opencode 可执行文件",
+      "checks": [],
+      "duration_s": 0.0
+    },
+    {
+      "id": "no-trigger-control",
+      "skill": null,
+      "prompt": "请只回答数字：1+1 等于几？",
+      "passed": false,
+      "error": "找不到 opencode 可执行文件",
+      "checks": [],
+      "duration_s": 0.0
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "id": "cn-entity-relation-check",
   "name": "关联排查",
   "name_en": "Entity Relation Check",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "对两个主体（公司/自然人）核查中国公开工商信息中是否存在可验证关联，支持公司-公司、公司-自然人、自然人-自然人三类组合，输出关联/不关联/待核查三态结论，绝不把「没查到」当「不关联」。 辅助核查公开工商关系，公开关系 ≠ 真实利益关联；不替代专业法务/合规判断；不含身份证号/股东内部协议等敏感信息。",
   "author": "andrew-tao-li",
   "homepage": "https://github.com/andrew-tao-li/ai-audit-skills",
@@ -30,5 +30,7 @@
     "工商"
   ],
   "license": "MIT-0",
-  "offline": true
+  "offline": true,
+  "copyright": "Copyright (c) 2026 Andrew Tao Li (andrew-tao-li)",
+  "notice": "See NOTICE in this skill directory. Author: Andrew Tao Li (andrew-tao-li) — https://github.com/andrew-tao-li/ai-audit-skills"
 }

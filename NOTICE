@@ -1,0 +1,21 @@
+Copyright (c) 2026 Andrew Tao Li (andrew-tao-li)
+
+本仓库（AI Audit Skill Pack）由 Andrew Tao Li (andrew-tao-li) 开发：
+
+  https://github.com/andrew-tao-li/ai-audit-skills
+
+许可证范围（两套并存，见 README 的 License 段）
+  · 各 skill（skills-v2/<skill>/）采用 MIT-0（MIT No Attribution）授权 ——
+    使用、修改、再分发均无需署名。每个 skill 包内自带 LICENSE（MIT-0 全文）
+    与 NOTICE（作者与出处说明）。
+  · 仓库其余部分（README / evals / evolution / scripts / docs / …）采用
+    Apache License 2.0 —— 见根目录 LICENSE。
+
+非约束性的出处声明（非许可条件）
+  以上条款不要求你署名。若你把某个 skill、其衍生作品，或本仓库的脚本
+  用于商业产品、对外服务、课程材料，或再分发到第三方平台，
+  欢迎注明出处（如「基于 andrew-tao-li 的 https://github.com/andrew-tao-li/ai-audit-skills 」）。
+  这不是许可条件，只是对作者的实际支持。
+
+问题 / 建议
+  微信公众号「美会侠」（回复「费用审计」）· 邮箱 andrew.tao.li@foxmail.com

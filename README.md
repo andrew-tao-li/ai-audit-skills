@@ -121,3 +121,11 @@ Scope is explicit, no ambiguity:
 - **Everything else** (this README, `evals/`, `evolution/`, `scripts/`, `docs/`, …) is under the **Apache License 2.0** — see the root [`LICENSE`](LICENSE).
 
 In short: **skills you install from a marketplace or release are MIT-0; the repository's own scaffolding is Apache-2.0.**
+
+### 出处声明（非许可条件）
+
+MIT-0 与 Apache-2.0 都不要求你署名，作者也不主张署名权。但如果你把某个 skill、其衍生作品或本仓库脚本用在商业产品、对外服务、课程材料，或再分发到第三方平台，**欢迎注明出处**（如「基于 [andrew-tao-li/ai-audit-skills](https://github.com/andrew-tao-li/ai-audit-skills)」）——这不是许可条件，只是对作者的实际支持。
+
+作者与联系方式见 [`NOTICE`](NOTICE)；各 skill 包内也自带 `LICENSE` 与 `NOTICE`。
+
+问题 / 建议：微信公众号「美会侠」（回复「费用审计」）· 邮箱 andrew.tao.li@foxmail.com

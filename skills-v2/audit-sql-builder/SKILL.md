@@ -1,11 +1,11 @@
 ---
 name: audit-sql-builder
 description: "把审计需求翻译成可在业务系统上执行的 SQL：读数据字典（表名/字段名/中文名），建议字段映射（带候选与置信度，不硬猜），按需渲染多方言 SQL，缺字段时明确报出。Use when the user knows only the business system name and needs to pull data out — asks for 取数/写 SQL/查询语句/数据字典/从 XX 系统导数据, or wants to turn audit needs into SELECT statements before running an audit skill. Do not use for analyzing data, writing findings, or connecting to a database — this skill only produces SQL text."
-version: 0.1.0
+version: 0.1.1
 metadata:
   author: "andrew-tao-li"
   aiaudit_compatibility: "Agent Skills hosts; offline; Python 3.10+; openpyxl optional for XLSX schema"
-  changelog: "v0.1.0: 首个版本——数据字典 → 字段映射建议 → 按需求渲染多方言 SQL（sqlite/mysql/postgres/sqlserver/oracle）；缺字段不硬凑；完全离线。"
+  changelog: "v0.1.1: 包内补 LICENSE(MIT-0 全文) 与 NOTICE；manifest 补 copyright/notice；README 加版权与出处说明。**许可证条款不变（MIT-0，无需署名），审计规则与输出无任何变化。** | v0.1.0: 首个版本——数据字典 → 字段映射建议 → 按需求渲染多方言 SQL（sqlite/mysql/postgres/sqlserver/oracle）；缺字段不硬凑；完全离线。"
 ---
 
 # Audit SQL Builder（审计取数）

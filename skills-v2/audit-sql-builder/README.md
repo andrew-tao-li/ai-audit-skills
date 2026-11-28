@@ -29,3 +29,17 @@ python3 scripts/run_sql_builder.py --schema 数据字典.csv --map 确认后的�
 
 - 它只生成**取数 SQL**，**不是审计结论**；SQL 的字段语义要**和 IT 确认**（技能只给候选 + 置信度）。
 - 不连接任何数据库、不上传任何数据。
+
+---
+
+## 版权与署名
+
+本 skill 由 **Andrew Tao Li (andrew-tao-li)** 开发（源码与全部版本：https://github.com/andrew-tao-li/ai-audit-skills）。
+
+许可证为 **MIT-0**（MIT No Attribution）：使用、修改、再分发**均无需署名**，条款见
+同目录 [`LICENSE`](LICENSE) 与 [`NOTICE`](NOTICE)。
+
+若用于商业产品、对外服务或再分发到第三方平台，欢迎注明出处 —— 这不是许可条件，
+只是对作者的实际支持。
+
+问题 / 建议：微信公众号「美会侠」（回复「费用审计」）· 邮箱 andrew.tao.li@foxmail.com
