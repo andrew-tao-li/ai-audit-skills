@@ -98,6 +98,16 @@ def build_one(skill: str, cfg: dict) -> Path:
     p = dst / "SKILL.md"
     p.write_text(transform_skill_md(p.read_text(encoding="utf-8"), cfg), encoding="utf-8")
 
+    # 平台上传有**文件类型白名单**：无扩展名的文件（如标准的 `LICENSE` / `NOTICE`）
+    # 会被服务端拒收（实测："不允许的文件类型: LICENSE"）。
+    # → 净化版里把无扩展名文件改名成 `<name>.md`（.md 一定在白名单内，SKILL.md 就是 .md）。
+    #    canonical / GitHub release / ClawHub 仍保持标准文件名 `LICENSE`、`NOTICE`。
+    for f in sorted(dst.iterdir()):
+        if f.is_file() and "." not in f.name:
+            new = f.with_name(f.name + ".md")
+            f.rename(new)
+            print("    · %s → %s（平台不收无扩展名文件）" % (f.name, new.name))
+
     # 代码规范化（动态导入 → 常规 import，并补上 import 行）
     for py in dst.rglob("*.py"):
         t = py.read_text(encoding="utf-8")
