@@ -1,5 +1,5 @@
 {
-  "pack": "v0.3.50",
+  "pack": "v0.3.51",
   "skills": {
     "audit-sql-builder": "0.1.1",
     "cn-entity-relation-check": "0.1.10",
